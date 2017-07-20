@@ -2,7 +2,8 @@
 !!!!! WORK IN PROGRESS !!!!!
 Autonomous air traffic control system for drones  
 
-This will be a centralized system which drones,users and monitors can connect to in order to autonomously fly drones to a target, avoiding NoFlyZones and in the future other drones. The current project target is to devise a system which provides the navigation for drones automatically, but cannot prevent collisions reliably
+This will be a centralized system which drones,users and monitors can connect to in order to autonomously fly drones to a target, avoiding NoFlyZones and in the future other drones. The current project target is to devise a system which provides the navigation for drones automatically, but cannot prevent collisions reliably.  
+Note: Inability to preempt collisions actually may be of benifit as it removes the serialization constraint from the pathfinding (in other words, the paths of the drones no longer affect each other). This means that, due to this independance, processing of flight paths can happen in parralel, VASTLY increasing scalability of the flight planner as well as reducing path finding time itself.
 
 Systems:  
 There are 4 components to the system : The Server, drones, Users and Monitors. Each drone,User or Monitor can connect to the Server in order to obtain data, change preferences and set flights. The Server will automatically find a path for the drone to follow around NoFlyZones using an A* Search.
