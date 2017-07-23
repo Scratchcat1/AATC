@@ -90,7 +90,7 @@ class DBConnection:
         if UserIDFetch != []:
             return True,"Correct Credentials",UserIDFetch[0]
         else:
-            return False,"Incorrect Credentials",UserIDFetch[0]
+            return False,"Incorrect Credentials",-1
 
     def SetUserPublicVisibleFlights(self,UserID,Value):
         if Value in [0,1]:

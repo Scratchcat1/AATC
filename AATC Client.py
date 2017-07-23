@@ -31,8 +31,6 @@
 #############################################################
 
 
-def Send(Connection,Code,Data):
-    Connection.send((Code,Data))
 
 def Login(Connection):
     Continue = "Y"
@@ -61,58 +59,142 @@ if LoggedIn:
 else:
     print("Exiting program..")
 
-
+def split(tup,num = 3):  # Used to remove the data section for non data
+    Sucess,Message,Data = tup[0],tup[1],tup[2]
+    if num == 3:
+        return Sucess,Message,Data
+    elif num == 2:
+        return Sucess,Message
 
 
 class ConnectionInterface:
     def __init__(self,Connection,Username):
-        self.Connection = Connection
+        self.con = Connection
         self.Username = Username       #Used to address user
         print("Welcome to the AATC connection interface",self.Username)
-    def FetchNoFlyZones(self):
+        
+    ################################
+    def GetNoFlyZones(self):
         self.Send("GetNoFlyZones",())
-        #Sucess,Message,NoFlyZones = Get Data
+        Sucess,Message,NoFlyZones = self.Recv()
         return Sucess,Message,NoFlyZones
 
-    def AddNoFlyZone(self,StartCoords,EndCoords):
-        self.Send("AddNoFlyZone",(StartCoords,EndCoords))
-        #Sucess,Message = GetData
+    def AddNoFlyZone(self,StartCoords,EndCoords,Level):
+        self.Send("AddNoFlyZone",(StartCoords,EndCoords,Level))
+        Sucess,Message,_ =  self.Recv()
         return Sucess,Message
 
     def RemoveNoFlyZone(self,ZoneID):
         self.Send("RemoveNoFlyZone",(ZoneID,))
-        # Sucess,Message = GetData
-        return Sucess,Message 
-    
-
-    def GetDroneInfo(self,All = False,InFlight = False):
-        self.Send("GetDroneInfo",(All,InFlight))
-        #Sucess,Message,DroneInfo  = GetData
-        return Sucess,Message,DroneInfo
-
-    def AddNewDrone(self,DroneName,Speed,Range,Weight):
-        self.Send("AddNewDrone",(DroneName,Speed,Range,Weight))
-        #Sucess, Message = GetData
+        Sucess,Message,_ =  self.Recv()
         return Sucess,Message
+    
+    def ModifyNoFlyZoneLevel(self,ZoneID,Level):
+        self.Send("ModifyNoFlyZoneLevel",(ZoneID,Level))
+        Sucess,Message,_ =  self.Recv()
+        return Sucess,Message     
+    ##################################
 
+    def AddDrone(self,DroneName,Type,Speed,Range,Weight):
+        self.Send("AddDrone",(DroneName,Type,Speed,Range,Weight))
+        Sucess, Message,_ =  self.Recv()
+        return Sucess,Message
+    
     def RemoveDrone(self,DroneID):
         self.Send("RemoveDrone",(DroneID,))
-        #Sucess,Message = GetData
+        Sucess,Message,_ =  self.Recv()
         return Sucess,Message
 
+    def GetDronesUser(self):
+        self.Send("GetDronesUser",())
+        Sucess,Message,DroneInfo  =  self.Recv()
+        return Sucess,Message,DroneInfo
+    def GetDronesAll(self):
+        self.Send("GetDronesAll",())
+        Sucess,Message,DroneInfo  =  self.Recv()
+        return Sucess,Message,DroneInfo
+    ###########################################
+
+
+    def GetUsername(self,UserID):
+        self.Send("GetUsername",(UserID,))
+        Sucess,Message,Username = self.Recv()
+        return Sucess,Message,Username   #Username will be ["asfgg"] as it is how database returns it
+
+    def AddUser(self,Username,Password):
+        self.Send("AddUser",(Username,Password))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+    
     def SetFlightVisibility(self,Visibility):
         self.Send("SetFlightVisibility",(Visibility,))
-        # Sucess,Message = GetData
+        Sucess,Message,_ =  self.Recv()
         return Sucess,Message
 
-    def GetFlightInfo(self,All= False):
-        self.Send("GetFlightInfo",(All,))
-        #Sucess,Message,FlightInfo = GetData
-        return Sucess,Message,FlightInfo
-        
-    def Send(self,Code,data):
-        Send(self.Connection,Code,data)
+    def SetAccountType(self,Value):
+        self.Send("SetAccountType",(Value,))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
 
+    ##########################################
+
+    def GetFlightsUser(self):
+        self.Send("GetFlightsUser",())
+        Sucess,Message,UserFlights = self.Recv()
+        return Sucess,Message,UserFlights
+
+    def GetFlightsAll(self):
+        self.Send("GetFlightsAll",())
+        Sucess,Message,AllFlights = self.Recv()
+        return Sucess,Message,AllFlights
+
+    def AddFlight(self,DroneID,StartCoords,EndCoords,StartTime):
+        self.Send("AddFlight",(DroneID,StartCoords,EndCoords,StartTime))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+
+    def RemoveFlight(self,FlightID):
+        self.Send("RemoveFlight",(FlightID,))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+    ##########################################
+
+    def GetFlightWaypointsUser(self):
+        self.Send("GetFlightWaypointsUser",())
+        Sucess,Message,UserWaypoints = self.Recv()
+        return Sucess,Message,UserWaypoints
+
+    def GetFlightWaypointsAll(self):
+        self.Send("GetFlightWaypointsAll",())
+        Sucess,Message,AllWaypoints = self.Recv()
+        return Sucess,Message,AllWaypoints
+    ##########################################
+
+    def GetMonitorID(self,MonitorName):
+        self.Send("GetMonitorID",(MonitorName,))
+        Sucess,Message,MonitorID = self.Recv()  #MonitorID = [NumberID] as how db returns
+        return Sucess,Message,MonitorID
+
+    def GetMonitorName(self,MonitorID):
+        self.Send("GetMonitorName",(MonitorID,))
+        Sucess,Message,MonitorName = self.Recv() #  [MonitorName]
+        return Sucess,Message,MonitorName
+    ##########################################
+    
+    def Send(self,Code,data):
+        Info = codecs.encode(str((Code,data)))
+        self.con.sendall(Info)
+
+    def Recv(self):   #Returns tuple of Sucess,Message,Data   of which data may just be useless for that function
+        try:
+            data = self.con.recv(1024)
+            data = ast.literal_eval(codecs.decode(data))
+            #      Sucess, Message , Data
+            return data
+        except Exception as e:
+            print("Socket data recive error")
+            print(str(e))
+            return (False,"Conversion/Transfer Error"+str(e),[])
 
 
 
