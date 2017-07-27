@@ -32,21 +32,7 @@
 
 
 
-def Login(Connection):
-    Continue = "Y"
-    ConInterface= None
-    while Continue == "Y":
-        username = input("Enter username:")
-        password = input("Enter password:")
-        #Send(Connection,"Login",("User",username,password))
-        #LoggedIn,Message =  Get Response
-        print(Message)
-        if not LoggedIn:
-            Continue = input("Error Logging on, Continue? (Y/N)").upper()
-        else:
-            Continue = "N"
-            ConInteface = ConnectionInterface(Connection,username)
-    return LoggedIn
+
          
 import socket
 #Create Socket
@@ -59,20 +45,27 @@ if LoggedIn:
 else:
     print("Exiting program..")
 
-def split(tup,num = 3):  # Used to remove the data section for non data
-    Sucess,Message,Data = tup[0],tup[1],tup[2]
-    if num == 3:
-        return Sucess,Message,Data
-    elif num == 2:
-        return Sucess,Message
+##def split(tup,num = 3):  # Used to remove the data section for non data
+##    Sucess,Message,Data = tup[0],tup[1],tup[2]
+##    if num == 3:
+##        return Sucess,Message,Data
+##    elif num == 2:
+##        return Sucess,Message
 
 
-class ConnectionInterface:
-    def __init__(self,Connection,Username):
+class UserInterface:
+    def __init__(self,Connection):
         self.con = Connection
-        self.Username = Username       #Used to address user
-        print("Welcome to the AATC connection interface",self.Username)
+        self.Username  = ""
+        print("Welcome to the AATC connection interface")
+
+    def Login(self,Username,Password):
+        self.Username = Username
+        self.Send("Login",(Username,Password))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
         
+    ################################    
     ################################
     def GetNoFlyZones(self):
         self.Send("GetNoFlyZones",())
@@ -105,6 +98,11 @@ class ConnectionInterface:
         Sucess,Message,_ =  self.Recv()
         return Sucess,Message
 
+    def GetDroneID(self,DroneName):
+        self.Send("GetDroneID",(DroneName,))
+        Sucess,Message,DroneID = self.Recv()
+        return Sucess,Message,DroneID
+
     def GetDronesUser(self):
         self.Send("GetDronesUser",())
         Sucess,Message,DroneInfo  =  self.Recv()
@@ -115,6 +113,10 @@ class ConnectionInterface:
         return Sucess,Message,DroneInfo
     ###########################################
 
+    def GetUserID(self,Username):
+        self.Send("GetUserID",(Username,))
+        Sucess,Message,UserID = self.Recv()
+        return Sucess,Message,UserID
 
     def GetUsername(self,UserID):
         self.Send("GetUsername",(UserID,))
@@ -180,7 +182,29 @@ class ConnectionInterface:
         Sucess,Message,MonitorName = self.Recv() #  [MonitorName]
         return Sucess,Message,MonitorName
     ##########################################
+
+    def AddMonitorPermission(self,MonitorID,ExpiryDate):
+        self.Send("AddMonitorPermission",(MonitorID,ExpiryDate))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
     
+    def RemoveMonitorPermission(self,MonitorID):
+        self.Send("RemoveMonitorPermission",(MonitorID,))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+
+    def ModifyMonitorPermissionDate(self,MonitorID,NewDate):
+        self.Send("ModifyMonitorPermissionDate",(MonitorID,NewDate))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+
+    def GetMonitorPermissionUser(self):
+        self.Send("GetMonitorPermissionUser",())
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+
+    ##############################################
+    ##############################################
     def Send(self,Code,data):
         Info = codecs.encode(str((Code,data)))
         self.con.sendall(Info)
@@ -190,7 +214,7 @@ class ConnectionInterface:
             data = self.con.recv(1024)
             data = ast.literal_eval(codecs.decode(data))
             #      Sucess, Message , Data
-            return data
+            return data[0],data[1],data[2]
         except Exception as e:
             print("Socket data recive error")
             print(str(e))

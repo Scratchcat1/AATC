@@ -50,8 +50,12 @@ class DBConnection:
 
 ########################    DRONE           ################################ 
     def AddDrone(self,UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight):
-        self.cur.execute("INSERT INTO Drone(UserID,DroneName,DroneType,DroneRange,DroneWeight) VALUES(?,?,?,?,?)",(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight))
-        return True,"Added Drone"
+        self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneName = ?",(UserID,DroneName))
+        if self.cur.fetchall() == []:
+            self.cur.execute("INSERT INTO Drone(UserID,DroneName,DroneType,DroneRange,DroneWeight) VALUES(?,?,?,?,?)",(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight))
+            return True,"Added Drone"
+        else:
+            return False,"This drone already exists for you"
     def RemoveDrone(self,UserID,DroneID):
         self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneID = ?",(UserID,DroneID))
         if self.cur.fetchall() != []:
@@ -59,6 +63,10 @@ class DBConnection:
             return True,"Removed Drone"
         else:
             return False,"This drone does not exist or you do not have permission to delete this drone"
+
+    def GetDroneID(self,UserID,DroneName):
+        self.cur.execute("SELECT DroneID FROM Drone WHERE UserID = ? AND DroneName = ?")
+        return True,"[DroneID]",self.cur.fetchall()
     
     def GetDronesUser(self,UserID):
         self.cur.execute("SELECT * FROM Drone WHERE UserID = ?",(UserID,))
@@ -165,12 +173,22 @@ class DBConnection:
         else:
             return False,"Monitor already exists"
 
+    def MonitorCheckCredentials(self,MonitorName,MonitorPassword):
+        self.cur.execute("SELECT MonitorID FROM Monitor WHERE MonitorName = ? AND MonitorPassword = ?",(MonitorName,MonitorPassword))
+        MonitorIDFetch = self.cur.fetchall()
+        if MonitorIDFetch != []:
+            return True,"Correct Credentials",MonitorIDFetch[0]
+        else:
+            return False,"Incorrect Credntials",-1
+
     def GetMonitorDrones(self,MonitorID):
         self.cur.execute("SELECT Drone.* FROM Drone,MonitorPermission WHERE Drone.UserID = MonitorPermission.UserID and MonitorPermission.MonitorID = ?",(MonitorID,))
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
+    
     def GetMonitorFlights(self,MonitorID):
         self.cur.execute("SELECT Flight.* FROM Flight,Drone,MonitorPermission WHERE Flight.DroneID = Drone.DroneID AND Drone.UserID = MonitorPermission.UserID and MonitorPermission.MonitorID = ?",(MonitorID,))
         return True,str(self.Table_Headers("Flight")),self.cur.fetchall()
+    
     def GetMonitorFlightWaypoints(self,MonitorID):
         self.cur.execute("SELECT FlightWaypoints.* FROM FlightWaypoints,Flight,Drone,MonitorPermission WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = MonitorPermission.UserID and MonitorPermission.MonitorID = ?",(MonitorID,))
         return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()
@@ -210,7 +228,7 @@ class DBConnection:
     def UpdateMonitorPermissionLastAccessed(self,UserID,MonitorID,NewDate = None):
         if NewDate == None:
             NewDate = GetTime()
-        self.cur.execute("UPDATE MonitorPermission SET LastAccessed = ?",(NewDate,))
+        self.cur.execute("UPDATE MonitorPermission SET LastAccessed = ? WHERE MonitorID = ? AND UserID = ?",(NewDate,MonitorID,UserID))
         return True,"Updated LastAccessed"
 
 
