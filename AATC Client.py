@@ -30,20 +30,26 @@
 #
 #############################################################
 
-
+def Connect(remote_ip,PORT):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.connect((remote_ip, PORT))
+        print("Connected to > "+ remote_ip+":"+str(PORT))
+        return s
+    except:
+        print("Error binding port")
+        print("Check address and port is up")
+        print("Otherwise check server is functional")
+        print("Exiting...")
+        sys.exit()
 
 
          
-import socket
+import socket,codecs,ast
 #Create Socket
 #Create Connection
 
-LoggedIn,ConInterface = Login(Connection)
-
-if LoggedIn:
-    UserInstance = UserControl(Connection,Username)
-else:
-    print("Exiting program..")
 
 ##def split(tup,num = 3):  # Used to remove the data section for non data
 ##    Sucess,Message,Data = tup[0],tup[1],tup[2]
@@ -129,7 +135,7 @@ class UserInterface:
         return Sucess,Message
     
     def SetFlightVisibility(self,Visibility):
-        self.Send("SetFlightVisibility",(Visibility,))
+        self.Send("SetUserPublicVisibleFlights",(Visibility,))
         Sucess,Message,_ =  self.Recv()
         return Sucess,Message
 
@@ -200,8 +206,8 @@ class UserInterface:
 
     def GetMonitorPermissionUser(self):
         self.Send("GetMonitorPermissionUser",())
-        Sucess,Message,_ = self.Recv()
-        return Sucess,Message
+        Sucess,Message,MonitorPermissionsUser = self.Recv()
+        return Sucess,Message,MonitorPermissionsUser
 
     ##############################################
     ##############################################
@@ -221,9 +227,7 @@ class UserInterface:
             return (False,"Conversion/Transfer Error"+str(e),[])
 
 
-
-
-"""SERVER SECTION TEMP"""
-
-
-
+def CreateUserInterface(IP = "192.168.0.19",Port = 8000):
+    soc = Connect(IP,Port)
+    U = UserInterface(soc)
+    return U

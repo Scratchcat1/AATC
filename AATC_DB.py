@@ -27,7 +27,7 @@ class DBConnection:
     In the future it may be possible to store the UserID in this object
     
     Table_Headers("TableName") will get the headers of that table
-    Reset() will drop all tables and create them again!  THIS CAN TAKE A LONG TIME AND IS PROBABLY NOT THREADSAFE. WILL CRASH OTHER USERS!
+    Reset() will drop all tables and create them again!  THIS CAN TAKE A LONG TIME AND IS PROBABLY NOT THREADSAFE. WILL CRASH OTHER USERS! NOT ACCESSABLE AT ALL RIGHT NOW
 
     This object is designed more towards security and reliability than performance, therefore more checks occur which can impeed performance
     """
@@ -37,12 +37,13 @@ class DBConnection:
         print("Initializing database connection '",DatabaseName,"'")
         self.db_con = sql.connect(DatabaseName)
         self.cur = self.db_con.cursor()
+        self.cur_header = self.db_con.cursor()
 
     def Exit(self):
         self.db_con.close()
     def Table_Headers(self,TableName):
-        self.cur.execute("PRAGMA table_info("+TableName+")")
-        result = self.cur.fetchall()
+        self.cur_header.execute("PRAGMA table_info("+TableName+")")
+        result = self.cur_header.fetchall()
         Headers = []
         for item in result:
             Headers.append(item[1])  #Gets Column header
@@ -52,10 +53,11 @@ class DBConnection:
     def AddDrone(self,UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight):
         self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneName = ?",(UserID,DroneName))
         if self.cur.fetchall() == []:
-            self.cur.execute("INSERT INTO Drone(UserID,DroneName,DroneType,DroneRange,DroneWeight) VALUES(?,?,?,?,?)",(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight))
+            self.cur.execute("INSERT INTO Drone(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight) VALUES(?,?,?,?,?,?)",(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight))
             return True,"Added Drone"
         else:
             return False,"This drone already exists for you"
+        
     def RemoveDrone(self,UserID,DroneID):
         self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneID = ?",(UserID,DroneID))
         if self.cur.fetchall() != []:
@@ -65,7 +67,7 @@ class DBConnection:
             return False,"This drone does not exist or you do not have permission to delete this drone"
 
     def GetDroneID(self,UserID,DroneName):
-        self.cur.execute("SELECT DroneID FROM Drone WHERE UserID = ? AND DroneName = ?")
+        self.cur.execute("SELECT DroneID FROM Drone WHERE UserID = ? AND DroneName = ?",(UserID,DroneName))
         return True,"[DroneID]",self.cur.fetchall()
     
     def GetDronesUser(self,UserID):
@@ -87,16 +89,16 @@ class DBConnection:
     def AddUser(self,Username,Password):
         self.cur.execute("SELECT 1 FROM User WHERE Username = ?",(Username,))
         if self.cur.fetchall() == []:
-            self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,AccountType) VALUES(?,?,0,'Default')",(Username,Username,Password))
+            self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,AccountType) VALUES(?,?,0,'Default')",(Username,Password))
             return True,"Added User"
         else:
             return False,"User already exists"
 
     def CheckCredentials(self,Username,Password):
-        self.cur.execute("SELECT UserID FROM User WHERE UserID = ? AND Password = ?")
+        self.cur.execute("SELECT UserID FROM User WHERE Username = ? AND Password = ?",(Username,Password))
         UserIDFetch = self.cur.fetchall()
         if UserIDFetch != []:
-            return True,"Correct Credentials",UserIDFetch[0]
+            return True,"Correct Credentials",UserIDFetch[0][0]
         else:
             return False,"Incorrect Credentials",-1
 
@@ -142,7 +144,7 @@ class DBConnection:
         return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()
     
     def GetFlightWaypointsAll(self):
-        self.cur.execute("SELECT Waypoints.* FROM FlightWaypoints,Flight,Drone,User WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = User.UserID AND User.PublicVisibleFlights = 1")
+        self.cur.execute("SELECT FlightWaypoints.* FROM FlightWaypoints,Flight,Drone,User WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = User.UserID AND User.PublicVisibleFlights = 1")
         return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()
     
     def AddWaypoint(self,UserID,FlightID,WaypointNumber,Coords,ETA,BlockTime=0):
@@ -177,7 +179,7 @@ class DBConnection:
         self.cur.execute("SELECT MonitorID FROM Monitor WHERE MonitorName = ? AND MonitorPassword = ?",(MonitorName,MonitorPassword))
         MonitorIDFetch = self.cur.fetchall()
         if MonitorIDFetch != []:
-            return True,"Correct Credentials",MonitorIDFetch[0]
+            return True,"Correct Credentials",MonitorIDFetch[0][0]
         else:
             return False,"Incorrect Credntials",-1
 
@@ -240,7 +242,7 @@ class DBConnection:
         else:
             if type(Level) is not int or Level <= 0:
                 return False, "Invalid Level. Must be an integer and > 0"
-            self.cur.execute("SELECT 1 FROM User WHERE UserID = ? AND 'ZoneCreator' IN AccountType",(UserID,))
+            self.cur.execute("SELECT 1 FROM User WHERE UserID = ? AND AccountType = 'ZoneCreator'",(UserID,))
             if self.cur.fetchall() !=  []:
                 self.cur.execute("INSERT INTO NoFlyZone(StartCoord,EndCoord,Level,OwnerUserID) VALUES(?,?,?,?)",(str(Coord1),str(Coord2),Level,UserID))
                 return True,"Sucessfully added NoFlyZone"
@@ -269,14 +271,14 @@ class DBConnection:
 
     def GetNoFlyZones(self):
         self.cur.execute("SELECT * FROM NoFlyZone")
-        Headers = self.TableHeaders("NoFlyZone")    #Gets Headers of table to be sent as message
+        Headers = self.Table_Headers("NoFlyZone")    #Gets Headers of table to be sent as message
         return True,str(Headers),self.cur.fetchall()
 
 
 ##########################################################################    
         
     def ResetDatabase(self):
-        TABLES = ["User","Drone","Monitor","MonitorPermission","Flight","FlightWaypoints","NoFlyZone"]
+        TABLES = ["User","Drone","Monitor","MonitorPermission","Flight","FlightWaypoints","NoFlyZone","DroneCredentials"]
         for item in TABLES:
             self.cur.execute("DROP TABLE IF EXISTS {0}".format(item))
         
@@ -287,6 +289,7 @@ class DBConnection:
         self.cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime TEXT, ETA TEXT, EndTime TEXT, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
         self.cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA TEXT, BlockTime INT ,FOREIGN KEY(FlightID) REFERENCES Flight(FlightID))")
         self.cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT,FOREIGN KEY(OwnerUserID) REFERENCES User(UserID))")
+        self.cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY ,DronePassword TEXT,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
         
     
 

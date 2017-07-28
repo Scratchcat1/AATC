@@ -1,4 +1,7 @@
 import codecs,ast,AATC_DB,socket
+##def GetTime():
+##    return time.strftime('%Y-%m-%d %H:%M:%S')
+
 def GetTime():
     return int(time.time())
 
@@ -11,8 +14,6 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
             BoolList.append(True)
     return all(BoolList)
             
-        
-        
 
 
 class UserInterface:
@@ -24,7 +25,7 @@ class UserInterface:
         self.con.sendall(codecs.encode(str(data)))
     def Recv(self):
         try:
-            data = sel.con.recv(1024)
+            data = self.con.recv(1024)
             data = ast.literal_eval(codecs.decode(data))
             #      (Command,Arguments)
             return data
@@ -143,7 +144,7 @@ class UserInterface:
 
     def AddNoFlyZone(self,Arguments):
         if len(Arguments) == 3:
-            Coord1,Coord2,Level = Argument[0],Argument[1],Argument[2]
+            Coord1,Coord2,Level = Arguments[0],Arguments[1],Arguments[2]
             Sucess,Message = self.DB.AddNoFlyZone(Coord1,Coord2,Level,self.UserID)
         else:
             Sucess,Message = False,"Incorrect Argument format"
@@ -465,4 +466,86 @@ class MonitorConnection:
     def GetFlightWaypointsAll(self,Arguments = None):
         Sucess,Message,Data = self.DB.GetFlightWaypointsAll()
         return Sucess,Message,Data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+HOST = ''
+PORT = 8000
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+print( 'Socket created')
+
+try:
+    s.bind((HOST, PORT))
+except:
+    print("Error binding port")
+    s.close()
+    sys.exit()
+     
+print( 'Socket bind complete')
+s.listen(10)
+print( 'Socket now listening')
+
+
+while 1:
+    try:
+        conn, addr = s.accept()
+        print( 'Connected with ' + addr[0] + ':' + str(addr[1]))
+        UConn = UserInterface(conn)
+        UConn.Connection_Loop()
+    except Exception as e:
+        print(str(e))
+
+
+
+
+
 
