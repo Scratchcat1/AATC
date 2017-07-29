@@ -1,6 +1,7 @@
 # AATC
 !!!!! WORK IN PROGRESS !!!!!
 Autonomous air traffic control system for *Drones*  
+Coordinates will be in form (x,y,z) where x is across, y is (pole to pole thing) and z is altitude ABOVE GROUND. 
 
 This will be a centralized system which *Drones*,*Users* and *Monitors* can connect to in order to autonomously fly *Drones* to a target, avoiding NoFlyZones and in the future other *Drones*. The current project target is to devise a system which provides the navigation for *Drone*s automatically, but cannot prevent collisions reliably.  
 Note: Inability to preempt collisions actually may be of benifit as it removes the serialization constraint from the pathfinding (in other words, the paths of the *Drones* no longer affect each other). This means that, due to this independance, processing of flight paths can happen in parralel, VASTLY increasing scalability of the flight planner as well as reducing path finding time itself.
