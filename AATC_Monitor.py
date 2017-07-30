@@ -2,7 +2,7 @@
 # Used to display the flights of drones
 
 
-import socket,codecs,ast
+import socket,codecs,ast,recvall
 
 
 class MonitorInterface:
@@ -22,7 +22,7 @@ class MonitorInterface:
         self.con.sendall(Info)
     def Recv(self):   #Returns tuple of Sucess,Message,Data   of which data may just be useless for that function
         try:
-            data = self.con.recv(1024)
+            data = recvall.recvall(self.con)
             data = ast.literal_eval(codecs.decode(data))
             #      Sucess, Message , Data
             return data[0],data[1],data[2]
@@ -124,8 +124,9 @@ def Connect(remote_ip,PORT):
         s.connect((remote_ip, PORT))
         print("Connected to > "+ remote_ip+":"+str(PORT))
         return s
-    except:
+    except Exception as e:
         print("Error binding port")
+        print(e)
         print("Check address and port is up")
         print("Otherwise check server is functional")
         print("Exiting...")

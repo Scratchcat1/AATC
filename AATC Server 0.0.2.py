@@ -1,4 +1,4 @@
-import codecs,ast,AATC_DB,socket
+import codecs,ast,AATC_DB,socket,recvall
 ##def GetTime():
 ##    return time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -16,7 +16,7 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
             
 
 
-class UserInterface:
+class UserConnection:
     def __init__(self,Connection):
         self.DB = AATC_DB.DBConnection()
         self.con = Connection
@@ -25,7 +25,7 @@ class UserInterface:
         self.con.sendall(codecs.encode(str(data)))
     def Recv(self):
         try:
-            data = self.con.recv(1024)
+            data = recvall.recvall(self.con)
             data = ast.literal_eval(codecs.decode(data))
             #      (Command,Arguments)
             return data
@@ -305,7 +305,7 @@ class MonitorConnection:
         self.con.sendall(codecs.encode(str(data)))
     def Recv(self):
         try:
-            data = sel.con.recv(1024)
+            data = recvall.recvall(self.con)
             data = ast.literal_eval(codecs.decode(data))
             #      (Command,Arguments)
             return data
@@ -336,7 +336,7 @@ class MonitorConnection:
                     Sucess,Message,Data = False,"Command does not exist",[]
             except Exception as e:
                 Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                print("Error occured with UserID:",str(self.UserID),"Error :",str(e)," Sending failure message")
+                print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
             self.Send((Sucess,Message,Data))
                 
         Exit = False
@@ -385,6 +385,7 @@ class MonitorConnection:
             except Exception as e:
                 Sucess,Message,Data = False,"An Error occured"+str(e),[]
                 print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
+##            print(Message,str(Data))
             self.Send((Sucess,Message,Data))
 
 
@@ -430,10 +431,10 @@ class MonitorConnection:
         return Sucess,Message,Data
 
     def GetMonitorFlights(self,Arguments = None):
-        Sucess,Message,Data = self.DB,GetMonitorFlights(self.MonitorID)
+        Sucess,Message,Data = self.DB.GetMonitorFlights(self.MonitorID)
         return Sucess,Message,Data
 
-    def GetMonitorFlightWaypoints(Arguments = None):
+    def GetMonitorFlightWaypoints(self,Arguments = None):
         Sucess,Message,Data = self.DB.GetMonitorFlightWaypoints(self.MonitorID)
         return Sucess,Message,Data
         
@@ -538,8 +539,8 @@ print( 'Socket now listening')
 while 1:
     try:
         conn, addr = s.accept()
-        print( 'Connected with ' + addr[0] + ':' + str(addr[1]))
-        UConn = UserInterface(conn)
+        print( '\nConnected with ' + addr[0] + ':' + str(addr[1]))
+        UConn = MonitorConnection(conn)
         UConn.Connection_Loop()
     except Exception as e:
         print(str(e))

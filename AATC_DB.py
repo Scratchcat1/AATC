@@ -53,7 +53,7 @@ class DBConnection:
     def AddDrone(self,UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight):
         self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneName = ?",(UserID,DroneName))
         if self.cur.fetchall() == []:
-            self.cur.execute("INSERT INTO Drone(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight) VALUES(?,?,?,?,?,?)",(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight))
+            self.cur.execute("INSERT INTO Drone(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight,FlightsFlown,LastCoords,LastBattery) VALUES(?,?,?,?,?,?,0,'(0,0,0)',0)",(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight))
             return True,"Added Drone"
         else:
             return False,"This drone already exists for you"
@@ -80,10 +80,10 @@ class DBConnection:
 ##########################   USER         #############################
     
     def GetUserID(self,Username):
-        self.cur.execute("SELECT UserID FROM User WHERE Username = ?",(Username))
+        self.cur.execute("SELECT UserID FROM User WHERE Username = ?",(Username,))
         return True,"[UserID]",self.cur.fetchall()
     def GetUsername(self,UserID):
-        self.cur.execute("SELECT Username FROM User WHERE UserID = ?",(Username))
+        self.cur.execute("SELECT Username FROM User WHERE UserID = ?",(UserID,))
         return True,"[Username]",self.cur.fetchall()
     
     def AddUser(self,Username,Password):
@@ -197,7 +197,11 @@ class DBConnection:
 
     def GetMonitorID(self,MonitorName):
         self.cur.execute("SELECT MonitorID FROM Monitor WHERE MonitorName = ?",(MonitorName,))
-        return True,"[MonitorID]",self.cur.fetchall()
+        if len(self.cur.fetchall()) != 0:
+            Sucess = True
+        else:
+            Sucess = False
+        return Sucess,"[MonitorID]",self.cur.fetchall()
     def GetMonitorName(self,MonitorID):
         self.cur.execute("SELECT MonitorName FROM Monitor WHERE MonitorID = ?",(MonitorID,))
         return True,"[MonitorName]",self.cur.fetchall()
@@ -224,7 +228,7 @@ class DBConnection:
         Headers = self.Table_Headers("MonitorPermission")
         return True,str(Headers),self.cur.fetchall()
     def GetMonitorPermissionMonitor(self,MonitorID):
-        self.cur.execute("SELECT * FROM MonitorPermission WHERE MonitorID = ?",(MonitorID))
+        self.cur.execute("SELECT * FROM MonitorPermission WHERE MonitorID = ?",(MonitorID,))
         Headers = self.Table_Headers("MonitorPermission")
         return True,str(Headers),self.cur.fetchall()
     def UpdateMonitorPermissionLastAccessed(self,UserID,MonitorID,NewDate = None):
