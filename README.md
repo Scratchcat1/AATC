@@ -15,3 +15,4 @@ There are 4 components to the system : The **Server, *Drones*, *Users* and *Moni
 
 ***Monitor* ->** Can be seen as a watcher. A *Monitor* can view all the public flight data and all non public flight data which it has been given permission to view. This could be used to create a visulization of the current flight situation and/or provide customers a real time view on when the *Drone* will arrive at its destination.
 
+recvall credit belongs to: https://stackoverflow.com/questions/17667903/python-socket-receive-large-amount-of-data
