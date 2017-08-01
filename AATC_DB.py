@@ -50,26 +50,52 @@ class DBConnection:
         return Headers
 
 ########################    DRONE           ################################ 
-    def AddDrone(self,UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight):
+    def AddDrone(self,UserID,DroneName,DronePassword,DroneType,DroneSpeed,DroneRange,DroneWeight):
         self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneName = ?",(UserID,DroneName))
         if self.cur.fetchall() == []:
             self.cur.execute("INSERT INTO Drone(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight,FlightsFlown,LastCoords,LastBattery) VALUES(?,?,?,?,?,?,0,'(0,0,0)',0)",(UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight))
+            _,_,DroneID = self.GetDroneID(UserID,DroneName)
+            DroneID = DroneID[0][0]                               #Sets up password in seperate table for maintainance security
+            self.cur.execute("INSERT INTO DroneCredentials(DroneID,DronePassword) VALUES(?,?)",(DroneID,DronePassword))
             return True,"Added Drone"
         else:
             return False,"This drone already exists for you"
         
     def RemoveDrone(self,UserID,DroneID):
-        self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneID = ?",(UserID,DroneID))
+        self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneID = ?",(UserID,DroneID))  #If drone belongs to user
         if self.cur.fetchall() != []:
-            self.cur.execute("DELETE FROM Drone WHERE UserID = ? AND DroneID = ?",(UserID,DroneID))
+            self.cur.execute("DELETE FROM Drone WHERE DroneID = ?",(DroneID,))
+            self.cur.execute("DELETE FROM DroneCredentials WHERE DroneID = ?",(DroneID,))
             return True,"Removed Drone"
         else:
             return False,"This drone does not exist or you do not have permission to delete this drone"
 
+    def DroneCheckCredentials(self,DroneID,DronePassword):
+        self.cur.execute("SELECT 1 FROM DroneCredentials WHERE DroneID = ? AND DronePassword = ?",(DroneID,DronePassword))
+        DroneIDFetch = self.cur.fetchall()
+        if DroneIDFetch != []:
+            return True,"Correct Drone Credentials",DroneIDFetch[0][0]
+        else:
+            return False,"Incorrect Drone Credentials",-1
+            
+
+        
     def GetDroneID(self,UserID,DroneName):
         self.cur.execute("SELECT DroneID FROM Drone WHERE UserID = ? AND DroneName = ?",(UserID,DroneName))
         return True,"[DroneID]",self.cur.fetchall()
-    
+
+    def GetDroneCredentials(self,UserID,DroneID):
+        self.cur.execute("SELECT DroneCredentials.* FROM Drone,DroneCredentials WHERE Drone.UserID = ? AND Drone.DroneID = DroneCredentials.DroneID AND DroneCredentials.DroneID = ?",(UserID,DroneID))
+        return True,str(self.Table_Headers("DroneCredentials")),self.cur.fetchall()
+
+    def SetDroneCredentials(self,UserID,DroneID,DronePassword):
+        self.cur.execute("SELECT 1 FROM Drone WHERE Drone.UserID = ? AND Drone.DroneID = ?",(UserID,DroneID))
+        if self.cur.fetchall() != []:
+            self.cur.execute("UPDATE DroneCredentials SET DronePassword = ? WHERE DroneID = ?",(DronePassword,DroneID))
+            return True,"Updated Drone Credentials"
+        else:
+            return False,"This drone does not exist or you do not have permission to change it's credentials"
+        
     def GetDronesUser(self,UserID):
         self.cur.execute("SELECT * FROM Drone WHERE UserID = ?",(UserID,))
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()

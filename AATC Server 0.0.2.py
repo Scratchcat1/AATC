@@ -79,6 +79,10 @@ class UserConnection:
                     Sucess,Message,Data = self.RemoveDrone(Arguments)
                 elif Command == "GetDroneID":
                     Sucess,Message,Data = self.GetDroneID(Arguments)
+                elif Command == "GetDroneCredentials":
+                    Sucess,Message,Data = self.GetDroneCredentials(Arguments)
+                elif Command == "SetDroneCredentials":
+                    Sucess,Message,Data = self.SetDroneCredentials(Arguments)
                 elif Command == "GetDronesUser":
                     Sucess,Message,Data = self.GetDronesUser(Arguments)
                 elif Command == "GetDronesAll":
@@ -163,8 +167,8 @@ class UserConnection:
 
     ########################################################
     def AddDrone(self,Arguments):
-        DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight = Arguments[0],Arguments[1],Arguments[2],Arguments[3],Arguments[4]
-        Sucess,Message = self.DB.AddDrone(self.UserID,DroneName,DroneType,DroneSpeed,DroneRange,DroneWeight)
+        DroneName,DronePassword,DroneType,DroneSpeed,DroneRange,DroneWeight = Arguments[0],Arguments[1],Arguments[2],Arguments[3],Arguments[4],Arguments[5]
+        Sucess,Message = self.DB.AddDrone(self.UserID,DroneName,DronePassword,DroneType,DroneSpeed,DroneRange,DroneWeight)
         return Sucess,Message,[]
     
     def RemoveDrone(self,Arguments):
@@ -176,6 +180,16 @@ class UserConnection:
         DroneName = Arguments[0]
         Sucess,Message,Data = self.DB.GetDroneID(self.UserID,DroneName)
         return Sucess,Message,Data
+
+    def GetDroneCredentials(self,Arguments):
+        DroneID = Arguments[0]
+        Sucess,Message,Data = self.DB.GetDroneCredentials(self.UserID,DroneID)
+        return Sucess,Message,Data
+
+    def SetDroneCredentials(self,Arguments):
+        DroneID,DronePassword = Arguments[0],Arguments[1]
+        Sucess,Message = self.DB.SetDroneCredentials(self.UserID,DroneID,DronePassword)
+        return Sucess,Message,[]
     
     def GetDronesUser(self,Arguments = None):
         Sucess,Message,Data = self.DB.GetDronesUser(self.UserID)
@@ -473,10 +487,73 @@ class MonitorConnection:
 
 
 
+class DroneConnection:
+    def __init__(self,Connection):
+        self.DB = AATC_DB.DBConnection()
+        self.con = Connection
+        self.DroneID = -1  #Used to identify if has logged in yet
+    def Send(self,data):
+        self.con.sendall(codecs.encode(str(data)))
+    def Recv(self):
+        try:
+            data = recvall.recvall(self.con)
+            data = ast.literal_eval(codecs.decode(data))
+            #      (Command,Arguments)
+            return data
+            #return data[0],data[1],data[2]
+        except Exception as e:
+            print("Socket data recive error")
+            print(str(e))
+
+    def Connection_Loop(self):
+        """
+            Keeps looping in request for Drone,
+            Recived data in format (CommandString,(Arg1,Arg2...))
+            Calls function in format FunctionX(ArgumentTuple)
+            This is to move argument processing to the specific Section
+            Drone is passed as argument on server side only for security
+
+            Arguments may be converted from Tuple to Dict in future for clarity
+        """
+        while self.DroneID == -1:#Repeats until logs in
+            data = self.Recv()
+            try:
+                Command,Arguments = data[0],data[1]
+                if Command == "Login":
+                    Sucess,Message,Data = self.Login(Arguments)
+
+                else:
+                    Sucess,Message,Data = False,"Command does not exist",[]
+            except Exception as e:
+                Sucess,Message,Data = False,"An Error occured"+str(e),[]
+                print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
+            self.Send((Sucess,Message,Data))
+                
+        Exit = False
+        while not Exit:
+            data = self.Recv()
+            try:
+                Command,Arguments = data[0],data[1]
+                if Command == "GetNoFlyZones":
+                    Sucess,Message,Data = self.GetNoFlyZones(Arguments)
+                    
+                elif Command == "GetDronesAll":
+                    Sucess,Message,Data = self.GetDronesAll(Arguments)
 
 
+                #Else if command doesnt exist send back Failure
+                else:
+                    Sucess,Message,Data = False,"Command does not exist",[]
+                    print("Drone tried to use unregistered command")
+            except Exception as e:
+                Sucess,Message,Data = False,"An Error occured"+str(e),[]
+                print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
+            self.Send((Sucess,Message,Data))
 
-
+    def Login(self,Arguments):
+        DroneID,DronePassword = Arguments[0],Arguments[1]
+        Sucess,Message,self.DroneID = self.DB.DroneCheckCredentials(DroneID,DronePassword)
+        return Sucess,Message,[]
 
 
 

@@ -94,8 +94,8 @@ class UserInterface:
         return Sucess,Message     
     ##################################
 
-    def AddDrone(self,DroneName,Type,Speed,Range,Weight):
-        self.Send("AddDrone",(DroneName,Type,Speed,Range,Weight))
+    def AddDrone(self,DroneName,DronePassword,Type,Speed,Range,Weight):
+        self.Send("AddDrone",(DroneName,DronePassword,Type,Speed,Range,Weight))
         Sucess, Message,_ =  self.Recv()
         return Sucess,Message
     
@@ -108,6 +108,16 @@ class UserInterface:
         self.Send("GetDroneID",(DroneName,))
         Sucess,Message,DroneID = self.Recv()
         return Sucess,Message,DroneID
+
+    def GetDroneCredentials(self,DroneID):
+        self.Send("GetDroneCredentials",(DroneID,))
+        Sucess,Message,Credentials = self.Recv()
+        return Sucess,Message,Credentials
+
+    def SetDroneCredentials(self,DroneID,DronePassword):
+        self.Send("SetDroneCredentials",(DroneID,DronePassword))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
 
     def GetDronesUser(self):
         self.Send("GetDronesUser",())

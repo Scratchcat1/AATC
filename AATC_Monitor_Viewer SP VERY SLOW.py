@@ -1,4 +1,4 @@
-import pygame,AATC_Monitor,time,ast
+import pygame,AATC_Monitor,time,ast,Spatial_Hashing
 pygame.init()
 
 _images= {}
@@ -31,7 +31,7 @@ class Coordinate:
 
 
 class Camera:
-    def __init__(self,xpixel,ypixel,MinCoords,MaxCoords):  #COORDS (X,Y,Z)
+    def __init__(self,xpixel,ypixel,MinCoords,MaxCoords,Spatial_Hash_Cell_Size= 0.0003):  #COORDS (X,Y,Z)
         self.xpixel = xpixel
         self.ypixel = ypixel
         self.gameDisplay = pygame.display.set_mode((self.xpixel,self.ypixel))
@@ -42,6 +42,8 @@ class Camera:
         self.CameraCoord.ySize = self.MaxCoords[1] - self.MinCoords[1]
         self.CameraZoom = 1
         self.DrawObjects = []
+        self.Spatial_Hash_Cell_Size = Spatial_Hash_Cell_Size
+        self.SH = Spatial_Hashing.Spatial_Hash(Spatial_Hash_Cell_Size)
 
     def GetZoom(self):
         return self.CameraZoom
@@ -66,22 +68,23 @@ class Camera:
 
     def CameraWipe(self,Colour = (0,0,0)):
         self.gameDisplay.fill(Colour)
+
+    def ResetSpatialHash(self):
+        self.SH = Spatial_Hashing.Spatial_Hash(self.Spatial_Hash_Cell_Size)
+        
     def ResetDrawObject(self):
         self.DrawObjects = []
+        
     def AddDrawObject(self,Object,ForceDraw):
+        self.SH.AddObject(Object)
         self.DrawObjects.append({"Object":Object,"ForceDraw":ForceDraw}) 
 
     def Draw(self):
-        CameraEndX= self.CameraCoord.x + self.CameraCoord.xSize    #Moved to new variablt to reduce recalculation
-        CameraEndY = self.CameraCoord.y + self.CameraCoord.ySize
-        for DrawObject in self.DrawObjects:
-            Object = DrawObject["Object"]
-            if ((Object.Coords.x < CameraEndX) and ((Object.Coords.x+Object.Coords.xSize) > self.CameraCoord.x)) and \
-               ((Object.Coords.y < CameraEndY) and ((Object.Coords.y+Object.Coords.ySize) > self.CameraCoord.y )) :  #If DrawObject intersects with Camera , Render, otherwise ignore
-                
+        CameraBox = CoordBox(self.CameraCoord.x,self.CameraCoord.y,self.CameraCoord.z,self.CameraCoord.xSize,self.CameraCoord.ySize,self.CameraCoord.zSize)
+        InViewObjects = self.SH.GetObjects(CameraBox)
+        for Object in InViewObjects:
                 PosX = ((Object.Coords.x- self.CameraCoord.x)/self.CameraCoord.xSize)* self.xpixel
                 PosY = ((Object.Coords.y- self.CameraCoord.y)/self.CameraCoord.ySize)* self.ypixel
-##                width,height = Object.Coords.xSize*self.CameraZoom ,Object.Coords.ySize*self.CameraZoom
                 width,height = int(Object.Coords.xSize/self.CameraCoord.xSize*self.xpixel) ,int(Object.Coords.ySize/self.CameraCoord.ySize*self.ypixel)
                 Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
                 self.gameDisplay.blit(Object.image,(PosX,PosY))
@@ -89,7 +92,9 @@ class Camera:
                 self.gameDisplay.blit(Object.DrawnType,(PosX+width,PosY+15))
                 self.gameDisplay.blit(Object.DrawnText,(PosX+width,PosY+30))
 
-             
+class CoordBox:
+        def __init__(self,x,y,z,xSize=0,ySize=0,zSize=0):
+             self.Coords = Coordinate(x,y,z,xSize,ySize,zSize)
                                                     
 class Monitor_Sprite(pygame.sprite.Sprite):
     def __init__(self,CoordObject,Type = "",Text = "",Colour = (255,255,255)):
@@ -231,10 +236,14 @@ def MakeSprites(M):
 
 
 
+
+
 xpixel = 1000
 ypixel = 500
 Refresh_Delay = 60
 clock = pygame.time.Clock()
+
+
 Exit = "N"
 while Exit != "Y":
     #try:
@@ -246,17 +255,20 @@ while Exit != "Y":
         MonCamera = Camera(xpixel,ypixel,MinCoords,MaxCoords)
         while True:
             MonCamera.ResetDrawObject()
+            MonCamera.ResetSpatialHash()
             Sprites = MakeSprites(M)
-            font = pygame.font.Font(None, 30) 
+            font = pygame.font.Font(None, 30)
+            
             for sprite in Sprites:
                 sprite.Make_CoordsText(font)
                 sprite.Make_Text(font)
                 sprite.Make_Type(font)
                 MonCamera.AddDrawObject(sprite,False)
+                
 
             Last_Refresh_Time = time.time()
             refresh = False
-            #MonCamera.SetZoom(1000000)
+            #MonCamera.SetZoom(10000)
             while not refresh:
                 MonCamera.CameraWipe()
                 if time.time() >= (Last_Refresh_Time + Refresh_Delay):
