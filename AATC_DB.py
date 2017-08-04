@@ -103,6 +103,10 @@ class DBConnection:
         self.cur.execute("SELECT Drone.* FROM User,Drone WHERE User.UserID = Drone.UserID AND User.PublicVisibleFlights = 1")
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
 
+    def UpdateDroneStatus(self,DroneID,LastCoords,LastBattery):
+        self.cur.execute("UPDATE Drone SET LastCoords = ?,LastBattery = ? WHERE DroneID = ?",(LastCoords,LastBattery,DroneID))
+        return True,"Updated Drone Status"
+
 ##########################   USER         #############################
     
     def GetUserID(self,Username):
@@ -152,7 +156,7 @@ class DBConnection:
     def AddFlight(self,UserID,DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset):
         self.cur.execute("SELECT 1 FROM User,Drone WHERE Drone.DroneID = ? AND Drone.UserID = ?",(DroneID,UserID))
         if self.cur.fetchall() !=[]:
-            self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset) VALUES(?,?,?,?,?,?,?,?,?,?)",(DroneID,str(StartCoords),str(EndCoords),StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset))
+            self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset,Completed) VALUES(?,?,?,?,?,?,?,?,?,?,0)",(DroneID,str(StartCoords),str(EndCoords),StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset))
             return True,"Flight added"
         else:
             return False,"You do not have permission to launch this drone"
@@ -164,13 +168,42 @@ class DBConnection:
             return True,"Flight Removed"
         else:
             return False,"You do not have permission to remove this flight"
-#----------------------------  FLIGHT WAYPOINT------------------------------------    
+
+    def CheckForFlight(self,DroneID,MaxLookAheadTime):
+        self.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = ? AND (StartTime - ?) < ? ORDER BY StartTime ASC LIMIT 1",(DroneID,MaxLookAheadTime,GetTime()))
+        FlightIDFetch = self.cur.fetchall()
+        if FlightIDFetch != []:
+            return True,"Flight is available",FlightIDFetch
+        else:
+            return False,"Flight is not available",[]
+
+    def GetFlight(self,DroneID,FlightID):
+        self.cur.execute("SELECT * FROM Flight WHERE DroneID = ? AND FlightID = ?",(DroneID,FlightID))
+        FlightFetch = self.cur.fetchall()
+        if FlightFetch != []:
+            return True,str(self.Table_Headers("Flight")),FlightFetch
+        else:
+            return False,"Flight not obtained, Flight may not exist or you may not have permission",[]
+
+    def MarkFlightComplete(self,DroneID,FlightID):
+        self.cur.execute("SELECT 1 FROM Flight WHERE DroneID = ? AND FlightID = ?",(DroneID,FlightID))
+        if self.cur.fetchall != []:
+            self.cur.execute("UPDATE Flight SET Completed = 1,EndTime = ? WHERE FlightID = ?",(FlightID,GetTime()))
+            return True,"Marked Flight complete"
+        else:
+            return False,"You do not have permission to mark this flight complete"
+        
+#----------------------------  FLIGHT WAYPOINT------------------------------------
+    def GetFlightWaypoints(self,DroneID,FlightID):
+        self.cur.execute("SELECT FlightWaypoints.* FROM Flight,FlightWaypoints WHERE Flight.DroneID = ? AND Flight.FlightID = FlightWaypoints.FlightID AND FlightWaypoints.FlightID = ?",(DroneID,FlightID))
+        return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()          
+    
     def GetFlightWaypointsUser(self,UserID):
         self.cur.execute("SELECT * FROM FlightWaypoints,Flight,Drone WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = ? ORDER BY FlightWaypoints.FlightID, FlightWaypoints.WaypointNumber",(UserID,))
         return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()
     
     def GetFlightWaypointsAll(self):
-        self.cur.execute("SELECT FlightWaypoints.* FROM FlightWaypoints,Flight,Drone,User WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = User.UserID AND User.PublicVisibleFlights = 1")
+        self.cur.execute("SELECT FlightWaypoints.* FROM FlightWaypoints,Flight,Drone,User WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = User.UserID AND User.PublicVisibleFlights = 1 ORDER BY FlightWaypoints.FlightID,FlightWaypoints.WaypointNumber")
         return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()
     
     def AddWaypoint(self,UserID,FlightID,WaypointNumber,Coords,ETA,BlockTime=0):
@@ -316,7 +349,7 @@ class DBConnection:
         self.cur.execute("CREATE TABLE Drone(DroneID INTEGER PRIMARY KEY, UserID INT, DroneName TEXT, DroneType TEXT, DroneSpeed INT, DroneRange INT, DroneWeight REAL, FlightsFlown INT, LastCoords TEXT, LastBattery REAL,FOREIGN KEY(UserID) REFERENCES User(UserID))")
         self.cur.execute("CREATE TABLE Monitor(MonitorID INTEGER PRIMARY KEY, MonitorName TEXT, MonitorPassword TEXT,AccountType TEXT)")
         self.cur.execute("CREATE TABLE MonitorPermission(MonitorID INT ,UserID INT, LastAccessed TEXT, ExpiryDate TEXT,PRIMARY KEY(MonitorID,UserID),FOREIGN KEY(MonitorID) REFERENCES Monitor(MonitorID),FOREIGN KEY(UserID) REFERENCES User(UserID))")
-        self.cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime TEXT, ETA TEXT, EndTime TEXT, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
+        self.cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime TEXT, ETA TEXT, EndTime TEXT, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,Completed INT,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
         self.cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA TEXT, BlockTime INT ,FOREIGN KEY(FlightID) REFERENCES Flight(FlightID))")
         self.cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT,FOREIGN KEY(OwnerUserID) REFERENCES User(UserID))")
         self.cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY ,DronePassword TEXT,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")

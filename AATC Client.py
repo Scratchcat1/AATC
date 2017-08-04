@@ -46,7 +46,7 @@ def Connect(remote_ip,PORT):
 
 
          
-import socket,codecs,ast
+import socket,codecs,ast,recvall
 #Create Socket
 #Create Connection
 
@@ -227,7 +227,7 @@ class UserInterface:
 
     def Recv(self):   #Returns tuple of Sucess,Message,Data   of which data may just be useless for that function
         try:
-            data = self.con.recv(1024)
+            data = recvall.recvall(self.con)
             data = ast.literal_eval(codecs.decode(data))
             #      Sucess, Message , Data
             return data[0],data[1],data[2]

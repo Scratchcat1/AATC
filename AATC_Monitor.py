@@ -2,7 +2,7 @@
 # Used to display the flights of drones
 
 
-import socket,codecs,ast,recvall
+import socket,codecs,ast,recvall,sys
 
 
 class MonitorInterface:

@@ -238,7 +238,7 @@ clock = pygame.time.Clock()
 Exit = "N"
 while Exit != "Y":
     #try:
-        M = AATC_Monitor.CreateMonitorInterface()
+        M = AATC_Monitor.CreateMonitorInterface(Port = 8001)
         M.Login("Zini","")
         #Sucess,Message,Data =  M.GetCoordDetails()
         #MinCoords,MaxCoords,StepCoords = Data[0],Data[1],Data[2]
