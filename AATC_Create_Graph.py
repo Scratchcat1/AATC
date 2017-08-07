@@ -8,10 +8,12 @@ class Coordinate:
         self.xSize = xSize
         self.ySize = ySize
         self.zSize = zSize
-        
+
+
 class Graph:
     def __init__(self):
         self.Nodes = {}
+        
 
     def Size(self,xSize,ySize,zSize):
         self.xSize = xSize
@@ -27,6 +29,8 @@ class Graph:
                 friend = self.Nodes[num]
                 if item.NodeID not in friend.Friends:
                     friend.add_friend(item.NodeID)
+
+    
     def Add_Edges(self,xRange,yRange,zRange):
         print("Adding edges...")
         xCount = int(xRange/self.xSize)
@@ -119,6 +123,31 @@ class Graph:
                 
             for friend in friends:
                 node.add_friend(friend)
+
+    def MapHash(self,value,div):
+        return int(value//div)
+                
+    def Build_Node_Cache(self):
+        self.Node_Cache = {}
+        for node in self.Nodes.values():
+            x = node.Coords.x + 0.25*self.xSize
+            y = node.Coords.y + 0.25*self.ySize
+            z = node.Coords.z + 0.25*self.zSize
+
+            mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
+            self.Node_Cache[(mx,my,mz)] = node.NodeID
+
+    def Find_NodeID(self,x,y,z):
+        mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
+        NodeID = self.Node_Cache[(mx,my,mz)]
+        return NodeID
+
+    def Obj_Find_NodeID(self,Obj):
+        x,y,z = Obj.Coords.x,Obj.Coords.y,Obj.Coords.z
+        NodeID = self.Find_NodeID(x,y,z)
+        return NodeID
+
+    
             
 ##        for node1 in self.Nodes.values():
 ##            for node2 in self.Nodes.values():
@@ -183,22 +212,6 @@ zRange = zEnd - zStart
 graph.Add_Edges(xRange,yRange,zRange)
 graph.clean_edges()
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
