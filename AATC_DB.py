@@ -95,7 +95,18 @@ class DBConnection:
             return True,"Updated Drone Credentials"
         else:
             return False,"This drone does not exist or you do not have permission to change it's credentials"
-        
+
+    def CheckDroneOwnership(self,UserID,DroneID):
+        self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneID = ?",(UserID,DroneID))
+        if self.cur.fetchall() != []:
+            return True,"Ownership confirmed"
+        else:
+            return False,"Ownership denied"
+
+    def GetDroneInfo(self,UserID,DroneID):
+        self.cur.execute("SELECT Drones.* FROM Drones,User WHERE Drone.DroneID = ? AND (Drone.UserID = ? OR (Drone.UserID = User.UserID AND User.PublicVisibleFlights = 1))",(DroneID,UserID))
+        return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
+            
     def GetDronesUser(self,UserID):
         self.cur.execute("SELECT * FROM Drone WHERE UserID = ?",(UserID,))
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()

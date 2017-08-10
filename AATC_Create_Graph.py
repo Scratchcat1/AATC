@@ -211,7 +211,24 @@ zRange = zEnd - zStart
 
 graph.Add_Edges(xRange,yRange,zRange)
 graph.clean_edges()
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -84,6 +84,10 @@ class UserConnection:
                         Sucess,Message,Data = self.GetDroneCredentials(Arguments)
                     elif Command == "SetDroneCredentials":
                         Sucess,Message,Data = self.SetDroneCredentials(Arguments)
+                    elif Command == "CheckDroneOwnership":
+                        Sucess,Message,Data = self.CheckDroneOwnership(Arguments)
+                    elif Command == "GetDroneInfo":
+                        Sucess,Message,Data = self.GetDroneInfo(Arguments)
                     elif Command == "GetDronesUser":
                         Sucess,Message,Data = self.GetDronesUser(Arguments)
                     elif Command == "GetDronesAll":
@@ -192,11 +196,21 @@ class UserConnection:
         DroneID = Arguments[0]
         Sucess,Message,Data = self.DB.GetDroneCredentials(self.UserID,DroneID)
         return Sucess,Message,Data
-
+    
     def SetDroneCredentials(self,Arguments):
         DroneID,DronePassword = Arguments[0],Arguments[1]
         Sucess,Message = self.DB.SetDroneCredentials(self.UserID,DroneID,DronePassword)
         return Sucess,Message,[]
+
+    def CheckDroneOwnership(self,Arguments):
+        UserID,DroneID = Arguments[0],Arguments[1]
+        Sucess,Message = self.DB.CheckDroneOwnership(UserID,DroneID)
+        return Sucess,Message,[]
+    
+    def GetDroneInfo(self,Arguments):
+        DroneID = Arguments[0]
+        Sucess,Message,Data = self.DB.GetDroneInfo(self.UserID,DroneID)
+        return Sucess,Message,Data
     
     def GetDronesUser(self,Arguments = None):
         Sucess,Message,Data = self.DB.GetDronesUser(self.UserID)
@@ -253,14 +267,16 @@ class UserConnection:
     def AddFlight(self,Arguments):
         DroneID,HighPoints,StartTime = Arguments[0],Arguments[1],Arguments[2]
         #load graph
-        Start = 0
-        Next = 1
-        Max = len(HighPoints)
-        Path = []
-        while Next < Max:
-            StartNodeID = MapCoordToNode(HighPoints[Start])
-            EndNodeID = MapCoordToNode(HighPoints[Next])
-            Path += AStart(graph,StartNodeID,EndNodeID)
+        Ownership,_ = self.DB.CheckDroneOwnership(self.UserID,DroneID)
+        if Ownership:
+            Start = 0
+            Next = 1
+            Max = len(HighPoints)
+            Path = []
+            while Next < Max:
+                StartNodeID = MapCoordToNode(HighPoints[Start])
+                EndNodeID = MapCoordToNode(HighPoints[Next])
+                Path += AStart(graph,StartNodeID,EndNodeID)
         #Stuff I still need to do
         #Eg add to tempoary PrebookFlight Table
         #User pathfinding to translate to Waypoints,Flight and remove from table
