@@ -267,8 +267,8 @@ class UserConnection:
     def AddFlight(self,Arguments):
         DroneID,HighPoints,StartTime = Arguments[0],Arguments[1],Arguments[2]
         #load graph
-        Ownership,_ = self.DB.CheckDroneOwnership(self.UserID,DroneID)
-        if Ownership:
+        Sucess,Message,Result = self.DB.CheckDroneOwnership(self.UserID,DroneID)
+        if Result != []:
             Start = 0
             Next = 1
             Max = len(HighPoints)
