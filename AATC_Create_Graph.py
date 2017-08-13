@@ -11,12 +11,17 @@ class Coordinate:
 
 
 class DynoGraph:
-    def __init__(self,BlockSize):
+    def __init__(self,BlockSize = 500,FolderName = "GraphFolder",GraphFileName = "Graph",GraphFileSuffix = ".graph",BlockFileName = "GraphNodes",BlockFileSuffix = ".blk"):
         self.Nodes = {}
         self.BlockSize = BlockSize
         self.cwd = os.getcwd()
-        self.Prefix = os.path.join("BlockFolder","GraphNodes")
-        self.Suffix = ".blk"
+
+        self.GraphFileName = GraphFileName
+        self.GraphFileSuffix = GraphFileSuffix
+        self.FolderName = FolderName
+        self.BlockFileName = BlockFileName
+        self.BlockFileSuffix = BlockFileSuffix
+        
         
     def Size(self,xSize,ySize,zSize):
         self.xSize = xSize
@@ -150,26 +155,53 @@ class DynoGraph:
         NodeID = self.Find_NodeID(x,y,z)
         return NodeID
 
+    #############################
+
+    def SaveGraph(self,AutoNodeSave = True):
+        if AutoNodeSave:
+            self.SaveNodes()
+
+        self.Nodes = {}
+        try:
+            filename = os.path.join(self.cwd,self.FolderName,self.GraphFileName+self.GraphFileSuffix)
+            file = open(filename,"wb")
+            pickle.dump(self,file,protocol = pickle.HIGHEST_PROTOCOL)
+            file.close()
+        except Exception as e:
+            print("Error occured while saving graph file ",e)
+
+    def ImportGraph(self):
+        try:
+            filename = os.path.join(self.cwd,self.FolderName,self.GraphFileName+self.GraphFileSuffix)
+            file = open(filename,"rb")
+            ImportFile = pickle.load(file)
+            file.close()
+            self.__dict__.update(ImportFile.__dict__)
+        except Exception as e:
+            print("An error occured while importing graph data",e)
+    
     ################
     def Hash(self,Value):
         return int(Value//self.BlockSize)
     def GetNode(self,NodeID):
         if NodeID not in self.Nodes:
-            print("Chek")
             BlockID = self.Hash(NodeID)
             try:
-                filename = os.path.join(self.cwd,self.Prefix+str(BlockID)+self.Suffix)
+                filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+str(BlockID)+self.BlockFileSuffix)
                 file = open(filename,"rb")
                 block = pickle.load(file)
                 file.close()
                 self.Nodes.update(block)
                 
-                if NodeID in self.Nodes:
-                    return self.Nodes[NodeID]
-            except:
-                pass
-        #Raises error if cannot get node
-        raise ValueError("NodeID requested is not in the BlockID checked. Check BlockSize or regenerate blockfiles")
+
+            except Exception as e:
+                print(e)
+
+        if NodeID in self.Nodes:
+            return self.Nodes[NodeID]
+        else:
+             #Raises error if cannot get node
+            raise ValueError("NodeID requested is not in the BlockID checked. Check BlockSize or regenerate blockfiles")
 
     def SaveNodes(self):
         Sets = {}
@@ -183,7 +215,7 @@ class DynoGraph:
 
 
         for Set in Sets: #Set = BlockID
-            filename = os.path.join(self.cwd,self.Prefix+str(Set)+self.Suffix)
+            filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+str(Set)+self.BlockFileSuffix)
             file = open(filename,"wb")
             data = Sets[Set]
             pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
@@ -225,7 +257,7 @@ yInterval = float(input("Enter y interval"))
 zInterval = float(input("Enter z interval"))
 
 print("creating graph")
-graph = DynoGraph(50)
+graph = DynoGraph()
 graph.Size(xInterval,yInterval,zInterval)
 nodeID = 1
 for x in drange(xStart,xEnd,xInterval):
