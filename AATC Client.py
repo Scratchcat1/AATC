@@ -119,6 +119,15 @@ class UserInterface:
         Sucess,Message,_ = self.Recv()
         return Sucess,Message
 
+    def CheckDroneOwnership(self,UserID,DroneID):
+        self.Send("CheckDroneOwnership")
+        Sucess,Message,Data = self.Recv()
+        return Sucess,Message,Data
+
+    def GetDroneInfo(self,DroneID):
+        self.Send("GetDroneInfo",(DroneID,))
+        Sucess,Message,DroneInfo = self.Recv()
+        return Sucess,Message,DroneInfo
     def GetDronesUser(self):
         self.Send("GetDronesUser",())
         Sucess,Message,DroneInfo  =  self.Recv()

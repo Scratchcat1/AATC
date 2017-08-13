@@ -82,7 +82,7 @@ class DBConnection:
         
     def GetDroneID(self,UserID,DroneName):
         self.cur.execute("SELECT DroneID FROM Drone WHERE UserID = ? AND DroneName = ?",(UserID,DroneName))
-        return True,"[DroneID]",self.cur.fetchall()
+        return True,"['DroneID']",self.cur.fetchall()
 
     def GetDroneCredentials(self,UserID,DroneID):
         self.cur.execute("SELECT DroneCredentials.* FROM Drone,DroneCredentials WHERE Drone.UserID = ? AND Drone.DroneID = DroneCredentials.DroneID AND DroneCredentials.DroneID = ?",(UserID,DroneID))
@@ -95,7 +95,15 @@ class DBConnection:
             return True,"Updated Drone Credentials"
         else:
             return False,"This drone does not exist or you do not have permission to change it's credentials"
-        
+
+    def CheckDroneOwnership(self,UserID,DroneID):
+        self.cur.execute("SELECT 1 FROM Drone WHERE UserID = ? AND DroneID = ?",(UserID,DroneID))
+        return True,"['DroneOwnership']",self.cur.fetchall()
+
+    def GetDroneInfo(self,UserID,DroneID):
+        self.cur.execute("SELECT Drones.* FROM Drones,User WHERE Drone.DroneID = ? AND (Drone.UserID = ? OR (Drone.UserID = User.UserID AND User.PublicVisibleFlights = 1))",(DroneID,UserID))
+        return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
+            
     def GetDronesUser(self,UserID):
         self.cur.execute("SELECT * FROM Drone WHERE UserID = ?",(UserID,))
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
@@ -111,10 +119,10 @@ class DBConnection:
     
     def GetUserID(self,Username):
         self.cur.execute("SELECT UserID FROM User WHERE Username = ?",(Username,))
-        return True,"[UserID]",self.cur.fetchall()
+        return True,"['UserID']",self.cur.fetchall()
     def GetUsername(self,UserID):
         self.cur.execute("SELECT Username FROM User WHERE UserID = ?",(UserID,))
-        return True,"[Username]",self.cur.fetchall()
+        return True,"['Username']",self.cur.fetchall()
     
     def AddUser(self,Username,Password):
         self.cur.execute("SELECT 1 FROM User WHERE Username = ?",(Username,))

@@ -1,5 +1,5 @@
 #Create graph module
-import pickle,decimal
+import pickle,decimal,os
 class Coordinate:
     def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
         self.x = x
@@ -10,11 +10,14 @@ class Coordinate:
         self.zSize = zSize
 
 
-class Graph:
-    def __init__(self):
+class DynoGraph:
+    def __init__(self,BlockSize):
         self.Nodes = {}
+        self.BlockSize = BlockSize
+        self.cwd = os.getcwd()
+        self.Prefix = os.path.join("BlockFolder","GraphNodes")
+        self.Suffix = ".blk"
         
-
     def Size(self,xSize,ySize,zSize):
         self.xSize = xSize
         self.ySize = ySize
@@ -147,18 +150,46 @@ class Graph:
         NodeID = self.Find_NodeID(x,y,z)
         return NodeID
 
-    
+    ################
+    def Hash(self,Value):
+        return int(Value//self.BlockSize)
+    def GetNode(self,NodeID):
+        if NodeID not in self.Nodes:
+            print("Chek")
+            BlockID = self.Hash(NodeID)
+            try:
+                filename = os.path.join(self.cwd,self.Prefix+str(BlockID)+self.Suffix)
+                file = open(filename,"rb")
+                block = pickle.load(file)
+                file.close()
+                self.Nodes.update(block)
+                
+                if NodeID in self.Nodes:
+                    return self.Nodes[NodeID]
+            except:
+                pass
+        #Raises error if cannot get node
+        raise ValueError("NodeID requested is not in the BlockID checked. Check BlockSize or regenerate blockfiles")
+
+    def SaveNodes(self):
+        Sets = {}
+        m = self.Hash(max(self.Nodes))  #Finds max blockID
+        for x in range(m+1):
+            Sets[x] = {}   #Creates sets for each block
+
+        for node in self.Nodes.values():
+            r = self.Hash(node.NodeID)
+            Sets[r][node.NodeID] = node
+
+
+        for Set in Sets: #Set = BlockID
+            filename = os.path.join(self.cwd,self.Prefix+str(Set)+self.Suffix)
+            file = open(filename,"wb")
+            data = Sets[Set]
+            pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
+            file.close()
+        
             
-##        for node1 in self.Nodes.values():
-##            for node2 in self.Nodes.values():
-##                Friend = False
-##                if node2.Coords.x > node1.Coords.x - self.xSize and node2.Coords.x < node1.Coords.x + self.xSize and \
-##                   node2.Coords.y > node1.Coords.y - self.ySize and node2.Coords.y < node1.Coords.y + self.ySize and \
-##                   node2.Coords.z > node1.Coords.z - self.zSize and node2.Coords.z < node1.Coords.z + self.zSize:    # If node 2 is in a cuboid of x,y,z, size around node 1
-##                    Friend = True
-##                if Friend:
-##                    node1.add_friend(node2.NodeID)
-##                    node2.add_friend(node1.NodeID)
 
 class Node:
     def __init__(self,NodeID,Cost,Coords):
@@ -194,7 +225,7 @@ yInterval = float(input("Enter y interval"))
 zInterval = float(input("Enter z interval"))
 
 print("creating graph")
-graph = Graph()
+graph = DynoGraph(50)
 graph.Size(xInterval,yInterval,zInterval)
 nodeID = 1
 for x in drange(xStart,xEnd,xInterval):
@@ -211,7 +242,24 @@ zRange = zEnd - zStart
 
 graph.Add_Edges(xRange,yRange,zRange)
 graph.clean_edges()
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -83,11 +83,19 @@ class Camera:
                 PosY = ((Object.Coords.y- self.CameraCoord.y)/self.CameraCoord.ySize)* self.ypixel
 ##                width,height = Object.Coords.xSize*self.CameraZoom ,Object.Coords.ySize*self.CameraZoom
                 width,height = int(Object.Coords.xSize/self.CameraCoord.xSize*self.xpixel) ,int(Object.Coords.ySize/self.CameraCoord.ySize*self.ypixel)
-                Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
-                self.gameDisplay.blit(Object.image,(PosX,PosY))
-                self.gameDisplay.blit(Object.CoordsText,(PosX+width,PosY))
-                self.gameDisplay.blit(Object.DrawnType,(PosX+width,PosY+15))
-                self.gameDisplay.blit(Object.DrawnText,(PosX+width,PosY+30))
+                if width > 0 and height > 0:
+                    font_size = int(40*width/self.xpixel)
+                    Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
+                    self.gameDisplay.blit(Object.image,(PosX,PosY))
+                    
+                    font = pygame.font.Font(None, font_size) #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                    sprite.Make_CoordsText(font)     #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                    sprite.Make_Text(font)          #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                    sprite.Make_Type(font)         #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                    
+                    self.gameDisplay.blit(Object.CoordsText,(PosX+width,PosY))
+                    self.gameDisplay.blit(Object.DrawnType,(PosX+width,PosY+15))
+                    self.gameDisplay.blit(Object.DrawnText,(PosX+width,PosY+30))
 
              
                                                     
