@@ -1,4 +1,4 @@
-import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math
+import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math,random
 ##def GetTime():
 ##    return time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -332,10 +332,13 @@ class UserConnection:
                 return False,"Pathfinding was not able to find a path between the two nodes "+str([HighPoints[Start],HighPoints[Next]]),[]
             
             else:
+                XOffset,YOffset,ZOffset = random.random()*0.5*graph.xSize,random.random()*0.5*graph.ySize,random.random()*0.5*graph.zSize
                 CoordList = []
                 for NodeID in Path:
                     Node = graph.GetNode(NodeID)
-                    CoordList.append({"Coords":Node.Coords})
+                    Coords = Node.Coords
+                    Coords.x, Coords.y, Coords.z = Coords.x+XOffset,  Coords.y+YOffset, Coords.z+ZOffset
+                    CoordList.append({"Coords":Coords})
 
                     
                 Time = StartTime
@@ -345,13 +348,31 @@ class UserConnection:
 
                 DroneSpeed,DroneRange = DroneData[SpeedIndex],DroneData[RangeIndex]                
             
-
+                TotalDistance = 0
                 for x in range(len(CoordList)):
                     if x != 0: #If not first Coord add the difference in distance to time etc
                         Distance = DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
+                        TotalDistance += Distance
                         DeltaTime = Distance/DroneSpeed
                         Time = Time + DeltaTime
                     CoordList[x]["Time"] = Time
+
+                EndTime = Time # Time at which it would probably complete it
+
+                #Adding Flight to Database
+                self.DB.AddFlight(self.UserID,DroneID,HighPoints[0],HighPoints[len(HighPoints)-1],StartTime,EndTime,EndTime,TotalDistance,XOffset,YOffset,ZOffset)
+
+                ######################
+                ###################### TEMP WORKAROUND ##########
+                self.DB.cur.execute("SELECT FlightID FROM Flight WHERE UserID = ? AND DroneID = ? AND StartTime = ?",(self.UserID,DroneID,StartTime))
+                FlightID = self.cur.fetchall()[0][0]
+                ######################
+                ######################
+                
+                for WaypointNumber in range(1,len(CoordList)):
+                    self.DB.AddWaypoint(self.UserID,FlightID,WaypointNumber,CoordList[WaypointNumber-1]["Coords"],CoordList[WaypointNumber-1]["Time"])
+
+                return True,"Sucessfully added flight",[]
 
         else:
             return False,"You do not own this drone. Flight denied",[]
