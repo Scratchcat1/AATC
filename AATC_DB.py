@@ -201,6 +201,14 @@ class DBConnection:
         else:
             return False,"You do not have permission to mark this flight complete"
         
+    def GetCompletedFlightIDs(self,EndTimeThreshold):
+        self.cur.execute("SELECT FlightID FROM Flight WHERE Completed > 0 AND (EndTime + ?) > ?",(EndTimeThreshold,GetTime()))
+        return True,"['FlightID']",self.cur.fetchall()
+
+    def CleanCompletedFlights(self,EndTimeThreshold):
+        self.cur.execute("DELETE FROM Flight WHERE Completed > 0 AND (EndTime + ?) > ?",(EndTimeThreshold,GetTime()))
+        return True,"Deleted completed flights above threshold"    
+
 #----------------------------  FLIGHT WAYPOINT------------------------------------
     def GetFlightWaypoints(self,DroneID,FlightID):
         self.cur.execute("SELECT FlightWaypoints.* FROM Flight,FlightWaypoints WHERE Flight.DroneID = ? AND Flight.FlightID = FlightWaypoints.FlightID AND FlightWaypoints.FlightID = ?",(DroneID,FlightID))
@@ -217,7 +225,7 @@ class DBConnection:
     def AddWaypoint(self,UserID,FlightID,WaypointNumber,Coords,ETA,BlockTime=0):
         self.cur.execute("SELECT 1 FROM User,Flight,Drone WHERE User.UserID = ? AND User.UserID = Drone.UserID AND Drone.DroneID = Flight.DroneID AND Flight.FlightID = ?",(UserID,FlightID))
         if self.cur.fetchall() !=[]:
-            self.cur.execute("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(?,?,?,?,?)",(FlightID,WaypointNumber,Coords,ETA,BlockTime))
+            self.cur.execute("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(?,?,?,?,?)",(FlightID,WaypointNumber,str(Coords),ETA,BlockTime))
             return True,"Added Waypoint"
         else:
             return False,"You do not have permission to add a waypoint for this flight"
@@ -231,7 +239,9 @@ class DBConnection:
             return False,"You do not have permission to delete these waypoints"
 
 
-
+    def CleanCompletedFlightWaypoints(self,FlightID):  #Server only command
+        self.cur.execute("DELETE FROM FlightWaypoints WHERE FlightID = ?",(FlightID,))
+        return True,"Deleted waypoints"
 
 ###########################  MONITOR     ##################################
     def AddMonitor(self,MonitorName,MonitorPassword):
@@ -273,7 +283,6 @@ class DBConnection:
         self.cur.execute("SELECT MonitorName FROM Monitor WHERE MonitorID = ?",(MonitorID,))
         return True,"[MonitorName]",self.cur.fetchall()
 
-
 #--------------------------   MONITOR PERMISSION   ------------------------------------
     def AddMonitorPermission(self,UserID,MonitorID,ExpiryDate):
         self.cur.execute("SELECT 1 FROM MonitorPermission WHERE UserID = ? AND MonitorID = ?",(UserID,MonitorID))
@@ -303,6 +312,10 @@ class DBConnection:
             NewDate = GetTime()
         self.cur.execute("UPDATE MonitorPermission SET LastAccessed = ? WHERE MonitorID = ? AND UserID = ?",(NewDate,MonitorID,UserID))
         return True,"Updated LastAccessed"
+
+    def CleanMonitorPermissions(self):
+        self.cur.execute("DELETE FROM MonitorPermission WHERE ExpiryDate < ?",(GetTime(),))
+        return True,"Cleaned Monitor Permission",[]
 
 
 ########################    No Fly Zone ###############################################

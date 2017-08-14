@@ -137,12 +137,18 @@ class DynoGraph:
     def Build_Node_Cache(self):
         self.Node_Cache = {}
         for node in self.Nodes.values():
-            x = node.Coords.x + 0.25*self.xSize
+            x = node.Coords.x + 0.25*self.xSize  #Prevents floating point rounding errors
             y = node.Coords.y + 0.25*self.ySize
             z = node.Coords.z + 0.25*self.zSize
 
             mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
             self.Node_Cache[(mx,my,mz)] = node.NodeID
+
+    def Direct_NodeID(self,x,y,z):
+        return self.Node_Cache[(x,y,z)]
+
+    def All_NodeIDs(self):
+        return self.Node_Cache.values()
 
     def Find_NodeID(self,x,y,z):
         mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
@@ -223,7 +229,10 @@ class DynoGraph:
             data = Sets[Set]
             pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
             file.close()
-        
+
+    def EvictNode(self,NodeID):  #Removes a node from the Nodes dict
+        if NodeID in self.Nodes:
+            self.Nodes.pop(NodeID)
             
 
 class Node:

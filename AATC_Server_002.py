@@ -1,4 +1,4 @@
-import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math,random
+import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math,random,time
 ##def GetTime():
 ##    return time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -761,6 +761,23 @@ class DroneConnection:
 
 
 
+def Cleaner(Interval = 36000,EndTimeThreshold = 72000):
+    while True:
+        try:
+            DB = AATC_DB.DBConnection()
+        
+            DB.CleanMonitorPermissions()
+            
+            FlightIDs = DB.GetCompletedFlightIDs(EndTimeThreshold)
+            DB.CleanCompletedFlights(EndTimeThreshold)
+            
+            for WrappedID in FlightIDs: #Wrapped as will be in for FlightIDs = [[a,],[b,],[c,]] where letters mean flightIDs
+                DB.CleanCompletedFlightWaypoints(WrappedID[0])
+                
+            
+        except Exception as e:
+            print("Error in Cleaner",e)
+    
 
 
 
@@ -780,8 +797,7 @@ class DroneConnection:
 
 
 
-
-if __name__ == "__main__":
+if __name__ == "__main__": #For testing purposes
     HOST = ''
     PORT = 8000
 

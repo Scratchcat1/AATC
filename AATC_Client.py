@@ -175,8 +175,8 @@ class UserInterface:
         Sucess,Message,AllFlights = self.Recv()
         return Sucess,Message,AllFlights
 
-    def AddFlight(self,DroneID,StartCoords,EndCoords,StartTime):
-        self.Send("AddFlight",(DroneID,StartCoords,EndCoords,StartTime))
+    def AddFlight(self,DroneID,HighPoints,StartTime):
+        self.Send("AddFlight",(DroneID,HighPoints,StartTime))
         Sucess,Message,_ = self.Recv()
         return Sucess,Message
 
