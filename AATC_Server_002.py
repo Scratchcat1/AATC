@@ -1,4 +1,4 @@
-import codecs,ast,AATC_DB,socket,recvall
+import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math
 ##def GetTime():
 ##    return time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -13,14 +13,37 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
         if List1[x] <= List2[x]:   #If The Coord1[x] <= Coord2[x]
             BoolList.append(True)
     return all(BoolList)
+
+def Radian(x):
+    return x*math.pi/180
             
+def DeltaCoordToMetres(aCoord,bCoord):
+    #Formula for dx and dy from : https://stackoverflow.com/questions/3024404/transform-longitude-latitude-into-meters
+    dx = abs(aCoord.x - bCoord.x)
+    dy = abs(aCoord.y - bCoord.y) # in degrees
+    dz = abs(aCoord.z - bCoord.z)
 
+    dx = Radian(dx)
+    dy = Radian(dy)
 
+    yCircumference = 40008000
+    xCircumference = 40075160
+    
+    mdy = dy * yCircumference /360
+    mdx = dx * xCircumference * math.cos(aCoord.y) /360
+
+    Distance = math.sqrt(mdx**2 + mdy**2 + dz)
+    return Distance
+    
+    
+    
+    
 class UserConnection:
     def __init__(self,Connection):
         self.DB = AATC_DB.DBConnection()
         self.con = Connection
         self.UserID = -1  #Used to identify if has logged in yet
+        self.NOFLYZONE_THRESHOLD_COST = 50
     def Send(self,data):
         self.con.sendall(codecs.encode(str(data)))
     def Recv(self):
@@ -267,16 +290,75 @@ class UserConnection:
     def AddFlight(self,Arguments):
         DroneID,HighPoints,StartTime = Arguments[0],Arguments[1],Arguments[2]
         #load graph
-        Sucess,Message,Result = self.DB.CheckDroneOwnership(self.UserID,DroneID)
+        filename = os.path.join(os.getcwd(),"Graph.graph")
+        file = open(filename,"rb")
+        graph = pickle.load(file)
+        file.close()
+
+        HighPointOK = []
+        try:
+            for point in HighPoints:  #Checks all points are not NoFlyZones
+                NodeID = graph.Find_NodeID(point)
+                if graph.GetNode(NodeID).Cost > self.NOFLYZONE_THRESHOLD_COST: #If it exceeds Threshold one cannot go through here
+                    HighPointOK.append(False)
+                else:
+                    HighPointOK.append(True)
+        except:
+            HighPointOK.append(False)  #If out of bounds the loop will generate an exception. This will then cause the program to return.
+
+        if not all(HighPointOK):
+            return False,"A point in this set is in a restricted area or not in service area. Flight denied.",[]
+              
+        
+        S_,M_,Result = self.DB.CheckDroneOwnership(self.UserID,DroneID)
         if Result != []:
             Start = 0
             Next = 1
             Max = len(HighPoints)
             Path = []
+            Sucess = True
             while Next < Max:
-                StartNodeID = MapCoordToNode(HighPoints[Start])
-                EndNodeID = MapCoordToNode(HighPoints[Next])
-                Path += AStart(graph,StartNodeID,EndNodeID)
+                StartNodeID = graph.Find_NodeID(HighPoints[Start])
+                NextNodeID = graph.Find_NodeID(HighPoints[Next])
+                TempPath = AATC_AStar.AStar2(graph,StartNodeID,NextNodeID)
+                if TempPath != None:
+                    Path += TempPath
+                    Start += 1
+                    Next += 1
+                else:
+                    Sucess = False
+                    break
+            if not Sucess:
+                return False,"Pathfinding was not able to find a path between the two nodes "+str([HighPoints[Start],HighPoints[Next]]),[]
+            
+            else:
+                CoordList = []
+                for NodeID in Path:
+                    Node = graph.GetNode(NodeID)
+                    CoordList.append({"Coords":Node.Coords})
+
+                    
+                Time = StartTime
+                _,Columns,DroneData = self.DB.GetDroneInfo(self.UserID,DroneID)
+                Columns = ast.literal_eval(Columns)
+                SpeedIndex,RangeIndex = Columns.index("DroneSpeed"),Columns.index("DroneRange")
+
+                DroneSpeed,DroneRange = DroneData[SpeedIndex],DroneData[RangeIndex]                
+            
+
+                for x in range(len(CoordList)):
+                    if x != 0: #If not first Coord add the difference in distance to time etc
+                        Distance = DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
+                        DeltaTime = Distance/DroneSpeed
+                        Time = Time + DeltaTime
+                    CoordList[x]["Time"] = Time
+
+        else:
+            return False,"You do not own this drone. Flight denied",[]
+
+
+
+                
         #Stuff I still need to do
         #Eg add to tempoary PrebookFlight Table
         #User pathfinding to translate to Waypoints,Flight and remove from table
