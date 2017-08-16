@@ -294,7 +294,7 @@ def AStar(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_c
             if tScore >= g[NodeID]:
                 continue
             cameFrom[NodeID] = current
-            g[NodeID] = tScore
+            g[NodeID] = tScore + graph.Nodes[NodeID].Cost
             f[NodeID] = g[NodeID] + EstimateDistance(graph.Nodes[NodeID],graph.Nodes[target],xSize,ySize,zSize)
     EndTime = time.time()
     print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds")
