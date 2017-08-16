@@ -354,7 +354,22 @@ class UserTextUI:
 
 
 
+if __name__ == "__main__":
+    print("AATC User Text Interface")
+    Exit = False
+    while not Exit:
+        try:
+            print("Connecting to server...")
+            U = AATC_Client.CreateUserInterface()
+            try:
+                TextUI = UserTextUI(U,MenuOptions)
+                TextUI.Main_Loop()
+                Exit = True  #When user selects exit
+            except Exception as e:
+                print("Error occured",e)  #Eg when connection fails during usage
 
+        except Exception as e:
+            print("Error occured creating user interface",e)             
 
 
 

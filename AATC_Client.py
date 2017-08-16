@@ -31,18 +31,12 @@
 #############################################################
 
 def Connect(remote_ip,PORT):
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.connect((remote_ip, PORT))
-        print("Connected to > "+ remote_ip+":"+str(PORT))
-        return s
-    except:
-        print("Error binding port")
-        print("Check address and port is up")
-        print("Otherwise check server is functional")
-        print("Exiting...")
-        sys.exit()
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.connect((remote_ip, PORT))
+    print("Connected to > "+ remote_ip+":"+str(PORT))
+    return s
+
 
 
          
@@ -250,3 +244,4 @@ def CreateUserInterface(IP = "192.168.0.19",Port = 8000):
     soc = Connect(IP,Port)
     U = UserInterface(soc)
     return U
+
