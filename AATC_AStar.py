@@ -50,86 +50,89 @@ class DynoGraph:
         
 
         for node in self.Nodes.values():
-            zlow,zhigh,ylow,yhigh,xlow,xhigh = False,False,False,False,False,False
-            friends = []
-            if (node.NodeID - 1) % zCount != 0:  # If not on bottom level of z
-                zlow = True
-            if node.NodeID % zCount != 0:   # if not on top level of z
-                zhigh = True
-
-            if ((node.NodeID-1) % (zCount*yCount)) >= zCount:   #Not on low y row
-                ylow = True
-            if ((node.NodeID-1)% (zCount*yCount))//zCount != yCount-1:  # Not on high y row
-                yhigh = True
-
-            if (node.NodeID-1) // (zCount*yCount) != 0:  # not on low x set
-                xlow = True
-            if (node.NodeID-1) // (zCount*yCount) != (xCount-1):
-                xhigh = True
-
-            if zlow:
-                friends.append(node.NodeID-1)
-                if ylow:
-                    friends.append((node.NodeID-1)-zCount)
-                    if xlow:
-                        friends.append((node.NodeID-1)-zCount-(zCount*yCount))
-                    if xhigh:
-                        friends.append((node.NodeID-1)-zCount+(zCount*yCount))
-                if yhigh:
-                    friends.append((node.NodeID-1)+zCount)
-                    if xlow:
-                        friends.append((node.NodeID-1)+zCount-(zCount*yCount))
-                    if xhigh:
-                        friends.append((node.NodeID-1)+zCount+(zCount*yCount))
-            if zhigh:
-                friends.append(node.NodeID+1)
-                if ylow:
-                    friends.append((node.NodeID+1)-zCount)
-                    if xlow:
-                        friends.append((node.NodeID+1)-zCount-(zCount*yCount))
-                    if xhigh:
-                        friends.append((node.NodeID+1)-zCount+(zCount*yCount))
-                if yhigh:
-                    friends.append((node.NodeID+1)+zCount)
-                    if xlow:
-                        friends.append((node.NodeID+1)+zCount-(zCount*yCount))
-                    if xhigh:
-                        friends.append((node.NodeID+1)+zCount+(zCount*yCount))
-                
-            if ylow:
-                friends.append(node.NodeID-zCount)
-                if xlow:
-                    friends.append(node.NodeID-zCount-(zCount*yCount))
-                if xhigh:
-                    friends.append(node.NodeID-zCount+(zCount*yCount))
-            if yhigh:
-                friends.append(node.NodeID+zCount)
-                if xlow:
-                    friends.append(node.NodeID+zCount-(zCount*yCount))
-                if xhigh:
-                    friends.append(node.NodeID+zCount+(zCount*yCount))
-
-
-            if zlow:
-                if xlow:
-                    friends.append((node.NodeID-1)-(zCount*yCount))
-                if xhigh:
-                    friends.append((node.NodeID-1)+(zCount*yCount))
-
-            if zhigh:
-                if xlow:
-                    friends.append((node.NodeID+1)-(zCount*yCount))
-                if xhigh:
-                    friends.append((node.NodeID+1)+(zCount*yCount))
-
-            if xlow:
-                friends.append(node.NodeID-(zCount*yCount))
-            if xhigh:
-                friends.append(node.NodeID+(zCount*yCount))
-
-                
+            friends = self.CalculateNeighbours(node.NodeID,xCount,yCount,zCount)
             for friend in friends:
                 node.add_friend(friend)
+
+    def CalculateNeighbours(self,NodeID,xCount,yCount,zCount):
+        zlow,zhigh,ylow,yhigh,xlow,xhigh = False,False,False,False,False,False
+        friends = []
+        if (NodeID - 1) % zCount != 0:  # If not on bottom level of z
+            zlow = True
+        if NodeID % zCount != 0:   # if not on top level of z
+            zhigh = True
+
+        if ((NodeID-1) % (zCount*yCount)) >= zCount:   #Not on low y row
+            ylow = True
+        if ((NodeID-1)% (zCount*yCount))//zCount != yCount-1:  # Not on high y row
+            yhigh = True
+
+        if (NodeID-1) // (zCount*yCount) != 0:  # not on low x set
+            xlow = True
+        if (NodeID-1) // (zCount*yCount) != (xCount-1):
+            xhigh = True
+
+        if zlow:
+            friends.append(NodeID-1)
+            if ylow:
+                friends.append((NodeID-1)-zCount)
+                if xlow:
+                    friends.append((NodeID-1)-zCount-(zCount*yCount))
+                if xhigh:
+                    friends.append((NodeID-1)-zCount+(zCount*yCount))
+            if yhigh:
+                friends.append((NodeID-1)+zCount)
+                if xlow:
+                    friends.append((NodeID-1)+zCount-(zCount*yCount))
+                if xhigh:
+                    friends.append((NodeID-1)+zCount+(zCount*yCount))
+        if zhigh:
+            friends.append(NodeID+1)
+            if ylow:
+                friends.append((NodeID+1)-zCount)
+                if xlow:
+                    friends.append((NodeID+1)-zCount-(zCount*yCount))
+                if xhigh:
+                    friends.append((NodeID+1)-zCount+(zCount*yCount))
+            if yhigh:
+                friends.append((NodeID+1)+zCount)
+                if xlow:
+                    friends.append((NodeID+1)+zCount-(zCount*yCount))
+                if xhigh:
+                    friends.append((NodeID+1)+zCount+(zCount*yCount))
+            
+        if ylow:
+            friends.append(NodeID-zCount)
+            if xlow:
+                friends.append(NodeID-zCount-(zCount*yCount))
+            if xhigh:
+                friends.append(NodeID-zCount+(zCount*yCount))
+        if yhigh:
+            friends.append(NodeID+zCount)
+            if xlow:
+                friends.append(NodeID+zCount-(zCount*yCount))
+            if xhigh:
+                friends.append(NodeID+zCount+(zCount*yCount))
+
+
+        if zlow:
+            if xlow:
+                friends.append((NodeID-1)-(zCount*yCount))
+            if xhigh:
+                friends.append((NodeID-1)+(zCount*yCount))
+
+        if zhigh:
+            if xlow:
+                friends.append((NodeID+1)-(zCount*yCount))
+            if xhigh:
+                friends.append((NodeID+1)+(zCount*yCount))
+
+        if xlow:
+            friends.append(NodeID-(zCount*yCount))
+        if xhigh:
+            friends.append(NodeID+(zCount*yCount))
+
+        return friends
 
     def MapHash(self,value,div):
         return int(value//div)
@@ -344,7 +347,7 @@ def AStar2(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_
                 g[NodeID] = math.inf
                 f[NodeID] = math.inf
 
-            tScore = g[current]+ 1
+            tScore = g[current]+ graph.GetNode(NodeID).Cost
             if tScore >= g[NodeID]:
                 continue
             cameFrom[NodeID] = current

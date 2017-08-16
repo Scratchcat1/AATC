@@ -372,7 +372,7 @@ class UserConnection:
                 for WaypointNumber in range(1,len(CoordList)):
                     self.DB.AddWaypoint(self.UserID,FlightID,WaypointNumber,CoordList[WaypointNumber-1]["Coords"],CoordList[WaypointNumber-1]["Time"])
 
-                return True,"Sucessfully added flight",[]
+                return True,"['FlightID','NumberOfWaypoints','StartTime','EndTime','Distance']",[FlightID,len(CoordList),StartTime,EndTime,TotalDistance] #Returns data about the flight
 
         else:
             return False,"You do not own this drone. Flight denied",[]
