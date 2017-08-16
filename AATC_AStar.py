@@ -1,4 +1,4 @@
-import os,pickle,heapq,time,math
+import os,pickle,heapq,time,math,hashlib
 
 class Coordinate:
     def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
@@ -10,7 +10,17 @@ class Coordinate:
         self.zSize = zSize
         
 class DynoGraph:
-    def __init__(self,BlockSize = 500,FolderName = "GraphFolder",GraphFileName = "Graph",GraphFileSuffix = ".graph",BlockFileName = "GraphNodes",BlockFileSuffix = ".blk"):
+    """ Graph object
+        BlockSize affects how many nodes are saved in a single BlockFile. Shown by an N before the BlockID 
+        Node_Cache_BlockSize affects how sparsly the node information is spread across files.
+        Lower means more sparse and lower memory usage but potentially worse performace, saving will take longer.
+        Larger means faster performance and higher memory usage.
+        HDDs and other low IOPS drives -> Higher
+        SSDs and other high IOPS drives -> Lower
+
+
+            """
+    def __init__(self,BlockSize = 500,FolderName = "GraphFolder",GraphFileName = "Graph",GraphFileSuffix = ".graph",BlockFileName = "GraphBlock",BlockFileSuffix = ".blk",Node_Cache_BlockSize = 10000000):
         self.Nodes = {}
         self.BlockSize = BlockSize
         self.cwd = os.getcwd()
@@ -20,6 +30,7 @@ class DynoGraph:
         self.FolderName = FolderName
         self.BlockFileName = BlockFileName
         self.BlockFileSuffix = BlockFileSuffix
+        self.Node_Cache_BlockSize = Node_Cache_BlockSize
         
         
     def Size(self,xSize,ySize,zSize):
@@ -133,10 +144,17 @@ class DynoGraph:
             friends.append(NodeID+(zCount*yCount))
 
         return friends
-
+    
+    ###################################
+    
     def MapHash(self,value,div):
         return int(value//div)
-                
+
+    def Node_Cache_Hash(self,Key):
+        return int(int(hashlib.md5(str(Key).encode('utf8')).hexdigest()[:8],16)//self.Node_Cache_BlockSize) #Generates integer hash of key then int div by BlockSize
+        
+    ##################################
+    
     def Build_Node_Cache(self):
         self.Node_Cache = {}
         for node in self.Nodes.values():
@@ -147,15 +165,52 @@ class DynoGraph:
             mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
             self.Node_Cache[(mx,my,mz)] = node.NodeID
 
-    def Direct_NodeID(self,x,y,z):
-        return self.Node_Cache[(x,y,z)]
+    def Save_Node_Cache(self):
+        print("Preparing to save Node Cache")
+        Sets = {}
+        for Key in self.Node_Cache:
+            print(Key)
+            r = self.Node_Cache_Hash(Key)  #Gets Hashed key
+            if r not in Sets:
+                Sets[r] = {}
+            Sets[r][Key] = self.Node_Cache[Key]  #Adds the item to the set
+        print("Saving Node Cache. Sets:",len(Sets))
+        for Set in Sets:
+            filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+"NC"+str(Set)+self.BlockFileSuffix)
+            file = open(filename,"wb")
+            data = Sets[Set]
+            pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
+            file.close()
+
+    def Get_Node_Cache(self,x,y,z):
+        Key = (x,y,z)
+        if Key not in self.Node_Cache:
+            NCBlockID = self.Node_Cache_Hash(Key)
+            try:
+                filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+"NC"+str(NCBlockID)+self.BlockFileSuffix)
+                file = open(filename,"rb")
+                block = pickle.load(file)
+                file.close()
+                self.Node_Cache.update(block)
+            
+            except Exception as e:
+                print(e)
+
+        if Key in self.Node_Cache:
+            return self.Node_Cache[Key]
+        else:
+             #Raises error if cannot get node
+            raise ValueError("Node_Cache Key requested is not in the NCBlockID checked. Check BlockSize or regenerate blockfiles")
+
+            
+        
 
     def All_NodeIDs(self):
         return self.Node_Cache.values()
 
     def Find_NodeID(self,x,y,z):
         mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
-        NodeID = self.Node_Cache[(mx,my,mz)]
+        NodeID = self.Get_Node_Cache(mx,my,mz)
         return NodeID
 
     def Obj_Find_NodeID(self,Obj):
@@ -163,14 +218,18 @@ class DynoGraph:
         NodeID = self.Find_NodeID(x,y,z)
         return NodeID
 
+    
     #############################
 
-    def SaveGraph(self,AutoNodeSave = True):
+    def SaveGraph(self,AutoNodeSave = True,AutoNodeCacheSave = True):
         print("Saving graph...")
         if AutoNodeSave:
             self.SaveNodes()
+        if AutoNodeCacheSave:
+            self.Save_Node_Cache()
 
         self.Nodes = {}
+        self.Node_Cache = {}
         try:
             filename = os.path.join(self.cwd,self.FolderName,self.GraphFileName+self.GraphFileSuffix)
             file = open(filename,"wb")
@@ -199,7 +258,7 @@ class DynoGraph:
         if NodeID not in self.Nodes:
             BlockID = self.Hash(NodeID)
             try:
-                filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+str(BlockID)+self.BlockFileSuffix)
+                filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+"N"+str(BlockID)+self.BlockFileSuffix)
                 file = open(filename,"rb")
                 block = pickle.load(file)
                 file.close()
@@ -227,7 +286,7 @@ class DynoGraph:
 
 
         for Set in Sets: #Set = BlockID
-            filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+str(Set)+self.BlockFileSuffix)
+            filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+"N"+str(Set)+self.BlockFileSuffix)
             file = open(filename,"wb")
             data = Sets[Set]
             pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
@@ -368,5 +427,45 @@ def FindPath(cameFrom,current):
     while current in cameFrom:
         current = cameFrom[current]
         path.append(current)
-    print(str(path)+"\n"+str(len(cameFrom)))
+    #print(str(path)+"\n"+str(len(cameFrom)))
     return path
+
+
+def Benchmark(FLUSH = 100,BlockSize = 500,MAXNODE = 2000000):
+    import random,sys
+    graph = DynoGraph(BlockSize= 500)
+    graph.ImportGraph()
+
+    
+    Count = 1
+    while True:
+        if Count % FLUSH == 0:
+            graph.Nodes = {}
+
+
+        a,b = random.randint(1,MAXNODE),random.randint(1,MAXNODE)
+        print("A:",a," B:",b," Delta:",abs(a-b))
+        Path = AStar2(graph,a,b)
+        print("Path Length",len(Path)," Graph Node length",len(graph.Nodes))
+
+        print("")
+        
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        
+    

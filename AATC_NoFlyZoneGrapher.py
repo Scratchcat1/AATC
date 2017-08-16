@@ -83,7 +83,7 @@ class NoFlyZoneGrapher:
                 node.Cost = Values[node.NodeID]
             else:
                 node.Cost = 1
-        graph.SaveNodes()
+        graph.SaveNodes(AutoNodeCacheSave = False)
         time.sleep(self.Interval)
 
                         
