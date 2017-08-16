@@ -1,4 +1,4 @@
-import multiprocessing,socket
+import multiprocessing,socket,AATC_NoFlyZoneGrapher
 import AATC_Server_002 as AATC_Server
 
 
@@ -108,14 +108,26 @@ def MakeDroneConnection(conn):
     
 
 if __name__ == "__main__":
+    #Launch UserProcess spawner
     UPS = multiprocessing.Process(target = UserProcessSpawner)
     UPS.start()
 
+    #Launch MonitorPerocess spawner
     MPS = multiprocessing.Process(target = MonitorProcessSpawner)
     MPS.start()
-
+    
+    #Launch DroneProcess Spawner
     DPS = multiprocessing.Process(target = DroneProcessSpawner)
     DPS.start()
+
+    #Launch NoFlyZoneGrapher
+    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)
+    NFZG.start()
+
+    CLN = multiprocessing.Process(target = AATC_Server.Cleaner)
+    CLN.start()
+
+    
 
 
 

@@ -223,6 +223,14 @@ class UserInterface:
         return Sucess,Message,MonitorPermissionsUser
 
     ##############################################
+
+    def Exit(self):
+        self.Send("Exit",())
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+        
+
+    ##############################################
     ##############################################
     def Send(self,Code,data):
         Info = codecs.encode(str((Code,data)))

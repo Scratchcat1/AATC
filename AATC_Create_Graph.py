@@ -17,7 +17,7 @@ def drange(start,end,step):
   while r < end:
     yield float(r)
     r += decimal.Decimal(step)
-
+print("2 million nodes ~ 357MB")
 xStart =float(input("Enter start x Coord"))
 yStart = float(input("Enter start y Coord"))
 zStart = float(input("Enter start z Coord"))

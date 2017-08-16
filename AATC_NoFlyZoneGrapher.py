@@ -10,13 +10,25 @@ class Coordinate:
         self.zSize = zSize
 
 class NoFlyZoneGrapher:
-    def __init__(self,xSize,ySize,zSize,Interval = 36000):
+    def __init__(self,Interval = 36000):
         self.DB = AATC_DB.DBConnection()
-        self.xSize = xSize
-        self.ySize = ySize
-        self.zSize = zSize
         self.Interval = Interval
 
+        graph = AATC_AStar.DynoGraph()
+        graph.ImportGraph()
+        self.xSize,self.ySize,self.zSize = graph.xSize,graph.ySize,graph.zSize
+        del graph
+
+        self.Main_Loop()
+        
+    def Main_Loop(self):
+        while True:
+            try:
+                NoFlyZoneData = self.GetNoFlyZones()
+                self.Make_Values(NoFlyZoneData)
+            except Exception as e:
+                print("Error occured in NoFlyZoneGrapher",e)
+        
     def Mod(self,Coords):
         return int(Coords.x//self.xSize),int(Coords.y//self.ySize),int(Coord.z//self.zSize)
         

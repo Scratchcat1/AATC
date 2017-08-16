@@ -347,7 +347,12 @@ class UserTextUI:
         Choice = input("Exit? (Y/N) >>").upper()
         if Choice == "Y":
             print("Exiting..")
-            self.Exit = True
+            Sucess,Message = self.UserInterface.Exit()
+            self.DisplayResults(Sucess,Message)
+            if Sucess:
+                self.Exit = True
+            else:
+                print("Exit failed")
         else:
             print("Exit cancelled")
 
