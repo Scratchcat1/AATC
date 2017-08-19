@@ -378,7 +378,7 @@ if __name__ == "__main__":
     while not Exit:
         try:
             print("Connecting to server...")
-            U = AATC_Client.CreateUserInterface()
+            U = AATC_Client.CreateUserInterface(IP = "192.168.0.10")
             try:
                 TextUI = UserTextUI(U,MenuOptions)
                 TextUI.Main_Loop()

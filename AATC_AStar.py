@@ -245,7 +245,7 @@ class DynoGraph:
     def ImportGraph(self):
         print("Importing graph")
         try:
-            filename = os.path.join(self.cwd,self.FolderName,self.GraphFileName+self.GraphFileSuffix)
+            filename = os.path.join(os.getcwd(),self.FolderName,self.GraphFileName+self.GraphFileSuffix)
             file = open(filename,"rb")
             ImportFile = pickle.load(file)
             file.close()
@@ -253,6 +253,7 @@ class DynoGraph:
             print("Imported graph sucessfully")
         except Exception as e:
             print("An error occured while importing graph data",e)
+        self.cwd = os.getcwd()
     
     ################
     def Hash(self,Value):
@@ -430,7 +431,7 @@ def FindPath(cameFrom,current):
     while current in cameFrom:
         current = cameFrom[current]
         path.append(current)
-    #print(str(path)+"\n"+str(len(cameFrom)))
+    print("Total expanded:"+str(len(cameFrom)))
     return path
 
 
