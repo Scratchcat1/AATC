@@ -14,8 +14,11 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
             BoolList.append(True)
     return all(BoolList)
 
-def Radian(x):
+def toRadian(x):
     return x*math.pi/180
+
+def toDegree(x):
+    return 180*x/math.pi
             
 def DeltaCoordToMetres(aCoord,bCoord):
     #Formula for dx and dy from : https://stackoverflow.com/questions/3024404/transform-longitude-latitude-into-meters
@@ -23,14 +26,12 @@ def DeltaCoordToMetres(aCoord,bCoord):
     dy = abs(aCoord.y - bCoord.y) # in degrees
     dz = abs(aCoord.z - bCoord.z)
 
-    dx = Radian(dx)
-    dy = Radian(dy)
 
     yCircumference = 40008000
     xCircumference = 40075160
     
     mdy = dy * yCircumference /360
-    mdx = dx * xCircumference * math.cos(aCoord.y) /360
+    mdx = dx * xCircumference * math.cos(toRadian(aCoord.y)) /360
 
     Distance = math.sqrt(mdx**2 + mdy**2 + dz**2)
     return Distance

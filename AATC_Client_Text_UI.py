@@ -355,7 +355,7 @@ class UserTextUI:
 
     def GetMonitorPermissionUser(self):
         Sucess,Message,MonitorPermissionsUser = self.UserInterface.GetMonitorPermissionUser()
-        self.DisplayResults(Sucess,Message,MonitorPermissionUser)
+        self.DisplayResults(Sucess,Message,MonitorPermissionsUser)
 
     #################################################
 
