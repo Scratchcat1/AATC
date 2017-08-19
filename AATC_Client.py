@@ -171,8 +171,8 @@ class UserInterface:
 
     def AddFlight(self,DroneID,HighPoints,StartTime):
         self.Send("AddFlight",(DroneID,HighPoints,StartTime))
-        Sucess,Message,_ = self.Recv()
-        return Sucess,Message
+        Sucess,Message,FlightInfo = self.Recv()
+        return Sucess,Message,FlightInfo
 
     def RemoveFlight(self,FlightID):
         self.Send("RemoveFlight",(FlightID,))

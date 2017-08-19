@@ -1,4 +1,4 @@
-import pygame,AATC_Monitor,time,ast
+import pygame,AATC_Monitor,time,ast,sys
 pygame.init()
 
 _images= {}
@@ -84,18 +84,20 @@ class Camera:
 ##                width,height = Object.Coords.xSize*self.CameraZoom ,Object.Coords.ySize*self.CameraZoom
                 width,height = int(Object.Coords.xSize/self.CameraCoord.xSize*self.xpixel) ,int(Object.Coords.ySize/self.CameraCoord.ySize*self.ypixel)
                 if width > 0 and height > 0:
-                    font_size = int(40*width/self.xpixel)
+                    font_size = int(100*width/self.xpixel)
                     Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
                     self.gameDisplay.blit(Object.image,(PosX,PosY))
-                    
-                    font = pygame.font.Font(None, font_size) #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
-                    sprite.Make_CoordsText(font)     #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
-                    sprite.Make_Text(font)          #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
-                    sprite.Make_Type(font)         #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
-                    
-                    self.gameDisplay.blit(Object.CoordsText,(PosX+width,PosY))
-                    self.gameDisplay.blit(Object.DrawnType,(PosX+width,PosY+15))
-                    self.gameDisplay.blit(Object.DrawnText,(PosX+width,PosY+30))
+
+                    if font_size > 5:
+                        font = pygame.font.Font(None, font_size) #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                        Object.Make_CoordsText(font)     #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                        Object.Make_Text(font)          #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                        Object.Make_Type(font)         #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+
+                        text_height = Object.CoordsText.get_height()
+                        self.gameDisplay.blit(Object.CoordsText,(PosX+width,PosY))
+                        self.gameDisplay.blit(Object.DrawnType,(PosX+width,PosY+text_height))
+                        self.gameDisplay.blit(Object.DrawnText,(PosX+width,PosY+text_height*2))
 
              
                                                     
@@ -168,7 +170,7 @@ def MakeFlightSprites(Message,RawFlightList):
         Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.00001,0.00001,0.00001)
         Text = "F:"+ str(Flight[FlightIDIndex])+" D:"+ str(Flight[DroneIDIndex])+ "ETA:"+str(Flight[ETATimeIndex])
         Colour = (255,0,0)
-        FlightList.append(MonitorSprite(Coord,"EndPoint",Text,Colour))
+        FlightList.append(Monitor_Sprite(Coord,"EndPoint",Text,Colour))
     return FlightList
 
 
@@ -183,7 +185,7 @@ def MakeWaypointSprites(Message,RawWaypointList):
         Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.00001,0.00001,0.00001)
         Text = "F:"+ str(Waypoint[FlightIDIndex]) +" W:"+ str(Waypoint[WaypointNumberIndex])
         Colour = (0,255,0)
-        WaypointList.append(MonitorSprite(Coord,"Waypoint",Text,Colour))
+        WaypointList.append(Monitor_Sprite(Coord,"Waypoint",Text,Colour))
     return WaypointList
 
 def MakeZoneSprites(Message,RawZoneList):
@@ -199,7 +201,7 @@ def MakeZoneSprites(Message,RawZoneList):
         Coord = Coordinate(StartCoords[0],StartCoords[1],StartCoords[2],EndCoords[0]-StartCoords[0],EndCoords[1]-StartCoords[1],EndCoords[2]-StartCoords[2])
         Text = "Z:"+ str(Zone[ZoneIDIndex]) +" L:"+ str(Zone[LevelIndex])
         Colour = (100,100,100)
-        ZoneList.append(MonitorSprite(Coord,"NoFlyZone",Text,Colour))
+        ZoneList.append(Monitor_Sprite(Coord,"NoFlyZone",Text,Colour))
     return ZoneList
 
 def MakeSprites(M):
@@ -245,7 +247,7 @@ Refresh_Delay = 60
 clock = pygame.time.Clock()
 Exit = "N"
 while Exit != "Y":
-    #try:
+    try:
         M = AATC_Monitor.CreateMonitorInterface(Port = 8001)
         M.Login("Zini","")
         #Sucess,Message,Data =  M.GetCoordDetails()
@@ -271,7 +273,9 @@ while Exit != "Y":
                     refresh = True
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
-                        raise Exception("Monitor exit was called")
+                        print("Monitor exit was called")
+                        pygame.quit()
+                        sys.exit()
                     
                     elif event.type == pygame.KEYDOWN and event.key == pygame.K_w:   #Shift camera
                         MonCamera.IncrementCameraCoordY(-0.5/MonCamera.GetZoom())  #/ as Greater zoom means need more fidelety
@@ -305,7 +309,7 @@ while Exit != "Y":
                 
 
             
-    #except Exception as e:
+    except Exception as e:
         print(e)
         print("An error occured, restarting main loop")
         Exit = input("Exit? Y/N").upper()

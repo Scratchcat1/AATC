@@ -13,6 +13,7 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
     return all(BoolList)
 
 
+
 class DBConnection:
     """
     This is the Database connection object for AATC. This provides a DB Connection of other objects using a simple API
@@ -57,6 +58,7 @@ class DBConnection:
             _,_,DroneID = self.GetDroneID(UserID,DroneName)
             DroneID = DroneID[0][0]                               #Sets up password in seperate table for maintainance security
             self.cur.execute("INSERT INTO DroneCredentials(DroneID,DronePassword) VALUES(?,?)",(DroneID,DronePassword))
+            self.db_con.commit()
             return True,"Added Drone"
         else:
             return False,"This drone already exists for you"
@@ -66,6 +68,7 @@ class DBConnection:
         if self.cur.fetchall() != []:
             self.cur.execute("DELETE FROM Drone WHERE DroneID = ?",(DroneID,))
             self.cur.execute("DELETE FROM DroneCredentials WHERE DroneID = ?",(DroneID,))
+            self.db_con.commit()
             return True,"Removed Drone"
         else:
             return False,"This drone does not exist or you do not have permission to delete this drone"
@@ -92,6 +95,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM Drone WHERE Drone.UserID = ? AND Drone.DroneID = ?",(UserID,DroneID))
         if self.cur.fetchall() != []:
             self.cur.execute("UPDATE DroneCredentials SET DronePassword = ? WHERE DroneID = ?",(DronePassword,DroneID))
+            self.db_con.commit()
             return True,"Updated Drone Credentials"
         else:
             return False,"This drone does not exist or you do not have permission to change it's credentials"
@@ -101,7 +105,7 @@ class DBConnection:
         return True,"['DroneOwnership']",self.cur.fetchall()
 
     def GetDroneInfo(self,UserID,DroneID):
-        self.cur.execute("SELECT Drones.* FROM Drones,User WHERE Drone.DroneID = ? AND (Drone.UserID = ? OR (Drone.UserID = User.UserID AND User.PublicVisibleFlights = 1))",(DroneID,UserID))
+        self.cur.execute("SELECT Drone.* FROM Drone,User WHERE Drone.DroneID = ? AND (Drone.UserID = ? OR (Drone.UserID = User.UserID AND User.PublicVisibleFlights = 1))",(DroneID,UserID))
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
             
     def GetDronesUser(self,UserID):
@@ -113,6 +117,7 @@ class DBConnection:
 
     def UpdateDroneStatus(self,DroneID,LastCoords,LastBattery):
         self.cur.execute("UPDATE Drone SET LastCoords = ?,LastBattery = ? WHERE DroneID = ?",(LastCoords,LastBattery,DroneID))
+        self.db_con.commit()
         return True,"Updated Drone Status"
 
 ##########################   USER         #############################
@@ -128,6 +133,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM User WHERE Username = ?",(Username,))
         if self.cur.fetchall() == []:
             self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,AccountType) VALUES(?,?,0,'Default')",(Username,Password))
+            self.db_con.commit()
             return True,"Added User"
         else:
             return False,"User already exists"
@@ -143,11 +149,13 @@ class DBConnection:
     def SetUserPublicVisibleFlights(self,UserID,Value):
         if Value in [0,1]:
             self.cur.execute("UPDATE User SET PublicVisibleFlights = ? WHERE UserID = ?",(Value,UserID))
+            self.db_con.commit()
             return True,"Changed PublicVisibleFlights Value"
         else:
             return False,"Invalid PublicVisibleFlights Value"
     def SetAccountType(self,UserID,Value):
         self.cur.execute("UPDATE User SET AccountType =? WHERE UserID = ? ",(Value,UserID))
+        self.db_con.commit()
         return True,"Set AccountType Value"
 
 #####################          FLIGHT          ##############################
@@ -165,6 +173,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM User,Drone WHERE Drone.DroneID = ? AND Drone.UserID = ?",(DroneID,UserID))
         if self.cur.fetchall() !=[]:
             self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset,Completed) VALUES(?,?,?,?,?,?,?,?,?,?,0)",(DroneID,str(StartCoords),str(EndCoords),StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset))
+            self.db_con.commit()
             return True,"Flight added"
         else:
             return False,"You do not have permission to launch this drone"
@@ -173,6 +182,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM Flight,Drone,User WHERE Flight.FlightID = ? AND Flight.DroneID = Drone.DroneID AND Drone.UserID = ?",(FlightID,UserID))  #If User owns this drone
         if self.cur.fetchall() != []:
             self.cur.execute("DELETE FROM Flight WHERE FlightID = ?",(FlightID,))
+            self.db_con.commit()
             return True,"Flight Removed"
         else:
             return False,"You do not have permission to remove this flight"
@@ -197,6 +207,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM Flight WHERE DroneID = ? AND FlightID = ?",(DroneID,FlightID))
         if self.cur.fetchall != []:
             self.cur.execute("UPDATE Flight SET Completed = 1,EndTime = ? WHERE FlightID = ?",(FlightID,GetTime()))
+            self.db_con.commit()
             return True,"Marked Flight complete"
         else:
             return False,"You do not have permission to mark this flight complete"
@@ -207,6 +218,7 @@ class DBConnection:
 
     def CleanCompletedFlights(self,EndTimeThreshold):
         self.cur.execute("DELETE FROM Flight WHERE Completed > 0 AND (EndTime + ?) > ?",(EndTimeThreshold,GetTime()))
+        self.db_con.commit()
         return True,"Deleted completed flights above threshold"    
 
 #----------------------------  FLIGHT WAYPOINT------------------------------------
@@ -215,7 +227,7 @@ class DBConnection:
         return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()          
     
     def GetFlightWaypointsUser(self,UserID):
-        self.cur.execute("SELECT * FROM FlightWaypoints,Flight,Drone WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = ? ORDER BY FlightWaypoints.FlightID, FlightWaypoints.WaypointNumber",(UserID,))
+        self.cur.execute("SELECT FlightWaypoints.* FROM FlightWaypoints,Flight,Drone WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = ? ORDER BY FlightWaypoints.FlightID, FlightWaypoints.WaypointNumber",(UserID,))
         return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()
     
     def GetFlightWaypointsAll(self):
@@ -226,6 +238,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM User,Flight,Drone WHERE User.UserID = ? AND User.UserID = Drone.UserID AND Drone.DroneID = Flight.DroneID AND Flight.FlightID = ?",(UserID,FlightID))
         if self.cur.fetchall() !=[]:
             self.cur.execute("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(?,?,?,?,?)",(FlightID,WaypointNumber,str(Coords),ETA,BlockTime))
+            self.db_con.commit()
             return True,"Added Waypoint"
         else:
             return False,"You do not have permission to add a waypoint for this flight"
@@ -234,6 +247,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM User,Flight,Drone WHERE User.UserID = ? AND User.UserID = Drone.UserID AND Drone.DroneID = Flight.DroneID AND Flight.FlightID = ?",(UserID,FlightID))
         if self.cur.fetchall() !=[]:
             self.cur.execute("DELETE FROM FlightWaypoints WHERE FlightID = ?",(FlightID,))
+            self.db_con.commit()
             return True,"Deleted waypoint"
         else:
             return False,"You do not have permission to delete these waypoints"
@@ -241,6 +255,7 @@ class DBConnection:
 
     def CleanCompletedFlightWaypoints(self,FlightID):  #Server only command
         self.cur.execute("DELETE FROM FlightWaypoints WHERE FlightID = ?",(FlightID,))
+        self.db_con.commit()
         return True,"Deleted waypoints"
 
 ###########################  MONITOR     ##################################
@@ -248,6 +263,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM Monitor WHERE MonitorName = ?",(MonitorName,))
         if self.cur.fetchall() == []:
             self.cur.execute("INSERT INTO Monitor(MonitorName,MonitorPassword,AccountType) VALUES(?,?,'Default')",(MonitorName,MonitorPassword))
+            self.db_con.commit()
             return True,"Added Monitor"
         else:
             return False,"Monitor already exists"
@@ -288,6 +304,7 @@ class DBConnection:
         self.cur.execute("SELECT 1 FROM MonitorPermission WHERE UserID = ? AND MonitorID = ?",(UserID,MonitorID))
         if self.cur.fetchall() ==[]:
             self.cur.execute("INSERT INTO MonitorPermission(MonitorID,UserID,LastAccessed,ExpiryDate) VALUES (?,?,?,?)",(MonitorID,UserID,0,ExpiryDate))
+            self.db_con.commit()
             return True,"Sucessfully added MonitorPermission"
         else:
             return False,"MonitorPermission already exists"
@@ -298,6 +315,7 @@ class DBConnection:
 
     def ModifyMonitorPermissionDate(self,UserID,MonitorID,NewDate):
         self.cur.execute("UPDATE MonitorPermission SET ExpiryDate = ? WHERE UserID = ? AND MonitorID = ?",(NewDate,UserID,MonitorID))
+        self.db_con.commit()
         return True,"Updated Date for MonitorPermission"
     def GetMonitorPermissionUser(self,UserID):
         self.cur.execute("SELECT * FROM MonitorPermission WHERE UserID = ?",(UserID,))
@@ -311,10 +329,12 @@ class DBConnection:
         if NewDate == None:
             NewDate = GetTime()
         self.cur.execute("UPDATE MonitorPermission SET LastAccessed = ? WHERE MonitorID = ? AND UserID = ?",(NewDate,MonitorID,UserID))
+        self.db_con.commit()
         return True,"Updated LastAccessed"
 
     def CleanMonitorPermissions(self):
         self.cur.execute("DELETE FROM MonitorPermission WHERE ExpiryDate < ?",(GetTime(),))
+        self.db_con.commit()
         return True,"Cleaned Monitor Permission",[]
 
 
@@ -329,6 +349,7 @@ class DBConnection:
             self.cur.execute("SELECT 1 FROM User WHERE UserID = ? AND AccountType = 'ZoneCreator'",(UserID,))
             if self.cur.fetchall() !=  []:
                 self.cur.execute("INSERT INTO NoFlyZone(StartCoord,EndCoord,Level,OwnerUserID) VALUES(?,?,?,?)",(str(Coord1),str(Coord2),Level,UserID))
+                self.db_con.commit()
                 return True,"Sucessfully added NoFlyZone"
             else:
                 return False,"You do not have ZoneCreator Permission"
@@ -337,6 +358,7 @@ class DBConnection:
         if self.cur.fetchall() != []:
             #Runs if user has permission to delete this no fly zone
             self.cur.execute("DELETE FROM NoFlyZone WHERE ZoneID = ?",(ZoneID,))
+            self.db_con.commit()
             return True,"Sucessfully deleted NoFlyZone"
         else:
             return False,"You do not own this NoFlyZone or you do not have the ZoneRemoverPermission"   #Replace String permission with max no fly zone level permission
@@ -349,6 +371,7 @@ class DBConnection:
         if self.cur.fetchall() != []:
             #Runs if user has permission to delete this no fly zone
             self.cur.execute("UPDATE NoFlyZone SET Level = ? WHERE ZoneID = ?",(Level,ZoneID))
+            self.db_con.commit()
             return True,"Sucessfully modified NoFlyZone"
         else:
             return False,"You do not own this NoFlyZone or you do not have the ZoneModifier Permission"   #Replace String permission with max no fly zone level permission    
@@ -374,6 +397,6 @@ class DBConnection:
         self.cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA TEXT, BlockTime INT ,FOREIGN KEY(FlightID) REFERENCES Flight(FlightID))")
         self.cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT,FOREIGN KEY(OwnerUserID) REFERENCES User(UserID))")
         self.cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY ,DronePassword TEXT,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
-        
+        self.db_con.commit()
     
 

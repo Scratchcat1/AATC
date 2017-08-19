@@ -26,6 +26,8 @@ class NoFlyZoneGrapher:
             try:
                 NoFlyZoneData = self.GetNoFlyZones()
                 self.Make_Values(NoFlyZoneData)
+                print("NoFlyZoneGrapher completed. Sleeping...")
+                time.sleep(self.Interval)
             except Exception as e:
                 print("Error occured in NoFlyZoneGrapher",e)
         
@@ -83,8 +85,12 @@ class NoFlyZoneGrapher:
                 node.Cost = Values[node.NodeID]
             else:
                 node.Cost = 1
-        graph.SaveNodes(AutoNodeCacheSave = False)
-        time.sleep(self.Interval)
+        try:
+            graph.SaveNodes()
+        except Exception as e:
+            print("Error saving nodes",e," Most likely no NoFlyZoneData yet")
+
+        
 
                         
                         

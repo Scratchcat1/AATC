@@ -1,4 +1,4 @@
-import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math,random,time
+import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math,random,time,pickle
 ##def GetTime():
 ##    return time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -32,9 +32,10 @@ def DeltaCoordToMetres(aCoord,bCoord):
     mdy = dy * yCircumference /360
     mdx = dx * xCircumference * math.cos(aCoord.y) /360
 
-    Distance = math.sqrt(mdx**2 + mdy**2 + dz)
+    Distance = math.sqrt(mdx**2 + mdy**2 + dz**2)
     return Distance
-    
+
+
     
     
     
@@ -44,6 +45,7 @@ class UserConnection:
         self.con = Connection
         self.UserID = -1  #Used to identify if has logged in yet
         self.NOFLYZONE_THRESHOLD_COST = 50
+        self.GRAPHFOLDERNAME = "GraphFolder"
     def Send(self,data):
         self.con.sendall(codecs.encode(str(data)))
     def Recv(self):
@@ -249,7 +251,7 @@ class UserConnection:
 ##    def CheckCredentials(self,Arguments):
 
     def GetUserID(self,Arguments):
-        Username = Arguements[0]
+        Username = Arguments[0]
         Sucess,Message,Data = self.DB.GetUserID(Username)
         return Sucess,Message,Data
     
@@ -290,20 +292,28 @@ class UserConnection:
     def AddFlight(self,Arguments):
         DroneID,HighPoints,StartTime = Arguments[0],Arguments[1],Arguments[2]
         #load graph
-        filename = os.path.join(os.getcwd(),"Graph.graph")
+        filename = os.path.join(os.getcwd(),self.GRAPHFOLDERNAME,"Graph.graph")
         file = open(filename,"rb")
         graph = pickle.load(file)
         file.close()
+        graph.ImportGraph()
+
+        temp = []
+        for point in HighPoints:
+            temp.append(ast.literal_eval(point))
+        HighPoints = temp
+        
 
         HighPointOK = []
         try:
             for point in HighPoints:  #Checks all points are not NoFlyZones
-                NodeID = graph.Find_NodeID(point)
+                NodeID = graph.Find_NodeID(*point)
                 if graph.GetNode(NodeID).Cost > self.NOFLYZONE_THRESHOLD_COST: #If it exceeds Threshold one cannot go through here
                     HighPointOK.append(False)
                 else:
                     HighPointOK.append(True)
-        except:
+        except Exception as e:
+            print(e)
             HighPointOK.append(False)  #If out of bounds the loop will generate an exception. This will then cause the program to return.
 
         if not all(HighPointOK):
@@ -318,8 +328,8 @@ class UserConnection:
             Path = []
             Sucess = True
             while Next < Max:
-                StartNodeID = graph.Find_NodeID(HighPoints[Start])
-                NextNodeID = graph.Find_NodeID(HighPoints[Next])
+                StartNodeID = graph.Find_NodeID(*HighPoints[Start])
+                NextNodeID = graph.Find_NodeID(*HighPoints[Next])
                 TempPath = AATC_AStar.AStar2(graph,StartNodeID,NextNodeID)
                 if TempPath != None:
                     Path += TempPath
@@ -339,17 +349,16 @@ class UserConnection:
                     Coords = Node.Coords
                     Coords.x, Coords.y, Coords.z = Coords.x+XOffset,  Coords.y+YOffset, Coords.z+ZOffset
                     CoordList.append({"Coords":Coords})
-
                     
                 Time = StartTime
                 _,Columns,DroneData = self.DB.GetDroneInfo(self.UserID,DroneID)
                 Columns = ast.literal_eval(Columns)
+                DroneData = DroneData[0]
                 SpeedIndex,RangeIndex = Columns.index("DroneSpeed"),Columns.index("DroneRange")
-
                 DroneSpeed,DroneRange = DroneData[SpeedIndex],DroneData[RangeIndex]                
             
                 TotalDistance = 0
-                for x in range(len(CoordList)):
+                for x in range(len(CoordList)-1):
                     if x != 0: #If not first Coord add the difference in distance to time etc
                         Distance = DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
                         TotalDistance += Distance
@@ -364,15 +373,15 @@ class UserConnection:
 
                 ######################
                 ###################### TEMP WORKAROUND ##########
-                self.DB.cur.execute("SELECT FlightID FROM Flight WHERE UserID = ? AND DroneID = ? AND StartTime = ?",(self.UserID,DroneID,StartTime))
-                FlightID = self.cur.fetchall()[0][0]
+                self.DB.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = ? AND StartTime = ?",(DroneID,StartTime))
+                FlightID = self.DB.cur.fetchall()[0][0]
                 ######################
                 ######################
                 
                 for WaypointNumber in range(1,len(CoordList)):
                     self.DB.AddWaypoint(self.UserID,FlightID,WaypointNumber,CoordList[WaypointNumber-1]["Coords"],CoordList[WaypointNumber-1]["Time"])
 
-                return True,"['FlightID','NumberOfWaypoints','StartTime','EndTime','Distance']",[FlightID,len(CoordList),StartTime,EndTime,TotalDistance] #Returns data about the flight
+                return True,"['FlightID','NumberOfWaypoints','StartTime','EndTime','Distance']",[(FlightID,len(CoordList),StartTime,EndTime,TotalDistance)] #Returns data about the flight
 
         else:
             return False,"You do not own this drone. Flight denied",[]
@@ -765,20 +774,21 @@ def Cleaner(Interval = 36000,EndTimeThreshold = 72000):
     while True:
         try:
             DB = AATC_DB.DBConnection()
-        
-            DB.CleanMonitorPermissions()
-            
-            FlightIDs = DB.GetCompletedFlightIDs(EndTimeThreshold)
-            DB.CleanCompletedFlights(EndTimeThreshold)
-            
-            for WrappedID in FlightIDs: #Wrapped as will be in for FlightIDs = [[a,],[b,],[c,]] where letters mean flightIDs
-                DB.CleanCompletedFlightWaypoints(WrappedID[0])
+            while True:
+                print("Cleaner starting cleaning")
+                DB.CleanMonitorPermissions()
                 
+                Sucess,Message,FlightIDs = DB.GetCompletedFlightIDs(EndTimeThreshold)
+                DB.CleanCompletedFlights(EndTimeThreshold)
+                
+                for WrappedID in FlightIDs: #Wrapped as will be in for FlightIDs = [[a,],[b,],[c,]] where letters mean flightIDs
+                    DB.CleanCompletedFlightWaypoints(WrappedID[0])
+                print("Cleaner completed cleaning. Sleeping..")
+                time.sleep(Interval)
             
         except Exception as e:
             print("Error in Cleaner",e)
     
-
 
 
 

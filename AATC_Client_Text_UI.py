@@ -1,4 +1,4 @@
-import prettytable,AATC_Client
+import prettytable,AATC_Client,ast
 MenuOptions = {
             1:"Login",
             
@@ -49,13 +49,17 @@ class UserTextUI:
         self.UserInterface = UserInterface
         self.MenuOptions = MenuOptions
 
-    def MainLoop(self):
+    def Main_Loop(self):
         self.Exit = False
         while not self.Exit:
-            self.PrintMainMenu()
-            MenuChoice = self.GetMenuChoice()
-            self.EvaluateChoice(MenuChoice)
-            
+            try:
+                self.PrintMainMenu()
+                MenuChoice = self.GetMenuChoice()
+                self.EvaluateChoice(MenuChoice)
+                _ = input()
+            except Exception as e:
+                print("Error occured in Client Text UI",e)
+                
     def PrintMainMenu(self):
         print("\n"*2)
         print("AATC Client Main Menu")
@@ -63,7 +67,7 @@ class UserTextUI:
             print("{0:>3} : {1}".format(str(x[0]),x[1]))
             
     def GetMenuChoice(self):
-        MenuChoice = -1
+        MenuChoice = -99
         while MenuChoice not in self.MenuOptions:  #will exit once valid menu option is chosen
             try:
                  MenuChoice = int(input("Choice >>"))
@@ -126,7 +130,7 @@ class UserTextUI:
             self.RemoveFlight()
             
         elif Command == "GetFlightWaypointsUser":
-            self.GetFlightWaypointUser()
+            self.GetFlightWaypointsUser()
         elif Command == "GetFlightWaypointsAll":
             self.GetFlightWaypointsAll()
 
@@ -147,7 +151,7 @@ class UserTextUI:
 
 
         elif Command == "Exit":
-            self.Exit()
+            self.Call_Exit()
         else:
             print("Please correctly register method to EvaluateChoice method")
 
@@ -183,7 +187,7 @@ class UserTextUI:
         StartCoords = input("Enter Start Coordinates in form (x,y,z) >>")
         EndCoords = input("Enter End Coordinates in form (x,y,z) >>")
         Level = int(input("Enter Level of No Fly Zone >>"))
-        Sucess,Message = self.MonitorInteface.AddNoFlyZone(StartCoords,EndCoords,Level)
+        Sucess,Message = self.UserInterface.AddNoFlyZone(StartCoords,EndCoords,Level)
         self.DisplayResults(Sucess,Message)
         
     def RemoveNoFlyZone(self):
@@ -255,7 +259,7 @@ class UserTextUI:
     def GetUserID(self):
         Username = input("Username >>")
         Sucess,Message,UserID = self.UserInterface.GetUserID(Username)
-        self.DisplayResults(Sucess,Message,DroneInfo)
+        self.DisplayResults(Sucess,Message,UserID)
 
     def GetUsername(self):
         UserID = int(input("UserID >>"))
@@ -288,7 +292,19 @@ class UserTextUI:
         Sucess,Message,AllFlights = self.UserInterface.GetFlightsAll()
         self.DisplayResults(Sucess,Message,AllFlights)
 
-##    def AddFlight
+    def AddFlight(self):
+        DroneID = int(input("DroneID >>"))
+
+        HighPoints = []
+        point = ""
+        print("Enter Coordinates one by one, enter 'Done' once complete")
+        while point != "Done":
+            point = input("Enter Coordinate in form (x,y,z) >>")
+            if point != "Done":
+                HighPoints.append(point)
+        StartTime = int(input("Enter start time in seconds since UNIX time >>"))
+        Sucess,Message,FlightInfo = self.UserInterface.AddFlight(DroneID,HighPoints,StartTime)
+        self.DisplayResults(Sucess,Message,FlightInfo)
     
         
     def RemoveFlight(self):
@@ -343,16 +359,13 @@ class UserTextUI:
 
     #################################################
 
-    def Exit(self):
+    def Call_Exit(self):
         Choice = input("Exit? (Y/N) >>").upper()
         if Choice == "Y":
             print("Exiting..")
             Sucess,Message = self.UserInterface.Exit()
             self.DisplayResults(Sucess,Message)
-            if Sucess:
-                self.Exit = True
-            else:
-                print("Exit failed")
+            self.Exit = True
         else:
             print("Exit cancelled")
 
@@ -374,7 +387,8 @@ if __name__ == "__main__":
                 print("Error occured",e)  #Eg when connection fails during usage
 
         except Exception as e:
-            print("Error occured creating user interface",e)             
+            print("Error occured creating user interface",e)
+            _ = input()
 
 
 

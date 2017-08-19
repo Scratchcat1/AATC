@@ -1,6 +1,17 @@
 import multiprocessing,socket,AATC_NoFlyZoneGrapher
 import AATC_Server_002 as AATC_Server
 
+class Coordinate:
+    def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.xSize = xSize
+        self.ySize = ySize
+        self.zSize = zSize
+    def __str__(self):
+        return str((self.x,self.y,self.z))
+
 
 def UserProcessSpawner():
     while True:
@@ -21,7 +32,7 @@ def UserProcessSpawner():
             while True:
                 try:
                     conn, addr = s.accept()
-                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1]))
+                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1])+ "Type:User")
                     UserProcess = multiprocessing.Process(target = MakeUserConnection,args = (conn,))
                     UserProcess.start()
                 except Exception as e:
@@ -53,7 +64,7 @@ def MonitorProcessSpawner():
             while True:
                 try:
                     conn, addr = s.accept()
-                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1]))
+                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1]) + "Type:Monitor")
                     MonitorProcess = multiprocessing.Process(target = MakeMonitorConnection,args = (conn,))
                     MonitorProcess.start()
                 except Exception as e:
@@ -89,7 +100,7 @@ def DroneProcessSpawner():
             while True:
                 try:
                     conn, addr = s.accept()
-                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1]))
+                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1])+ "Type:Drone")
                     DroneProcess = multiprocessing.Process(target = MakeDroneConnection, args = (conn,))
                     DroneProcess.start()
                 except Exception as e:
@@ -108,6 +119,7 @@ def MakeDroneConnection(conn):
     
 
 if __name__ == "__main__":
+    print("Server is starting")
     #Launch UserProcess spawner
     UPS = multiprocessing.Process(target = UserProcessSpawner)
     UPS.start()
@@ -121,9 +133,9 @@ if __name__ == "__main__":
     DPS.start()
 
     #Launch NoFlyZoneGrapher
-    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)
-    NFZG.start()
-
+##    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)
+##    NFZG.start()
+##
     CLN = multiprocessing.Process(target = AATC_Server.Cleaner)
     CLN.start()
 

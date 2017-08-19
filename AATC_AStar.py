@@ -1,5 +1,9 @@
 import os,pickle,heapq,time,math,hashlib
-
+try:
+    _ = math.inf
+except:
+    print("You do not have math.inf object, Python 3.5 onwards. Will use replacement.")
+    math.inf = 10^34
 class Coordinate:
     def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
         self.x = x
@@ -169,7 +173,6 @@ class DynoGraph:
         print("Preparing to save Node Cache")
         Sets = {}
         for Key in self.Node_Cache:
-            print(Key)
             r = self.Node_Cache_Hash(Key)  #Gets Hashed key
             if r not in Sets:
                 Sets[r] = {}
