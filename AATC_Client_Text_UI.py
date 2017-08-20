@@ -363,8 +363,11 @@ class UserTextUI:
         Choice = input("Exit? (Y/N) >>").upper()
         if Choice == "Y":
             print("Exiting..")
-            Sucess,Message = self.UserInterface.Exit()
-            self.DisplayResults(Sucess,Message)
+            try:
+                Sucess,Message = self.UserInterface.Exit()
+                self.DisplayResults(Sucess,Message)
+            except:
+                print("Unable to close server connection")
             self.Exit = True
         else:
             print("Exit cancelled")
@@ -378,7 +381,7 @@ if __name__ == "__main__":
     while not Exit:
         try:
             print("Connecting to server...")
-            U = AATC_Client.CreateUserInterface(IP = "192.168.0.10")
+            U = AATC_Client.CreateUserInterface()
             try:
                 TextUI = UserTextUI(U,MenuOptions)
                 TextUI.Main_Loop()

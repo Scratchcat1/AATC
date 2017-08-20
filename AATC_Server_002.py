@@ -292,6 +292,8 @@ class UserConnection:
     
     def AddFlight(self,Arguments):
         DroneID,HighPoints,StartTime = Arguments[0],Arguments[1],Arguments[2]
+        if StartTime < GetTime():
+            return False,"Attempting to add flight in the past",[]
         #load graph
         filename = os.path.join(os.getcwd(),self.GRAPHFOLDERNAME,"Graph.graph")
         file = open(filename,"rb")
@@ -729,13 +731,13 @@ class DroneConnection:
     def Login(self,Arguments):
         DroneID,DronePassword = Arguments[0],Arguments[1]
         Sucess,Message,self.DroneID = self.DB.DroneCheckCredentials(DroneID,DronePassword)
-        return Sucess,Message,[]
+        return Sucess,Message,-1
 
     ########################################################
 
     def UpdateDroneStatus(self,Arguments):
         LastCoords,LastBattery = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.UpdateDroneStatus(self.DroneIDLastCoords,LastBattery)
+        Sucess,Message = self.DB.UpdateDroneStatus(self.DroneID,LastCoords,LastBattery)
         return Sucess,Message,[]
     
     ##########################################################
@@ -756,8 +758,8 @@ class DroneConnection:
         return Sucess,Message,Data
 
     def MarkFlightComplete(self,Arguments):
-        FlightID = Arguments[0]
-        Sucess,Message = self.DB.MarkFlightComplete(self.DroneID,FlightID)
+        FlightID,Code = Arguments[0],Arguments[1]
+        Sucess,Message = self.DB.MarkFlightComplete(self.DroneID,FlightID,Code)
         return Sucess,Message,[]
 
     ######################################################

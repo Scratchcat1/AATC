@@ -10,7 +10,7 @@ class Coordinate:
         self.ySize = ySize
         self.zSize = zSize
     def __str__(self):
-        return str((self.x,self.y,self.z))
+        return str((round(self.x,8),round(self.y,8),round(self.z,8)))
 
 
 def UserProcessSpawner():
@@ -133,9 +133,9 @@ if __name__ == "__main__":
     DPS.start()
 
     #Launch NoFlyZoneGrapher
-##    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)
-##    NFZG.start()
-##
+    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)
+    NFZG.start()
+
     CLN = multiprocessing.Process(target = AATC_Server.Cleaner)
     CLN.start()
 

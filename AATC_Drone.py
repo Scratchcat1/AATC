@@ -9,11 +9,11 @@ class Coordinate:
         self.xSize = xSize
         self.ySize = ySize
         self.zSize = zSize
-    def __str__(self):
+    def Print(self):
         print("Coordinate:")
-        print("X: {:<8}   xSize:{:<8}".format(self.x,self.xSize))
-        print("Y: {:<8}   ySize:{:<8}".format(self.ys,self.ySize))
-        print("Z: {:<8}   zSize:{:<8}".format(self.z,self.zSize))
+        print("X: {:<8}   xSize:{:<8}".format(round(self.x,7),self.xSize))
+        print("Y: {:<8}   ySize:{:<8}".format(round(self.y,7),self.ySize))
+        print("Z: {:<8}   zSize:{:<8}".format(round(self.z,7),self.zSize))
         
         
 class DroneInterface:
@@ -90,8 +90,8 @@ class DroneInterface:
         Sucess,Message,FlightWaypoints = self.Recv()
         return Sucess,Message,FlightWaypoints
 
-    def MarkFlightComplete(self,FlightID):
-        self.Send("MarkFlightComplete",(FlightID,))
+    def MarkFlightComplete(self,FlightID,Code):
+        self.Send("MarkFlightComplete",(FlightID,Code))
         Sucess,Message,_ = self.Recv()
         return Sucess,Message
 
@@ -125,7 +125,6 @@ def ConvertCoordString(CoordString):
 def GetFlightObject(Message,Data):
     Data = Data[0]  # as Data = [(Stuff,stuff,even more stuff)]
     Columns = ast.literal_eval(Message)
-    
     FlightIDIndex = Columns.index("FlightID")
     DroneIDIndex = Columns.index("DroneID")
     StartCoordsIndex = Columns.index("StartCoords")
@@ -137,7 +136,7 @@ def GetFlightObject(Message,Data):
     FlightID = Data[FlightIDIndex]
     DroneID = Data[DroneIDIndex]
     StartCoord = ConvertCoordString(Data[StartCoordsIndex])
-    EndCoord = ConvertCoordString(Data[FlightIDIndex])
+    EndCoord = ConvertCoordString(Data[EndCoordsIndex])
     StartTime = Data[FlightIDIndex]
     ETA = Data[FlightIDIndex]
     Distance = Data[DistanceIndex]
@@ -160,7 +159,7 @@ def GetWaypointObjects(Message,Data):
         Coord = ConvertCoordString(point[CoordIndex])
         ETA = point[ETAIndex]
         
-        waypoint = Waypoint(FlightID,WaypointNumber,Coord)
+        waypoint = Waypoint(FlightID,WaypointNumber,Coord,ETA)
         WaypointList.append(waypoint)
 
 
@@ -195,7 +194,7 @@ def Connect(remote_ip,PORT):
         sys.exit()
 
 
-def CreateDroneInterface(IP = "192.168.0.19",Port = 8000):
+def CreateDroneInterface(IP = "192.168.0.19",Port = 8002):
     soc = Connect(IP,Port)
     D = DroneInterface(soc)
     return D
