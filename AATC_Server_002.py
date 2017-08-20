@@ -376,7 +376,7 @@ class UserConnection:
 
                 ######################
                 ###################### TEMP WORKAROUND ##########
-                self.DB.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = ? AND StartTime = ?",(DroneID,StartTime))
+                self.DB.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime = %s",(DroneID,StartTime))
                 FlightID = self.DB.cur.fetchall()[0][0]
                 ######################
                 ######################

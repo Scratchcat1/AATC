@@ -9,8 +9,10 @@ def LaunchDroneLogic(FlightQueue,StatusQueue):
             print(LoginSucess,Message)
             if LoginSucess:
                 
+                
                 AvailableFlight = False
                 while not AvailableFlight:
+                    time.sleep(0.2)
                     
                     if not StatusQueue.empty():
                         Status = StatusQueue.get()
@@ -20,6 +22,7 @@ def LaunchDroneLogic(FlightQueue,StatusQueue):
                     Sucess,Message,FlightID  = D.CheckForFlight()
                     AvailableFlight = Sucess
 
+                print("Obtaining flight")
                 FlightID = FlightID[0][0]
                 FSucess,FlightMessage,FlightData = D.GetFlight(FlightID)
                 WSucess,WaypointsMessage,FlightWaypointsData = D.GetFlightWaypoints(FlightID)
@@ -99,7 +102,9 @@ def DroneHardware(FlightQueue,StatusQueue):
     xSize,ySize,zSize = 0.001,0.001,5
     
     while True:
-        PutStatus(StatusQueue,Coords,Battery)
+        time.sleep(0.2)
+        if StatusQueue.empty():
+            PutStatus(StatusQueue,Coords,Battery)
         if not FlightQueue.empty():
             data = FlightQueue.get()
             Flight,Waypoints = data[1][0],data[1][1]
