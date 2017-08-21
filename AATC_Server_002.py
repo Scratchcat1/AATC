@@ -12,6 +12,8 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
     for x in range(len(List1)):  #Goes through each item in the lists
         if List1[x] <= List2[x]:   #If The Coord1[x] <= Coord2[x]
             BoolList.append(True)
+        else:
+            BoolList.append(False)
     return all(BoolList)
 
 def toRadian(x):
@@ -57,8 +59,8 @@ class UserConnection:
             return data
             #return data[0],data[1],data[2]
         except Exception as e:
-            print("Socket data recive error")
-            print(str(e))
+            print("UserID:",self.UserID," Socket data recive error")
+            data = ("",())#Never references a command
 
     def Connection_Loop(self):
         """
@@ -167,10 +169,13 @@ class UserConnection:
                         print("User tried to use unregistered command")
                 except Exception as e:
                     Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                    print("Error occured with UserID:",str(self.UserID),"Error :",str(e)," Sending failure message")
+                    print("Error occured with UserID:",str(self.UserID),". Error :",str(e),". Sending failure message")
                 self.Send((Sucess,Message,Data))
         except Exception as e:
-            print("Serious exception occured with UserID ",self.UserID," Error",e)
+            if type(e) == BrokenPipeError:
+                print("UserID:",self.UserID," disconnected")
+            else:
+                print("Serious exception occured with UserID ",self.UserID," Error",e)
         print("Process will now exit")
             
     def Login(self,Arguments):
@@ -186,6 +191,7 @@ class UserConnection:
     def AddNoFlyZone(self,Arguments):
         if len(Arguments) == 3:
             Coord1,Coord2,Level = Arguments[0],Arguments[1],Arguments[2]
+            Coord1,Coord2 = ast.literal_eval(Coord1),ast.literal_eval(Coord2)
             Sucess,Message = self.DB.AddNoFlyZone(Coord1,Coord2,Level,self.UserID)
         else:
             Sucess,Message = False,"Incorrect Argument format"
@@ -197,7 +203,7 @@ class UserConnection:
         return Sucess,Message,[]
     
     def ModifyNoFlyZoneLevel(self,Arguments):
-        ZoneID,Level = Arguments[0]
+        ZoneID,Level = Arguments[0],Arguments[1]
         Sucess,Message = self.DB.ModifyNoFlyZoneLevel(self.UserID,ZoneID,Level)
         return Sucess,Message,[]
 
@@ -477,8 +483,7 @@ class MonitorConnection:
             return data
             #return data[0],data[1],data[2]
         except Exception as e:
-            print("Socket data recive error")
-            print(str(e))
+            print("MonitorID:",self.MonitorID," Socket data recive error")
 
     def Connection_Loop(self):
         """
@@ -560,7 +565,10 @@ class MonitorConnection:
                 self.Send((Sucess,Message,Data))
                 
         except Exception as e:
-            print("Serious Exception occured with MonitorID",self.MonitorID," Error",e)
+            if type(e) == BrokenPipeError:
+                print("MonitorID:",self.MonitorID," disconnected")
+            else:
+                print("Serious exception occured with UserID ",self.UserID," Error",e)
         print("Process is exiting")
 
     ################################
@@ -667,8 +675,8 @@ class DroneConnection:
             return data
             #return data[0],data[1],data[2]
         except Exception as e:
-            print("Socket data recive error")
-            print(str(e))
+            print("DroneID:",DroneID," Socket data recive error")
+            
 
     def Connection_Loop(self):
         """
@@ -725,7 +733,10 @@ class DroneConnection:
                 self.Send((Sucess,Message,Data))
                 
         except Exception as e:
-            print("Serious Exception occured with DroneID",self.DroneID, " Error ",e)
+            if type(e) == BrokenPipeError:
+                print("DroneID:",self.DroneID," disconnected")
+            else:
+                print("Serious exception occured with UserID ",self.UserID," Error",e)
         print("Process is exiting")
 
     def Login(self,Arguments):

@@ -382,13 +382,11 @@ if __name__ == "__main__":
         try:
             print("Connecting to server...")
             U = AATC_Client.CreateUserInterface()
-            try:
-                TextUI = UserTextUI(U,MenuOptions)
-                TextUI.Main_Loop()
-                Exit = True  #When user selects exit
-            except Exception as e:
-                print("Error occured",e)  #Eg when connection fails during usage
 
+            TextUI = UserTextUI(U,MenuOptions)
+            TextUI.Main_Loop()
+            Exit = True  #When user selects exit
+                
         except Exception as e:
             print("Error occured creating user interface",e)
             _ = input()

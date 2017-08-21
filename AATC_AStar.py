@@ -206,7 +206,8 @@ class DynoGraph:
             raise ValueError("Node_Cache Key requested is not in the NCBlockID checked. Check BlockSize or regenerate blockfiles")
 
             
-        
+    def Direct_NodeID(self,x,y,z):
+        return self.Get_Node_Cache(x,y,z)
 
     def All_NodeIDs(self):
         return self.Node_Cache.values()

@@ -32,7 +32,7 @@ class NoFlyZoneGrapher:
                 print("Error occured in NoFlyZoneGrapher",e)
         
     def Mod(self,Coords):
-        return int(Coords.x//self.xSize),int(Coords.y//self.ySize),int(Coord.z//self.zSize)
+        return int(Coords.x//self.xSize),int(Coords.y//self.ySize),int(Coords.z//self.zSize)
         
     def GetNoFlyZones(self):
         _,Columns,Data = self.DB.GetNoFlyZones()

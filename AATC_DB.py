@@ -10,6 +10,8 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
     for x in range(len(List1)):  #Goes through each item in the lists
         if List1[x] <= List2[x]:   #If The Coord1[x] <= Coord2[x]
             BoolList.append(True)
+        else:
+            BoolList.append(False)
     return all(BoolList)
 
 
@@ -341,12 +343,12 @@ class DBConnection:
 ########################    No Fly Zone ###############################################
     def AddNoFlyZone(self,Coord1,Coord2,Level,UserID):
         if not CoordLessThanOrEqual(Coord1,Coord2):  #If Coord2 is closer to origin in every point than Coord1 It is an invalid coordinate
-            Message = "Invalid Coordinates. Coordinate 2:"+str(Coord2)+" is closer in all dimentions to the origin than Coordinate 1"+str(Coord1)
+            Message = "Invalid Coordinates. Coordinate 2:"+str(Coord2)+" is closer in some dimentions to the origin than Coordinate 1"+str(Coord1)
             return False,Message
         else:
             if type(Level) is not int or Level <= 0:
                 return False, "Invalid Level. Must be an integer and > 0"
-            self.cur.execute("SELECT 1 FROM User WHERE UserID = %s AND AccountType = 'ZoneCreator'",(UserID,))
+            self.cur.execute("SELECT 1 FROM User WHERE UserID = %s AND AccountType LIKE '%%ZoneCreator%%'",(UserID,))
             if self.cur.fetchall() !=  ():
                 self.cur.execute("INSERT INTO NoFlyZone(StartCoord,EndCoord,Level,OwnerUserID) VALUES(%s,%s,%s,%s)",(str(Coord1),str(Coord2),Level,UserID))
                 self.db_con.commit()
@@ -354,7 +356,7 @@ class DBConnection:
             else:
                 return False,"You do not have ZoneCreator Permission"
     def RemoveNoFlyZone(self,UserID,ZoneID):
-        self.cur.execute("SELECT 1 FROM NoFlyZone,User WHERE (NoFlyZone.ZoneID = %s AND NoFlyZone.OwnerUserID = %s ) OR (User.UserID = %s AND 'ZoneRemover' IN User.AccountType)",(ZoneID,UserID,UserID))   # Gets 1 if (Zone with ZoneID has UserID as owner) OR (User with UserID has ZoneRemoverPermission) 
+        self.cur.execute("SELECT 1 FROM NoFlyZone,User WHERE (NoFlyZone.ZoneID = %s AND NoFlyZone.OwnerUserID = %s ) OR (User.UserID = %s AND User.AccountType LIKE '%%ZoneRemover%%')",(ZoneID,UserID,UserID))   # Gets 1 if (Zone with ZoneID has UserID as owner) OR (User with UserID has ZoneRemoverPermission) 
         if self.cur.fetchall() != ():
             #Runs if user has permission to delete this no fly zone
             self.cur.execute("DELETE FROM NoFlyZone WHERE ZoneID = %s",(ZoneID,))
@@ -367,7 +369,7 @@ class DBConnection:
     def ModifyNoFlyZoneLevel(self,UserID,ZoneID,Level):
         if type(Level) is not int or Level <=0:
             return False,"Invalid Level. Must be an integer and > 0"
-        self.cur.execute("SELECT 1 FROM NoFlyZone,User WHERE (NoFlyZone.ZoneID = %s AND NoFlyZone.OwnerUserID = %s ) OR (User.UserID = %s AND 'ZoneModifier' IN User.AccountType)",(ZoneID,UserID,UserID))   # Gets 1 if (Zone with ZoneID has UserID as owner) OR (User with UserID has ZoneModifier Permission) 
+        self.cur.execute("SELECT 1 FROM NoFlyZone,User WHERE (NoFlyZone.ZoneID = %s AND NoFlyZone.OwnerUserID = %s ) OR (User.UserID = %s AND User.AccountType LIKE '%%ZoneModifier%%')",(ZoneID,UserID,UserID))   # Gets 1 if (Zone with ZoneID has UserID as owner) OR (User with UserID has ZoneModifier Permission) 
         if self.cur.fetchall() != ():
             #Runs if user has permission to delete this no fly zone
             self.cur.execute("UPDATE NoFlyZone SET Level = %s WHERE ZoneID = %s",(Level,ZoneID))
@@ -391,14 +393,27 @@ class DBConnection:
             self.cur.execute("DROP TABLE IF EXISTS {0}".format(item))
         
         self.cur.execute("CREATE TABLE User(UserID INTEGER PRIMARY KEY AUTO_INCREMENT, Username TEXT,Password TEXT, PublicVisibleFlights INT, AccountType TEXT)")
-        self.cur.execute("CREATE TABLE Drone(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT, UserID INT, DroneName TEXT, DroneType TEXT, DroneSpeed INT, DroneRange INT, DroneWeight REAL, FlightsFlown INT, LastCoords TEXT, LastBattery REAL,FOREIGN KEY(UserID) REFERENCES User(UserID))")
+        self.cur.execute("CREATE TABLE Drone(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT, UserID INT, DroneName TEXT, DroneType TEXT, DroneSpeed INT, DroneRange INT, DroneWeight REAL, FlightsFlown INT, LastCoords TEXT, LastBattery REAL)")
         self.cur.execute("CREATE TABLE Monitor(MonitorID INTEGER PRIMARY KEY AUTO_INCREMENT, MonitorName TEXT, MonitorPassword TEXT,AccountType TEXT)")
-        self.cur.execute("CREATE TABLE MonitorPermission(MonitorID INT ,UserID INT, LastAccessed TEXT, ExpiryDate TEXT,PRIMARY KEY(MonitorID,UserID),FOREIGN KEY(MonitorID) REFERENCES Monitor(MonitorID),FOREIGN KEY(UserID) REFERENCES User(UserID))")
-        self.cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY AUTO_INCREMENT, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime REAL, ETA REAL, EndTime REAL, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,Completed INT,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
-        self.cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA REAL, BlockTime INT ,FOREIGN KEY(FlightID) REFERENCES Flight(FlightID))")
-        self.cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY AUTO_INCREMENT, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT,FOREIGN KEY(OwnerUserID) REFERENCES User(UserID))")
-        self.cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT ,DronePassword TEXT,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
+        self.cur.execute("CREATE TABLE MonitorPermission(MonitorID INT ,UserID INT, LastAccessed TEXT, ExpiryDate TEXT,PRIMARY KEY(MonitorID,UserID),FOREIGN KEY(MonitorID) REFERENCES Monitor(MonitorID))")
+        self.cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY AUTO_INCREMENT, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime REAL, ETA REAL, EndTime REAL, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,Completed INT)")
+        self.cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA REAL, BlockTime INT)")
+        self.cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY AUTO_INCREMENT, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT)")
+        self.cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT ,DronePassword TEXT)")
         self.cur.execute("SET FOREIGN_KEY_CHECKS = 1")
         self.db_con.commit()
     
 
+
+
+
+
+#Code of stuff with foriegn keys, not used as causes trouble and has no advantage
+####self.cur.execute("CREATE TABLE User(UserID INTEGER PRIMARY KEY AUTO_INCREMENT, Username TEXT,Password TEXT, PublicVisibleFlights INT, AccountType TEXT)")
+####self.cur.execute("CREATE TABLE Drone(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT, UserID INT, DroneName TEXT, DroneType TEXT, DroneSpeed INT, DroneRange INT, DroneWeight REAL, FlightsFlown INT, LastCoords TEXT, LastBattery REAL,FOREIGN KEY(UserID) REFERENCES User(UserID))")
+####self.cur.execute("CREATE TABLE Monitor(MonitorID INTEGER PRIMARY KEY AUTO_INCREMENT, MonitorName TEXT, MonitorPassword TEXT,AccountType TEXT)")
+####self.cur.execute("CREATE TABLE MonitorPermission(MonitorID INT ,UserID INT, LastAccessed TEXT, ExpiryDate TEXT,PRIMARY KEY(MonitorID,UserID),FOREIGN KEY(MonitorID) REFERENCES Monitor(MonitorID),FOREIGN KEY(UserID) REFERENCES User(UserID))")
+####self.cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY AUTO_INCREMENT, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime REAL, ETA REAL, EndTime REAL, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,Completed INT,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
+####self.cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA REAL, BlockTime INT ,FOREIGN KEY(FlightID) REFERENCES Flight(FlightID))")
+####self.cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY AUTO_INCREMENT, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT,FOREIGN KEY(OwnerUserID) REFERENCES User(UserID))")
+####self.cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT ,DronePassword TEXT,FOREIGN KEY(DroneID) REFERENCES Drone(DroneID))")
