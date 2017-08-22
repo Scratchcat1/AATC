@@ -3,7 +3,7 @@ try:
     _ = math.inf
 except:
     print("You do not have math.inf object, Python 3.5 onwards. Will use replacement.")
-    math.inf = 10^34
+    math.inf = 10**20
 class Coordinate:
     def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
         self.x = x
@@ -438,7 +438,7 @@ def FindPath(cameFrom,current):
 
 def Benchmark(FLUSH = 100,BlockSize = 500,MAXNODE = 2000000):
     import random,sys
-    graph = DynoGraph(BlockSize= 500)
+    graph = DynoGraph(BlockSize= BlockSize)
     graph.ImportGraph()
 
     

@@ -45,7 +45,7 @@ for x in drange(xStart,xEnd,xInterval):
 xRange = xEnd - xStart
 yRange = yEnd - yStart
 zRange = zEnd - zStart
-
+print("Adding edges")
 graph.Add_Edges(xRange,yRange,zRange)
 graph.clean_edges()
 graph.Build_Node_Cache()
