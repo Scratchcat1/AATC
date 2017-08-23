@@ -1,3 +1,7 @@
+#!python
+#cython: boundscheck=False, wraparound=False
+
+
 import os,pickle,heapq,time,math,hashlib
 try:
     _ = math.inf
@@ -58,6 +62,7 @@ class DynoGraph:
         xCount = int(xRange/self.xSize)
         yCount = int(yRange/self.ySize)
         zCount = int(zRange/self.zSize)
+        self.xCount,self.yCount,self.zCount = xCount,yCount,zCount
 
         print("xCount:",xCount)
         print("yCount:",yCount)
@@ -316,19 +321,42 @@ class Node:
     def Get_Cost(self):
         return self.Cost
 
-def EstimateDistance(Node,Target, float xSize, float ySize, float zSize):
-    return int(abs(Node.Coords.x-Target.Coords.x)/xSize+abs(Node.Coords.y-Target.Coords.y)/ySize+abs(Node.Coords.z-Target.Coords.z)/zSize)
+##cdef int EstimateDistance(Node,Target, float xSize, float ySize, float zSize):
+##    return int(abs(Node.Coords.x-Target.Coords.x)/xSize+abs(Node.Coords.y-Target.Coords.y)/ySize+abs(Node.Coords.z-Target.Coords.z)/zSize)
+
+cdef float EstimateDistance(int NodeID, int TargetID, int xCount,int yCount,int zCount, float xSize, float ySize, float zSize):
+    cdef float x,y,z,Nx,Ny,Nz,Tx,Ty,Tz
+    cdef float Distance
+    Nx,Ny,Nz = GetCoord(NodeID,xCount,yCount,zCount,xSize,ySize,zSize)
+    Tx,Ty,Tz = GetCoord(TargetID,xCount,yCount,zCount,xSize,ySize,zSize)
+    x=(Nx-Tx)/xSize
+    y=(Ny-Ty)/ySize
+    z=(Nz-Tz)/zSize
+    if x < 0:
+        x = x*-1
+    if y < 0:
+        y = y*-1
+    if z < 0:
+        z = z*-1
+    Distance = x+y+z
+    return Distance
+
 
 
 def AStar2(graph, int start, int target):   # Set all g to node_count + 1
     StartTime = time.time()
 
-    cdef float xSize,ySize,zSize
+    cdef float xSize,ySize,zSize,gNode
     cdef dict ClosedSet,OpenSet,cameFrom,g,f
-    cdef int NodeID,current,tScore
+    cdef int NodeID,current,tScore,xCount,yCount,zCount
     cdef list OpenList
-    
+
+    cdef list FriendList
+
+
+    TargetNode = graph.GetNode(target)
     xSize,ySize,zSize = graph.xSize,graph.ySize,graph.zSize
+    xCount,yCount,zCount = graph.xCount,graph.yCount,graph.zCount
     
     ClosedSet = {}  #Dict to hash find closed nodes
     OpenSet = {start:1}
@@ -340,7 +368,7 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
         f[NodeID] = math.inf
 
     g[start] = 0
-    f[start] = EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize)
+    f[start] = EstimateDistance(start,target,xCount,yCount,zCount,xSize,ySize,zSize)
     Found = False
     while len(OpenSet) != 0:
         OpenList = []
@@ -358,7 +386,10 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
         
         OpenSet.pop(current)
         ClosedSet[current] = 1
-        for NodeID in graph.GetNode(current).Friends:
+
+        FriendList = graph.GetNode(current).Friends
+        for NodeID in FriendList:
+            Node = graph.GetNode(NodeID)
             if ClosedSet.get(NodeID) != None:
                 continue
             if OpenSet.get(NodeID) == None:
@@ -368,12 +399,13 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
                 g[NodeID] = math.inf
                 f[NodeID] = math.inf
 
-            tScore = g[current]+ graph.GetNode(NodeID).Cost
-            if tScore >= g[NodeID]:
+            gNode = g[NodeID]
+            tScore = g[current]+ Node.Cost
+            if tScore >= gNode:
                 continue
             cameFrom[NodeID] = current
             g[NodeID] = tScore
-            f[NodeID] = g[NodeID] + EstimateDistance(graph.GetNode(NodeID),graph.GetNode(target),xSize,ySize,zSize)
+            f[NodeID] = gNode + EstimateDistance(NodeID,target,xCount,yCount,zCount,xSize,ySize,zSize)
     EndTime = time.time()
     print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds")
     if Found:
@@ -416,18 +448,23 @@ def Benchmark(FLUSH = 100,BlockSize = 500,MAXNODE = 2000000):
         
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        
+cdef tuple GetCoord(int ID, int xCount, int yCount, int zCount, float xSize, float ySize,float zSize):
+    cdef float xCoord,yCoord,zCoord
+    zCoord = ((ID-1)%zCount)*zSize
+    yCoord = (((ID-1)%(zCount*yCount))//zCount)*ySize
+    xCoord = ((ID-1)//(zCount*yCount)) * xSize
+    return xCoord,yCoord,zCoord
     
+
+
+
+
+
+
+
+
+
+
+    
+    
+

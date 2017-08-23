@@ -20,6 +20,11 @@ def GetText(Text,font,AA,Colour):  #Efficiently get text
         _images[(Text,font,AA,Colour)]=result
     return result
 
+def MaxLimit(value,Max):
+    if value > Max:
+        value = Max
+    return value
+
 class Coordinate:
     def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
         self.x = x
@@ -84,6 +89,8 @@ class Camera:
 ##                width,height = Object.Coords.xSize*self.CameraZoom ,Object.Coords.ySize*self.CameraZoom
                 width,height = int(Object.Coords.xSize/self.CameraCoord.xSize*self.xpixel) ,int(Object.Coords.ySize/self.CameraCoord.ySize*self.ypixel)
                 if width > 0 and height > 0:
+                    width = MaxLimit(width,self.xpixel)
+                    height = MaxLimit(height,self.ypixel)
                     font_size = int(100*width/self.xpixel)
                     Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
                     self.gameDisplay.blit(Object.image,(PosX,PosY))
@@ -163,12 +170,12 @@ def MakeFlightSprites(Message,RawFlightList):
         Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.00001,0.00001,0.00001)
         Text = "F:"+ str(Flight[FlightIDIndex])+" D:"+ str(Flight[DroneIDIndex])+ "ST:"+str(Flight[StartTimeIndex])
         Colour = (0,0,255)
-        FlightList.append(MonitorSprite(Coord,"StartPoint",Text,Colour))
+        FlightList.append(Monitor_Sprite(Coord,"StartPoint",Text,Colour))
 
         #End Sprite
         Coords = ast.literal_eval(Flight[EndCoordsIndex])
         Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.00001,0.00001,0.00001)
-        Text = "F:"+ str(Flight[FlightIDIndex])+" D:"+ str(Flight[DroneIDIndex])+ "ETA:"+str(Flight[ETATimeIndex])
+        Text = "F:"+ str(Flight[FlightIDIndex])+" D:"+ str(Flight[DroneIDIndex])+ "ETA:"+str(Flight[ETAIndex])
         Colour = (255,0,0)
         FlightList.append(Monitor_Sprite(Coord,"EndPoint",Text,Colour))
     return FlightList

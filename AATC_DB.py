@@ -82,6 +82,16 @@ class DBConnection:
             return True,"Correct Drone Credentials",DroneIDFetch[0][0]
         else:
             return False,"Incorrect Drone Credentials",-1
+
+    def DroneGetDroneInfo(self,DroneID,DronePassword):
+        self.cur.execute("SELECT 1 FROM DroneCredentials WHERE DroneID = %s AND DronePassword = %s",(DroneID,DronePassword))
+        DroneIDFetch = self.cur.fetchall()
+        if DroneIDFetch != ():
+            self.cur.execute("SELECT * FROM Drone WHERE DroneID = %s",(DroneID,))
+            return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
+        else:
+            return False,"Incorrect Drone Credentials",[]
+        
             
 
         
@@ -112,6 +122,7 @@ class DBConnection:
             
     def GetDronesUser(self,UserID):
         self.cur.execute("SELECT * FROM Drone WHERE UserID = %s",(UserID,))
+        self.db_con.commit()
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
     def GetDronesAll(self):
         self.cur.execute("SELECT Drone.* FROM User,Drone WHERE User.UserID = Drone.UserID AND User.PublicVisibleFlights = 1")
@@ -206,9 +217,11 @@ class DBConnection:
             return False,"Flight not obtained, Flight may not exist or you may not have permission",[]
 
     def MarkFlightComplete(self,DroneID,FlightID,Code):
+        print(FlightID)
         self.cur.execute("SELECT 1 FROM Flight WHERE DroneID = %s AND FlightID = %s",(DroneID,FlightID))
         if self.cur.fetchall != ():
-            self.cur.execute("UPDATE Flight SET Completed = %s,EndTime = %s WHERE FlightID = %s",(Code,FlightID,GetTime()))
+            self.cur.execute("UPDATE Flight SET Completed = %s,EndTime = %s WHERE FlightID = %s",(Code,GetTime(),FlightID))
+            self.cur.execute("UPDATE Drone SET FlightsFlown = FlightsFlown +1 WHERE DroneID = %s",(DroneID,))
             self.db_con.commit()
             return True,"Marked Flight complete"
         else:
@@ -296,10 +309,10 @@ class DBConnection:
             Sucess = True
         else:
             Sucess = False
-        return Sucess,"[MonitorID]",self.cur.fetchall()
+        return Sucess,"['MonitorID']",self.cur.fetchall()
     def GetMonitorName(self,MonitorID):
         self.cur.execute("SELECT MonitorName FROM Monitor WHERE MonitorID = %s",(MonitorID,))
-        return True,"[MonitorName]",self.cur.fetchall()
+        return True,"['MonitorName']",self.cur.fetchall()
 
 #--------------------------   MONITOR PERMISSION   ------------------------------------
     def AddMonitorPermission(self,UserID,MonitorID,ExpiryDate):

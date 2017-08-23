@@ -75,6 +75,13 @@ class DroneInterface:
 
     ############################
 
+    def DroneGetDroneInfo(self,DroneID,DronePassword):
+        self.Send("DroneGetDroneInfo",(DroneID,DronePassword))
+        Sucess,Message,DroneInfo = self.Recv()
+        return Sucess,Message,DroneInfo
+
+    ############################
+
     def CheckForFlight(self,MaxLookAheadTime = 1800):
         self.Send("CheckForFlight",(MaxLookAheadTime,))
         Sucess,Message,FlightID = self.Recv()   #FlightID in form [(FlightID,)]
@@ -172,10 +179,26 @@ def GetWaypointObjects(Message,Data):
         WaypointList.append(item[1])
     return WaypointList
     
+def MakeDroneInfo(DroneMessage,DroneData):
+    return DroneInformation(DroneMessage,DroneData)
+
+class DroneInformation:
+    def __init__(self,Message,DroneInfo):
+        Message = ast.literal_eval(Message)
+        Index = {}
+        Titles = ["DroneID","UserID","DroneName","DroneType","DroneSpeed","DroneRange","DroneWeight"]
+        for title in Titles:
+            Index[title] = Message.index(title)
+
+        self.DroneID = Index["DroneID"]
+        self.UserID = Index["UserID"]
+        self.DroneName = Index["DroneName"]
+        self.DroneType = Index["DroneType"]
+        self.DroneSpeed = Index["DroneSpeed"]
+        self.DroneRange = Index["DroneRange"]
+        self.DroneWeight = Index["DroneWeight"]
 
 
-
-    
 
 
 def Connect(remote_ip,PORT):

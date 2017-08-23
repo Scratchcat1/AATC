@@ -568,7 +568,7 @@ class MonitorConnection:
             if type(e) == BrokenPipeError:
                 print("MonitorID:",self.MonitorID," disconnected")
             else:
-                print("Serious exception occured with UserID ",self.UserID," Error",e)
+                print("Serious exception occured with MonitorID ",self.MonitorID," Error",e)
         print("Process is exiting")
 
     ################################
@@ -675,7 +675,7 @@ class DroneConnection:
             return data
             #return data[0],data[1],data[2]
         except Exception as e:
-            print("DroneID:",DroneID," Socket data recive error")
+            print("DroneID:",self.DroneID," Socket data recive error")
             
 
     def Connection_Loop(self):
@@ -710,6 +710,9 @@ class DroneConnection:
                     Command,Arguments = data[0],data[1]
                     if Command == "UpdateDroneStatus":
                         Sucess,Message,Data = self.UpdateDroneStatus(Arguments)
+
+                    elif Command == "DroneGetDroneInfo":
+                        Sucess,Message,Data = self.DroneGetDroneInfo(Arguments)
                         
                     elif Command == "CheckForFlight":
                         Sucess,Message,Data = self.CheckForFlight(Arguments)
@@ -728,21 +731,23 @@ class DroneConnection:
                         Sucess,Message,Data = False,"Command does not exist",[]
                         print("Drone tried to use unregistered command")
                 except Exception as e:
+                    if type(e) != TypeError:# if this error type occurs connection has failed and would otherwise flood console with irrelevant errors
+                        print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
                     Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                    print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
+        
                 self.Send((Sucess,Message,Data))
                 
         except Exception as e:
             if type(e) == BrokenPipeError:
                 print("DroneID:",self.DroneID," disconnected")
             else:
-                print("Serious exception occured with UserID ",self.UserID," Error",e)
+                print("Serious exception occured with DroneID ",self.DroneID," Error",e)
         print("Process is exiting")
 
     def Login(self,Arguments):
         DroneID,DronePassword = Arguments[0],Arguments[1]
         Sucess,Message,self.DroneID = self.DB.DroneCheckCredentials(DroneID,DronePassword)
-        return Sucess,Message,-1
+        return Sucess,Message,[]
 
     ########################################################
 
@@ -750,6 +755,13 @@ class DroneConnection:
         LastCoords,LastBattery = Arguments[0],Arguments[1]
         Sucess,Message = self.DB.UpdateDroneStatus(self.DroneID,LastCoords,LastBattery)
         return Sucess,Message,[]
+
+    ########################################################
+
+    def DroneGetDroneInfo(self,Arguments):
+        DroneID,DronePassword = Arguments[0],Arguments[1]
+        Sucess,Message,Data = self.DB.DroneGetDroneInfo(DroneID,DronePassword)
+        return Sucess,Message,Data
     
     ##########################################################
 

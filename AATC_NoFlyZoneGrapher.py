@@ -78,7 +78,7 @@ class NoFlyZoneGrapher:
                             v = Zone["Level"]
 
                         Values[NodeID] = v  #This gets the maximum cost for that node
-
+        print("[NoFlyZoneGrapher] Length of Values:",len(Values))
         for NodeID in graph.All_NodeIDs():
             node = graph.GetNode(NodeID)
             if node.NodeID in Values:
