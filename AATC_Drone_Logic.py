@@ -1,8 +1,8 @@
 import AATC_Drone,threading,queue,math,time
 
 def LaunchDroneLogic(FlightQueue,StatusQueue):
-    DRONEID = 1
-    DRONEPASSWORD = "Purr"
+    DRONEID = 3
+    DRONEPASSWORD = "test"
     SLEEP_TIME = 5
     Exit = False
     while not Exit:
@@ -41,29 +41,30 @@ def LaunchDroneLogic(FlightQueue,StatusQueue):
         except Exception as e:
             print("Error occured in Drone Logic",str(e))
 
-          
-        complete = False
-        crashed = False
-        while not complete:    #While drone not at target location
-            try:
-                if crashed:
-                    D = AATC_Drone.CreateDroneInterface()
-                    LoginSucess,Message = D.Login(DRONEID,DRONEPASSWORD)
-                    crashed = False
-                while StatusQueue.empty():
+        if AvailableFlight:
+            
+            complete = False
+            crashed = False
+            while not complete:    #While drone not at target location
+                try:
+                    if crashed:
+                        D = AATC_Drone.CreateDroneInterface()
+                        LoginSucess,Message = D.Login(DRONEID,DRONEPASSWORD)
+                        crashed = False
+                    while StatusQueue.empty():
+                        time.sleep(SLEEP_TIME)
+                    Status = StatusQueue.get()
+                    StatusQueue.task_done()
+                    Sucess,Message = D.UpdateDroneStatus(Status["Coords"],Status["Battery"])
+                    if "MarkComplete" in Status:
+                        complete = True
+                        print("Flight ",Status["MarkComplete"]," complete")
+                        Sucess,Message = D.MarkFlightComplete(Status["MarkComplete"],1)
+                        print("Sucess",Sucess,"   Message:",Message)
                     time.sleep(SLEEP_TIME)
-                Status = StatusQueue.get()
-                StatusQueue.task_done()
-                Sucess,Message = D.UpdateDroneStatus(Status["Coords"],Status["Battery"])
-                if "MarkComplete" in Status:
-                    complete = True
-                    print("Flight ",Status["MarkComplete"]," complete")
-                    Sucess,Message = D.MarkFlightComplete(Status["MarkComplete"],1)
-                    print("Sucess",Sucess,"   Message:",Message)
-                time.sleep(SLEEP_TIME)
-            except Exception as e:
-                print("Error in drone logic flight stage",e)
-                crashed = True
+                except Exception as e:
+                    print("Error in drone logic flight stage",e)
+                    crashed = True
 
 def toRadian(x):
     return x*math.pi/180

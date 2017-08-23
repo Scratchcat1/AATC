@@ -76,7 +76,7 @@ class DBConnection:
             return False,"This drone does not exist or you do not have permission to delete this drone"
 
     def DroneCheckCredentials(self,DroneID,DronePassword):
-        self.cur.execute("SELECT 1 FROM DroneCredentials WHERE DroneID = %s AND DronePassword = %s",(DroneID,DronePassword))
+        self.cur.execute("SELECT DroneID FROM DroneCredentials WHERE DroneID = %s AND DronePassword = %s",(DroneID,DronePassword))
         DroneIDFetch = self.cur.fetchall()
         if DroneIDFetch != ():
             return True,"Correct Drone Credentials",DroneIDFetch[0][0]
@@ -203,6 +203,7 @@ class DBConnection:
     def CheckForFlight(self,DroneID,MaxLookAheadTime):
         self.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime < (%s+%s) ORDER BY StartTime ASC LIMIT 1",(DroneID,GetTime(),MaxLookAheadTime))
         FlightIDFetch = self.cur.fetchall()
+        self.db_con.commit()
         if FlightIDFetch != ():
             return True,"Flight is available",FlightIDFetch
         else:

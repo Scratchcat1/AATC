@@ -367,7 +367,7 @@ class UserConnection:
                 DroneSpeed,DroneRange = DroneData[SpeedIndex],DroneData[RangeIndex]                
             
                 TotalDistance = 0
-                for x in range(len(CoordList)-1):
+                for x in range(len(CoordList)):
                     if x != 0: #If not first Coord add the difference in distance to time etc
                         Distance = DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
                         TotalDistance += Distance
@@ -387,8 +387,8 @@ class UserConnection:
                 ######################
                 ######################
                 
-                for WaypointNumber in range(1,len(CoordList)):
-                    self.DB.AddWaypoint(self.UserID,FlightID,WaypointNumber,CoordList[WaypointNumber-1]["Coords"],CoordList[WaypointNumber-1]["Time"])
+                for WaypointNumber in range(len(CoordList)):
+                    self.DB.AddWaypoint(self.UserID,FlightID,WaypointNumber+1,CoordList[WaypointNumber]["Coords"],CoordList[WaypointNumber]["Time"])
 
                 return True,"['FlightID','NumberOfWaypoints','StartTime','EndTime','Distance']",[(FlightID,len(CoordList),StartTime,EndTime,TotalDistance)] #Returns data about the flight
 
