@@ -90,6 +90,8 @@ class NoFlyZoneGrapher:
         except Exception as e:
             print("Error saving nodes",e," Most likely no NoFlyZoneData yet")
 
+        del graph
+
         
 
                         

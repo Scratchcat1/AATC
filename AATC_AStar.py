@@ -433,7 +433,7 @@ def FindPath(cameFrom,current):
         current = cameFrom[current]
         path.append(current)
     print("Total expanded:"+str(len(cameFrom)))
-    return path
+    return path[::-1]
 
 
 def Benchmark(FLUSH = 100,BlockSize = 500,MAXNODE = 2000000):

@@ -340,6 +340,7 @@ class UserConnection:
                 StartNodeID = graph.Find_NodeID(*HighPoints[Start])
                 NextNodeID = graph.Find_NodeID(*HighPoints[Next])
                 TempPath = AATC_AStar.AStar2(graph,StartNodeID,NextNodeID)
+                
                 if TempPath != None:
                     Path += TempPath
                     Start += 1
