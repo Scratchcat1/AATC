@@ -88,13 +88,12 @@ class Camera:
                 PosY = ((Object.Coords.y- self.CameraCoord.y)/self.CameraCoord.ySize)* self.ypixel
 ##                width,height = Object.Coords.xSize*self.CameraZoom ,Object.Coords.ySize*self.CameraZoom
                 width,height = int(Object.Coords.xSize/self.CameraCoord.xSize*self.xpixel) ,int(Object.Coords.ySize/self.CameraCoord.ySize*self.ypixel)
-                if width > 0 and height > 0:
+                if width > 0 or height > 0:
                     width = MaxLimit(width,self.xpixel)
                     height = MaxLimit(height,self.ypixel)
                     font_size = int(100*width/self.xpixel)
                     Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
                     self.gameDisplay.blit(Object.image,(PosX,PosY))
-
                     if font_size > 5:
                         font = pygame.font.Font(None, font_size) #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
                         Object.Make_CoordsText(font)     #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
@@ -146,7 +145,7 @@ def MakeDroneSprites(Message,RawDroneList):
     BatteryIndex = Columns.index("LastBattery")
     for Drone in RawDroneList:
         LastCoords = ast.literal_eval(Drone[CoordIndex])
-        Coord = Coordinate(LastCoords[0],LastCoords[1],LastCoords[2],0.00001,0.00001,0.00001)
+        Coord = Coordinate(LastCoords[0],LastCoords[1],LastCoords[2],0.001,0.001,0.00001)
         Text = "D:"+str(Drone[DroneIDIndex]) +" U:"+str(Drone[UserIDIndex]) +" N:"+str(Drone[DroneNameIndex])+" B:"+str(Drone[BatteryIndex])
         Colour = (255,255,255)
         Sprite = Monitor_Sprite(Coord,"Drone",Text,Colour)
@@ -189,7 +188,7 @@ def MakeWaypointSprites(Message,RawWaypointList):
     FlightIDIndex = Columns.index("FlightID")
     for Waypoint in RawWaypointList:
         Coords = ast.literal_eval(Waypoint[CoordIndex])
-        Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.00001,0.00001,0.00001)
+        Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.001,0.001,0.00001)
         Text = "F:"+ str(Waypoint[FlightIDIndex]) +" W:"+ str(Waypoint[WaypointNumberIndex])
         Colour = (0,255,0)
         WaypointList.append(Monitor_Sprite(Coord,"Waypoint",Text,Colour))
@@ -252,6 +251,7 @@ xpixel = 1000
 ypixel = 500
 Refresh_Delay = 60
 clock = pygame.time.Clock()
+pressed = pygame.key.get_pressed
 Exit = "N"
 while Exit != "Y":
     try:
@@ -284,19 +284,19 @@ while Exit != "Y":
                         pygame.quit()
                         sys.exit()
                     
-                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_w:   #Shift camera
-                        MonCamera.IncrementCameraCoordY(-0.5/MonCamera.GetZoom())  #/ as Greater zoom means need more fidelety
-                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                        MonCamera.IncrementCameraCoordY(0.5/MonCamera.GetZoom())
-                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
-                        MonCamera.IncrementCameraCoordX(-0.5/MonCamera.GetZoom())
-                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_d:
-                        MonCamera.IncrementCameraCoordX(0.5/MonCamera.GetZoom())
+##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_w:   #Shift camera
+##                        MonCamera.IncrementCameraCoordY(-0.5/MonCamera.GetZoom())  #/ as Greater zoom means need more fidelety
+##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+##                        MonCamera.IncrementCameraCoordY(0.5/MonCamera.GetZoom())
+##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
+##                        MonCamera.IncrementCameraCoordX(-0.5/MonCamera.GetZoom())
+##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_d:
+##                        MonCamera.IncrementCameraCoordX(0.5/MonCamera.GetZoom())
                         
-                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:#Zoom out
-                        MonCamera.SetZoom(0.9*MonCamera.GetZoom())
-                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_e:#Zoom in
-                        MonCamera.SetZoom(1.1*MonCamera.GetZoom())
+##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:#Zoom out
+##                        MonCamera.SetZoom(0.9*MonCamera.GetZoom())
+##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_e:#Zoom in
+##                        MonCamera.SetZoom(1.1*MonCamera.GetZoom())
                         
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         print("Camera details")
@@ -309,6 +309,20 @@ while Exit != "Y":
                         print("FPS:"+str(clock.get_fps()))
                     elif event.type == pygame.KEYDOWN:
                         pass
+
+                if pressed()[pygame.K_w]:   #Shift camera
+                    MonCamera.IncrementCameraCoordY(-0.1/MonCamera.GetZoom())  #/ as Greater zoom means need more fidelety
+                if pressed()[pygame.K_s]:
+                    MonCamera.IncrementCameraCoordY(0.1/MonCamera.GetZoom())
+                if pressed()[pygame.K_a]:
+                    MonCamera.IncrementCameraCoordX(-0.1/MonCamera.GetZoom())
+                if pressed()[pygame.K_d]:
+                    MonCamera.IncrementCameraCoordX(0.1/MonCamera.GetZoom())
+
+                if pressed()[pygame.K_q]:#Zoom out
+                    MonCamera.SetZoom(0.99*MonCamera.GetZoom())
+                if pressed()[pygame.K_e]:#Zoom in
+                    MonCamera.SetZoom(1.01*MonCamera.GetZoom())
                 MonCamera.UpdateCameraSize()
                 MonCamera.Draw()
                 pygame.display.flip()

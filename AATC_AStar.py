@@ -55,17 +55,18 @@ class DynoGraph:
     
     def Add_Edges(self,xRange,yRange,zRange):
         print("Adding edges...")
-        xCount = int(xRange/self.xSize)
-        yCount = int(yRange/self.ySize)
-        zCount = int(zRange/self.zSize)
-
-        print("xCount:",xCount)
-        print("yCount:",yCount)
-        print("zCount:",zCount)
+        self.xCount = int(xRange/self.xSize)
+        self.yCount = int(yRange/self.ySize)
+        self.zCount = int(zRange/self.zSize)
+        
+        
+        print("xCount:",self.xCount)
+        print("yCount:",self.yCount)
+        print("zCount:",self.zCount)
         
 
         for node in self.Nodes.values():
-            friends = self.CalculateNeighbours(node.NodeID,xCount,yCount,zCount)
+            friends = self.CalculateNeighbours(node.NodeID,self.xCount,self.yCount,self.zCount)
             for friend in friends:
                 node.add_friend(friend)
 
@@ -209,8 +210,15 @@ class DynoGraph:
     def Direct_NodeID(self,x,y,z):
         return self.Get_Node_Cache(x,y,z)
 
-    def All_NodeIDs(self):
-        return self.Node_Cache.values()
+    def All_NodeIDs(self,StartValue = 1, MaxValue = None):
+        if MaxValue == None:
+            MaxValue = self.xCount*self.yCount*self.zCount + (StartValue-1) #Gets Maximum start value, StartValue gives the starting NodeID. -1 as x*y*z = max, if start at 1 and therefore xyz +1-1 = max value. XYZ as eg x=2,y=10,z=5 you will have 100 blocks ,starting at 1 so 100 is max.
+                        
+        NodeIDList = []
+        for NodeID in range(1,MaxValue+1):
+            NodeIDList.append(NodeID)
+            
+        return NodeIDList
 
     def Find_NodeID(self,x,y,z):
         mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)

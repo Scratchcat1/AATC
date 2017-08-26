@@ -10,6 +10,17 @@ class Coordinate:
         self.zSize = zSize
 
 class NoFlyZoneGrapher:
+    """ Selects all NoFlyZones, calculates the nodes which they correspond to and modifies the cost of those nodes
+        Reads all NoFlyZones and converts into dictionary object and adds to list.
+        This list is then read and converted into a dictionary of NodeID:MaxCost
+        Then for all nodes, the node is loaded, cost modified
+        Then graph is saved
+        Repeats every interval seconds.
+        Must load entire graph and all NoFlyZones at once as if a NoFlyZone is removed there may be other smaller NoFlyZones which affect the cost of the node.
+        Very RAM intensive. Could be run on a different device and update via a network share.
+        Could use an A/B method to update if file locking occurs where the Updating takes place on one set of data while the other set of data is read from by eg A* pathfinding
+
+    """
     def __init__(self,Interval = 36000):
         self.DB = AATC_DB.DBConnection()
         self.Interval = Interval
@@ -26,10 +37,10 @@ class NoFlyZoneGrapher:
             try:
                 NoFlyZoneData = self.GetNoFlyZones()
                 self.Make_Values(NoFlyZoneData)
-                print("NoFlyZoneGrapher completed. Sleeping...")
-                time.sleep(self.Interval)
             except Exception as e:
                 print("Error occured in NoFlyZoneGrapher",e)
+            print("NoFlyZoneGrapher completed. Sleeping...")
+            time.sleep(self.Interval)
         
     def Mod(self,Coords):
         return int(Coords.x//self.xSize),int(Coords.y//self.ySize),int(Coords.z//self.zSize)
@@ -66,23 +77,28 @@ class NoFlyZoneGrapher:
 
             StartX, StartY, StartZ = self.Mod(StartCoord)
             EndX, EndY, EndZ = self.Mod(EndCoord)
-
-            for x in range(StartX,EndX):   #For every block which is in the NoFlyZone
-                for y in range(StartY,EndY):
-                    for z in range(StartZ,EndZ):
+            for x in range(StartX,EndX+1):   #For every block which is in the NoFlyZone
+                for y in range(StartY,EndY+1):
+                    for z in range(StartZ,EndZ+1):
                         NodeID = graph.Direct_NodeID(x,y,z)  #Gets NodeID for that area
-
+                        print(NodeID)
                         if NodeID in Values:
                             v = max([Zone["Level"],Values[NodeID]])
                         else:
                             v = Zone["Level"]
 
                         Values[NodeID] = v  #This gets the maximum cost for that node
+
+        ######MODIFY TO BE OK
+        graph.Node_Cache = {}  #Reduces memory usage.
+
+        
         print("[NoFlyZoneGrapher] Length of Values:",len(Values))
         for NodeID in graph.All_NodeIDs():
             node = graph.GetNode(NodeID)
             if node.NodeID in Values:
                 node.Cost = Values[node.NodeID]
+                Values.pop(node.NodeID)# Reduce memory usage by evicting Node values which have been added already
             else:
                 node.Cost = 1
         try:

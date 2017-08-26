@@ -133,8 +133,8 @@ if __name__ == "__main__":
     DPS.start()
 
     #Launch NoFlyZoneGrapher
-##    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)
-##    NFZG.start()
+    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)
+    NFZG.start()
 
     CLN = multiprocessing.Process(target = AATC_Server.Cleaner)
     CLN.start()

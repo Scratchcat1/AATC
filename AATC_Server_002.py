@@ -38,6 +38,16 @@ def DeltaCoordToMetres(aCoord,bCoord):
     Distance = math.sqrt(mdx**2 + mdy**2 + dz**2)
     return Distance
 
+class Coordinate:
+    def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.xSize = xSize
+        self.ySize = ySize
+        self.zSize = zSize
+    def __str__(self):
+        return str((round(self.x,8),round(self.y,8),round(self.z,8)))
 
     
     
@@ -352,7 +362,7 @@ class UserConnection:
                 return False,"Pathfinding was not able to find a path between the two nodes "+str([HighPoints[Start],HighPoints[Next]]),[]
             
             else:
-                XOffset,YOffset,ZOffset = random.random()*0.5*graph.xSize,random.random()*0.5*graph.ySize,random.random()*0.5*graph.zSize
+                XOffset,YOffset,ZOffset = round(random.random()*0.5*graph.xSize,8),round(random.random()*0.5*graph.ySize,8),round(random.random()*0.5*graph.zSize,8)
                 CoordList = []
                 for NodeID in Path:
                     Node = graph.GetNode(NodeID)
@@ -753,7 +763,7 @@ class DroneConnection:
     ########################################################
 
     def UpdateDroneStatus(self,Arguments):
-        LastCoords,LastBattery = Arguments[0],Arguments[1]
+        LastCoords,LastBattery = Coordinate(*Arguments[0]),Arguments[1]
         Sucess,Message = self.DB.UpdateDroneStatus(self.DroneID,LastCoords,LastBattery)
         return Sucess,Message,[]
 

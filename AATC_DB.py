@@ -201,7 +201,8 @@ class DBConnection:
             return False,"You do not have permission to remove this flight"
 
     def CheckForFlight(self,DroneID,MaxLookAheadTime):
-        self.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime < (%s+%s) ORDER BY StartTime ASC LIMIT 1",(DroneID,GetTime(),MaxLookAheadTime))
+        InvalidateDelay = 1800
+        self.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime < (%s+%s) AND StartTime > (%s-%s) ORDER BY StartTime ASC LIMIT 1",(DroneID,GetTime(),MaxLookAheadTime, GetTime(),InvalidateDelay))
         FlightIDFetch = self.cur.fetchall()
         self.db_con.commit()
         if FlightIDFetch != ():
@@ -218,7 +219,6 @@ class DBConnection:
             return False,"Flight not obtained, Flight may not exist or you may not have permission",[]
 
     def MarkFlightComplete(self,DroneID,FlightID,Code):
-        print(FlightID)
         self.cur.execute("SELECT 1 FROM Flight WHERE DroneID = %s AND FlightID = %s",(DroneID,FlightID))
         if self.cur.fetchall != ():
             self.cur.execute("UPDATE Flight SET Completed = %s,EndTime = %s WHERE FlightID = %s",(Code,GetTime(),FlightID))

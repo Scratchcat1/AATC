@@ -1,9 +1,6 @@
 import AATC_Drone,threading,queue,math,time
 
-def LaunchDroneLogic(FlightQueue,StatusQueue):
-    DRONEID = 3
-    DRONEPASSWORD = "test"
-    SLEEP_TIME = 5
+def LaunchDroneLogic(DRONEID,DRONEPASSWORD,FlightQueue,StatusQueue,SLEEP_TIME = 30):
     Exit = False
     while not Exit:
         try:
@@ -15,7 +12,6 @@ def LaunchDroneLogic(FlightQueue,StatusQueue):
                 
                 AvailableFlight = False
                 while not AvailableFlight:
-                    time.sleep(SLEEP_TIME)
                     
                     if not StatusQueue.empty():
                         Status = StatusQueue.get()
@@ -24,9 +20,11 @@ def LaunchDroneLogic(FlightQueue,StatusQueue):
                         
                     Sucess,Message,FlightID  = D.CheckForFlight()
                     AvailableFlight = Sucess
+                    time.sleep(SLEEP_TIME)  #At the end to pause to wait so that if the server is still writing waypoints it can finish.
+                    
 
-                print("Obtaining flight and drone information")
                 FlightID = FlightID[0][0]
+                print("Obtaining flight and drone information. FlightID :",FlightID)
                 DSucess,DroneMessage,DroneData = D.DroneGetDroneInfo(DRONEID,DRONEPASSWORD)
                 FSucess,FlightMessage,FlightData = D.GetFlight(FlightID)
                 WSucess,WaypointsMessage,FlightWaypointsData = D.GetFlightWaypoints(FlightID)
@@ -40,6 +38,7 @@ def LaunchDroneLogic(FlightQueue,StatusQueue):
                 
         except Exception as e:
             print("Error occured in Drone Logic",str(e))
+            AvailableFlight = False
 
         if AvailableFlight:
             
@@ -120,7 +119,7 @@ def DroneHardware(FlightQueue,StatusQueue):
     xSize,ySize,zSize = 0.001,0.001,5
     
     while True:
-        time.sleep(0.2)
+        time.sleep(1)
         PutStatus(StatusQueue,Coords,Battery)
         if not FlightQueue.empty():
             data = FlightQueue.get()
@@ -131,7 +130,7 @@ def DroneHardware(FlightQueue,StatusQueue):
                 VectorCoord = CalculateVector(Coords,Flight.StartCoord,DroneInfo.DroneSpeed)
                 Coords = AddCoords(Coords,VectorCoord)
                 PutStatus(StatusQueue,Coords,Battery)
-                Coords.Print()
+                #Coords.Print()
             print("Reached Start Coordinate")
 
             for point in Waypoints:
@@ -139,25 +138,24 @@ def DroneHardware(FlightQueue,StatusQueue):
                     VectorCoord = CalculateVector(Coords,point.Coord,DroneInfo.DroneSpeed)
                     Coords = AddCoords(Coords,VectorCoord)
                     PutStatus(StatusQueue,Coords,Battery)
-                    Coords.Print()
+                    #Coords.Print() #probably too verbose
                 print("Reached Waypoint",point.WaypointNumber)
                 
             while not AtWaypoint(Coords,Flight.EndCoord,xSize,ySize,zSize):
                 VectorCoord = CalculateVector(Coords,Flight.EndCoord,DroneInfo.DroneSpeed)
                 Coords = AddCoords(Coords,VectorCoord)
                 PutStatus(StatusQueue,Coords,Battery)
-                Coords.Print()
+                #Coords.Print()
             print("Reached End Coordinate")
             PutStatus(StatusQueue,Coords,Battery,Flight.FlightID,EmptyOverride = True)  # Updates Status and marks flight as complete.
             FlightQueue.task_done()
-            time.sleep(100)
 
             
-def Startup():
+def Startup(DroneID,DronePassword):
     FlightQueue = queue.Queue()
     StatusQueue = queue.Queue()
     HardwareThread = threading.Thread(target = DroneHardware,args = (FlightQueue,StatusQueue))
-    LogicThread = threading.Thread(target = LaunchDroneLogic, args = (FlightQueue,StatusQueue))
+    LogicThread = threading.Thread(target = LaunchDroneLogic, args = (DroneID,DronePassword,FlightQueue,StatusQueue))
 
     HardwareThread.start()
     LogicThread.start()
