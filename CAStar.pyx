@@ -3,11 +3,12 @@
 
 
 import os,pickle,heapq,time,math,hashlib
+import numpy as np
 try:
     _ = math.inf
 except:
     print("You do not have math.inf object, Python 3.5 onwards. Will use replacement.")
-    math.inf = 10^34
+    math.inf = 10**34
 class Coordinate:
     def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
         self.x = x
@@ -327,8 +328,8 @@ class Node:
 cdef float EstimateDistance(int NodeID, int TargetID, int xCount,int yCount,int zCount, float xSize, float ySize, float zSize):
     cdef float x,y,z,Nx,Ny,Nz,Tx,Ty,Tz
     cdef float Distance
-    Nx,Ny,Nz = GetCoord(NodeID,xCount,yCount,zCount,xSize,ySize,zSize)
-    Tx,Ty,Tz = GetCoord(TargetID,xCount,yCount,zCount,xSize,ySize,zSize)
+    Nx,Ny,Nz = GetxCoord(NodeID,xCount,yCount,zCount,xSize,ySize,zSize),GetyCoord(NodeID,xCount,yCount,zCount,xSize,ySize,zSize),GetzCoord(NodeID,xCount,yCount,zCount,xSize,ySize,zSize)
+    Tx,Ty,Tz = GetxCoord(TargetID,xCount,yCount,zCount,xSize,ySize,zSize),GetyCoord(TargetID,xCount,yCount,zCount,xSize,ySize,zSize),GetzCoord(TargetID,xCount,yCount,zCount,xSize,ySize,zSize)
     x=(Nx-Tx)/xSize
     y=(Ny-Ty)/ySize
     z=(Nz-Tz)/zSize
@@ -350,7 +351,6 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
     cdef dict ClosedSet,OpenSet,cameFrom,g,f
     cdef int NodeID,current,tScore,xCount,yCount,zCount
     cdef list OpenList
-
     cdef list FriendList
 
 
@@ -362,6 +362,7 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
     OpenSet = {start:1}
     cameFrom = {}
     g,f = {},{}
+    current = -1
 
     for NodeID in graph.Nodes:
         g[NodeID] = math.inf
@@ -389,23 +390,23 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
 
         FriendList = graph.GetNode(current).Friends
         for NodeID in FriendList:
-            Node = graph.GetNode(NodeID)
-            if ClosedSet.get(NodeID) != None:
+            if NodeID in ClosedSet:
                 continue
-            if OpenSet.get(NodeID) == None:
+            if NodeID not in OpenSet:
                 OpenSet[NodeID] = 1
 
             if NodeID not in g:  #if not in g it is not yet in f also
                 g[NodeID] = math.inf
                 f[NodeID] = math.inf
 
+            Node = graph.GetNode(NodeID)
             gNode = g[NodeID]
             tScore = g[current]+ Node.Cost
             if tScore >= gNode:
                 continue
             cameFrom[NodeID] = current
             g[NodeID] = tScore
-            f[NodeID] = gNode + EstimateDistance(NodeID,target,xCount,yCount,zCount,xSize,ySize,zSize)
+            f[NodeID] = g[NodeID] + EstimateDistance(NodeID,target,xCount,yCount,zCount,xSize,ySize,zSize)
     EndTime = time.time()
     print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds")
     if Found:
@@ -448,14 +449,20 @@ def Benchmark(FLUSH = 100,BlockSize = 500,MAXNODE = 2000000):
         
 
 
-cdef tuple GetCoord(int ID, int xCount, int yCount, int zCount, float xSize, float ySize,float zSize):
-    cdef float xCoord,yCoord,zCoord
-    zCoord = ((ID-1)%zCount)*zSize
-    yCoord = (((ID-1)%(zCount*yCount))//zCount)*ySize
+cdef float GetxCoord(int ID, int xCount, int yCount, int zCount, float xSize, float ySize,float zSize):
+    cdef float xCoord
     xCoord = ((ID-1)//(zCount*yCount)) * xSize
-    return xCoord,yCoord,zCoord
+    return xCoord
     
+cdef float GetyCoord(int ID, int xCount, int yCount, int zCount, float xSize, float ySize,float zSize):
+    cdef float yCoord
+    yCoord = (((ID-1)%(zCount*yCount))//zCount)*ySize
+    return yCoord
 
+cdef float GetzCoord(int ID, int xCount, int yCount, int zCount, float xSize, float ySize,float zSize):
+    cdef float zCoord
+    zCoord = ((ID-1)%zCount)*zSize
+    return zCoord
 
 
 
