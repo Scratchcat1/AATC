@@ -394,9 +394,9 @@ def AStar2(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_
     f[start] = EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize)
     Found = False
     while len(OpenSet) != 0:
-        OpenList = []
-        for x in OpenSet:
-            OpenList.append((f[x],x))  # f score and ID
+        OpenList = [(f[x],x) for x in OpenSet]  #provides slight speed increase
+##        for x in OpenSet:
+##            OpenList.append((f[x],x))  # f score and ID
             
         heapq.heapify(OpenList)
         current = OpenList.pop(0)[1]  # Gets ID with lowest f
