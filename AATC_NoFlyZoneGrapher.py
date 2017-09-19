@@ -1,13 +1,5 @@
 import AATC_DB,AATC_AStar,ast,time
-
-class Coordinate:
-    def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.xSize = xSize
-        self.ySize = ySize
-        self.zSize = zSize
+from AATC_Coordinate import *
 
 class NoFlyZoneGrapher:
     """ Selects all NoFlyZones, calculates the nodes which they correspond to and modifies the cost of those nodes

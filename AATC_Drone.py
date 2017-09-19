@@ -1,19 +1,5 @@
 import socket,codecs,ast,recvall,sys,heapq
-
-
-class Coordinate:
-    def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.xSize = xSize
-        self.ySize = ySize
-        self.zSize = zSize
-    def Print(self):
-        print("Coordinate:")
-        print("X: {:<8}   xSize:{:<8}".format(round(self.x,7),self.xSize))
-        print("Y: {:<8}   ySize:{:<8}".format(round(self.y,7),self.ySize))
-        print("Z: {:<8}   zSize:{:<8}".format(round(self.z,7),self.zSize))
+from AATC_Coordinate import *
         
         
 class DroneInterface:

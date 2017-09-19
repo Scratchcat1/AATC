@@ -1,15 +1,6 @@
 #Create graph module
 import decimal,AATC_AStar
-
-class Coordinate:
-    def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.xSize = xSize
-        self.ySize = ySize
-        self.zSize = zSize
-
+from AATC_Coordinate import *
 
 def drange(start,end,step):
   step = decimal.Decimal(step)

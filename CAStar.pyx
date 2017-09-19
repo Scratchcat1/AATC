@@ -1,22 +1,14 @@
 #!python
-#cython: boundscheck=False, wraparound=False
+#cython: boundscheck=False, wraparound=False, infer_types=True,cdivision = True
 
 
 import os,pickle,heapq,time,math,hashlib
-import numpy as np
+from AATC_Coordinate import *
 try:
     _ = math.inf
 except:
     print("You do not have math.inf object, Python 3.5 onwards. Will use replacement.")
-    math.inf = 10**34
-class Coordinate:
-    def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.xSize = xSize
-        self.ySize = ySize
-        self.zSize = zSize
+    math.inf = 10**20
         
 class DynoGraph:
     """ Graph object
@@ -46,32 +38,36 @@ class DynoGraph:
         self.xSize = xSize
         self.ySize = ySize
         self.zSize = zSize
+
+    def Get_Size(self):
+        return self.xSize, self.ySize, self.zSize
+    
     def add_node(self,node):
-        self.Nodes[node.NodeID] = node
+        self.Nodes[node.Get_NodeID()] = node
 
     def clean_edges(self):
         print("Cleaning edges...")
         for item in self.Nodes.values():
             for num in item.Friends:
                 friend = self.Nodes[num]
-                if item.NodeID not in friend.Friends:
-                    friend.add_friend(item.NodeID)
+                if item.Get_NodeID() not in friend.Friends:
+                    friend.add_friend(item.Get_NodeID())
 
     
     def Add_Edges(self,xRange,yRange,zRange):
         print("Adding edges...")
-        xCount = int(xRange/self.xSize)
-        yCount = int(yRange/self.ySize)
-        zCount = int(zRange/self.zSize)
-        self.xCount,self.yCount,self.zCount = xCount,yCount,zCount
-
-        print("xCount:",xCount)
-        print("yCount:",yCount)
-        print("zCount:",zCount)
+        self.xCount = int(xRange/self.xSize)
+        self.yCount = int(yRange/self.ySize)
+        self.zCount = int(zRange/self.zSize)
+        
+        
+        print("xCount:",self.xCount)
+        print("yCount:",self.yCount)
+        print("zCount:",self.zCount)
         
 
         for node in self.Nodes.values():
-            friends = self.CalculateNeighbours(node.NodeID,xCount,yCount,zCount)
+            friends = self.CalculateNeighbours(node.Get_NodeID(),self.xCount,self.yCount,self.zCount)
             for friend in friends:
                 node.add_friend(friend)
 
@@ -168,12 +164,12 @@ class DynoGraph:
     def Build_Node_Cache(self):
         self.Node_Cache = {}
         for node in self.Nodes.values():
-            x = node.Coords.x + 0.25*self.xSize  #Prevents floating point rounding errors
-            y = node.Coords.y + 0.25*self.ySize
-            z = node.Coords.z + 0.25*self.zSize
+            x = node.Coords.Get_X() + 0.25*self.xSize  #Prevents floating point rounding errors
+            y = node.Coords.Get_Y() + 0.25*self.ySize
+            z = node.Coords.Get_Z() + 0.25*self.zSize
 
             mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
-            self.Node_Cache[(mx,my,mz)] = node.NodeID
+            self.Node_Cache[(mx,my,mz)] = node.Get_NodeID()
 
     def Save_Node_Cache(self):
         print("Preparing to save Node Cache")
@@ -215,8 +211,15 @@ class DynoGraph:
     def Direct_NodeID(self,x,y,z):
         return self.Get_Node_Cache(x,y,z)
 
-    def All_NodeIDs(self):
-        return self.Node_Cache.values()
+    def All_NodeIDs(self,StartValue = 1, MaxValue = None):
+        if MaxValue == None:
+            MaxValue = self.xCount*self.yCount*self.zCount + (StartValue-1) #Gets Maximum start value, StartValue gives the starting NodeID. -1 as x*y*z = max, if start at 1 and therefore xyz +1-1 = max value. XYZ as eg x=2,y=10,z=5 you will have 100 blocks ,starting at 1 so 100 is max.
+                        
+        NodeIDList = []
+        for NodeID in range(1,MaxValue+1):
+            NodeIDList.append(NodeID)
+            
+        return NodeIDList
 
     def Find_NodeID(self,x,y,z):
         mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
@@ -292,8 +295,8 @@ class DynoGraph:
             Sets[x] = {}   #Creates sets for each block
 
         for node in self.Nodes.values():
-            r = self.Hash(node.NodeID)
-            Sets[r][node.NodeID] = node
+            r = self.Hash(node.Get_NodeID())
+            Sets[r][node.Get_NodeID()] = node
 
 
         for Set in Sets: #Set = BlockID
@@ -306,6 +309,10 @@ class DynoGraph:
     def EvictNode(self,NodeID):  #Removes a node from the Nodes dict
         if NodeID in self.Nodes:
             self.Nodes.pop(NodeID)
+            return True
+        else:
+            return False
+        
             
 
 class Node:
@@ -317,6 +324,11 @@ class Node:
     def add_friend(self,friend):
         if friend not in self.Friends:
             self.Friends.append(friend)
+
+    def Get_NodeID(self):
+        return self.NodeID
+    def Get_Friends(self):
+        return self.Friends
     def Get_Coords(self):
         return self.Coords
     def Get_Cost(self):
@@ -364,9 +376,6 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
     g,f = {},{}
     current = -1
 
-    for NodeID in graph.Nodes:
-        g[NodeID] = math.inf
-        f[NodeID] = math.inf
 
     g[start] = 0
     f[start] = EstimateDistance(start,target,xCount,yCount,zCount,xSize,ySize,zSize)
@@ -394,21 +403,18 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
                 continue
             if NodeID not in OpenSet:
                 OpenSet[NodeID] = 1
-
-            if NodeID not in g:  #if not in g it is not yet in f also
                 g[NodeID] = math.inf
                 f[NodeID] = math.inf
 
             Node = graph.GetNode(NodeID)
-            gNode = g[NodeID]
             tScore = g[current]+ Node.Cost
-            if tScore >= gNode:
+            if tScore >= g[NodeID]:
                 continue
             cameFrom[NodeID] = current
             g[NodeID] = tScore
             f[NodeID] = g[NodeID] + EstimateDistance(NodeID,target,xCount,yCount,zCount,xSize,ySize,zSize)
     EndTime = time.time()
-    print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds")
+    print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds."+" Total Expanded:"+str(len(cameFrom)))
     if Found:
         return FindPath(cameFrom,current)
     else:
@@ -417,12 +423,12 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
         return None
 
         
-def FindPath(cameFrom,current):
+cdef FindPath(dict cameFrom, int current):
+    cdef list path
     path = [current]
     while current in cameFrom:
         current = cameFrom[current]
         path.append(current)
-    print("Total expanded:"+str(len(cameFrom)))
     return path
 
 

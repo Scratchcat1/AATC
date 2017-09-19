@@ -1,17 +1,10 @@
 import os,pickle,heapq,time,math,hashlib
+from AATC_Coordinate import *
 try:
     _ = math.inf
 except:
     print("You do not have math.inf object, Python 3.5 onwards. Will use replacement.")
     math.inf = 10**20
-class Coordinate:
-    def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.xSize = xSize
-        self.ySize = ySize
-        self.zSize = zSize
         
 class DynoGraph:
     """ Graph object
@@ -41,16 +34,20 @@ class DynoGraph:
         self.xSize = xSize
         self.ySize = ySize
         self.zSize = zSize
+
+    def Get_Size(self):
+        return self.xSize, self.ySize, self.zSize
+    
     def add_node(self,node):
-        self.Nodes[node.NodeID] = node
+        self.Nodes[node.Get_NodeID()] = node
 
     def clean_edges(self):
         print("Cleaning edges...")
         for item in self.Nodes.values():
             for num in item.Friends:
                 friend = self.Nodes[num]
-                if item.NodeID not in friend.Friends:
-                    friend.add_friend(item.NodeID)
+                if item.Get_NodeID() not in friend.Friends:
+                    friend.add_friend(item.Get_NodeID())
 
     
     def Add_Edges(self,xRange,yRange,zRange):
@@ -66,7 +63,7 @@ class DynoGraph:
         
 
         for node in self.Nodes.values():
-            friends = self.CalculateNeighbours(node.NodeID,self.xCount,self.yCount,self.zCount)
+            friends = self.CalculateNeighbours(node.Get_NodeID(),self.xCount,self.yCount,self.zCount)
             for friend in friends:
                 node.add_friend(friend)
 
@@ -163,12 +160,12 @@ class DynoGraph:
     def Build_Node_Cache(self):
         self.Node_Cache = {}
         for node in self.Nodes.values():
-            x = node.Coords.x + 0.25*self.xSize  #Prevents floating point rounding errors
-            y = node.Coords.y + 0.25*self.ySize
-            z = node.Coords.z + 0.25*self.zSize
+            x = node.Coords.Get_X() + 0.25*self.xSize  #Prevents floating point rounding errors
+            y = node.Coords.Get_Y() + 0.25*self.ySize
+            z = node.Coords.Get_Z() + 0.25*self.zSize
 
             mx,my,mz = self.MapHash(x,self.xSize),self.MapHash(y,self.ySize),self.MapHash(z,self.zSize)
-            self.Node_Cache[(mx,my,mz)] = node.NodeID
+            self.Node_Cache[(mx,my,mz)] = node.Get_NodeID()
 
     def Save_Node_Cache(self):
         print("Preparing to save Node Cache")
@@ -294,8 +291,8 @@ class DynoGraph:
             Sets[x] = {}   #Creates sets for each block
 
         for node in self.Nodes.values():
-            r = self.Hash(node.NodeID)
-            Sets[r][node.NodeID] = node
+            r = self.Hash(node.Get_NodeID())
+            Sets[r][node.Get_NodeID()] = node
 
 
         for Set in Sets: #Set = BlockID
@@ -308,6 +305,10 @@ class DynoGraph:
     def EvictNode(self,NodeID):  #Removes a node from the Nodes dict
         if NodeID in self.Nodes:
             self.Nodes.pop(NodeID)
+            return True
+        else:
+            return False
+        
             
 
 class Node:
@@ -319,13 +320,21 @@ class Node:
     def add_friend(self,friend):
         if friend not in self.Friends:
             self.Friends.append(friend)
+
+    def Get_NodeID(self):
+        return self.NodeID
+    def Get_Friends(self):
+        return self.Friends
     def Get_Coords(self):
         return self.Coords
     def Get_Cost(self):
         return self.Cost
 
 def EstimateDistance(Node,Target,xSize,ySize,zSize):
-    return abs(Node.Coords.x-Target.Coords.x)/xSize+abs(Node.Coords.y-Target.Coords.y)/ySize+abs(Node.Coords.z-Target.Coords.z)/zSize
+    Node_Coords = Node.Get_Coords()
+    Target_Coords = Target.Get_Coords()
+    return abs(Node_Coords.Get_X()-Target_Coords.Get_X())/xSize+abs(Node_Coords.Get_Y()-Target_Coords.Get_Y())/ySize+abs(Node_Coords.Get_Z()-Target_Coords.Get_Z())/zSize
+
 def AStar(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_count + 1
     StartTime = time.time()
     ClosedSet = {}  #Dict to hash find closed nodes
@@ -356,7 +365,7 @@ def AStar(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_c
         
         OpenSet.pop(current)
         ClosedSet[current] = 1
-        for NodeID in graph.Nodes[current].Friends:
+        for NodeID in graph.Nodes[current].Get_Friends():
             if ClosedSet.get(NodeID) != None:
                 continue
             if OpenSet.get(NodeID) == None:
@@ -366,7 +375,7 @@ def AStar(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_c
             if tScore >= g[NodeID]:
                 continue
             cameFrom[NodeID] = current
-            g[NodeID] = tScore + graph.Nodes[NodeID].Cost
+            g[NodeID] = tScore + graph.Nodes[NodeID].Get_Cost()
             f[NodeID] = g[NodeID] + EstimateDistance(graph.Nodes[NodeID],graph.Nodes[target],xSize,ySize,zSize)
     EndTime = time.time()
     print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds")
@@ -379,16 +388,13 @@ def AStar(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_c
 def AStar2(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_count + 1
     StartTime = time.time()
 
-    xSize,ySize,zSize = graph.xSize,graph.ySize,graph.zSize
+    xSize,ySize,zSize = graph.Get_Size()
     
     ClosedSet = {}  #Dict to hash find closed nodes
     OpenSet = {start:1}
     cameFrom = {}
     g,f = {},{}
 
-    for NodeID in graph.Nodes:
-        g[NodeID] = math.inf
-        f[NodeID] = math.inf
 
     g[start] = 0
     f[start] = EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize)
@@ -409,24 +415,30 @@ def AStar2(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_
         
         OpenSet.pop(current)
         ClosedSet[current] = 1
-        for NodeID in graph.GetNode(current).Friends:
-            if ClosedSet.get(NodeID) != None:
+        
+        for NodeID in graph.GetNode(current).Get_Friends():
+            if NodeID in ClosedSet:
                 continue
-            if OpenSet.get(NodeID) == None:
+            
+            if NodeID not in OpenSet:
                 OpenSet[NodeID] = 1
-
-            if NodeID not in g:  #if not in g it is not yet in f also
                 g[NodeID] = math.inf
                 f[NodeID] = math.inf
 
-            tScore = g[current]+ graph.GetNode(NodeID).Cost
+            NewNode = graph.GetNode(NodeID)
+            tScore = g[current] + NewNode.Get_Cost()
             if tScore >= g[NodeID]:
                 continue
             cameFrom[NodeID] = current
             g[NodeID] = tScore
-            f[NodeID] = g[NodeID] + EstimateDistance(graph.GetNode(NodeID),graph.GetNode(target),xSize,ySize,zSize)
+            f[NodeID] = g[NodeID] + EstimateDistance(NewNode,graph.GetNode(target),xSize,ySize,zSize)
+
+        f.pop(current) #These values will not be refered to again since the current NodeID has been moved to the closed set . This therefore reduces memory usage very slightly
+        g.pop(current)
+
+
     EndTime = time.time()
-    print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds")
+    print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds."+" Total Expanded:"+str(len(cameFrom)))
     if Found:
         return FindPath(cameFrom,current)
     else:
@@ -440,11 +452,10 @@ def FindPath(cameFrom,current):
     while current in cameFrom:
         current = cameFrom[current]
         path.append(current)
-    print("Total expanded:"+str(len(cameFrom)))
     return path[::-1]
 
 
-def Benchmark(FLUSH = 100,BlockSize = 500,MAXNODE = 2000000):
+def Benchmark(FLUSH = 100,BlockSize = 500,MAXNODE = 80000):
     import random,sys
     graph = DynoGraph(BlockSize= BlockSize)
     graph.ImportGraph()
@@ -468,7 +479,31 @@ def Benchmark(FLUSH = 100,BlockSize = 500,MAXNODE = 2000000):
 
 
 
-
+def CAStarBenchmark(Random = False):
+    graph = DynoGraph()
+    graph.ImportGraph()
+    if Random:
+        import random
+        source = random.randint(1,80000)
+        target = random.randint(1,80000)
+    else:
+        source = 1
+        target = 80000
+    print("ok")
+    _ = AStar2(graph,source,target)
+    
+    print("--- AStar2 ---")
+    for x in range(3):
+        _ = AStar2(graph,source,target)
+    print("--------------")
+    print()
+    print("--- CAStar2 ---")
+    import CAStar
+    for x in range(3):
+        _ = CAStar.AStar2(graph,source,target)
+    print("--------------")
+    print("")
+        
 
 
 

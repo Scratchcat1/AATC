@@ -1,6 +1,5 @@
 import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math,random,time,pickle
-##def GetTime():
-##    return time.strftime('%Y-%m-%d %H:%M:%S')
+from AATC_Coordinate import *
 
 def GetTime():
     return int(time.time())
@@ -37,18 +36,6 @@ def DeltaCoordToMetres(aCoord,bCoord):
 
     Distance = math.sqrt(mdx**2 + mdy**2 + dz**2)
     return Distance
-
-class Coordinate:
-    def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.xSize = xSize
-        self.ySize = ySize
-        self.zSize = zSize
-    def __str__(self):
-        return str((round(self.x,8),round(self.y,8),round(self.z,8)))
-
     
     
     
