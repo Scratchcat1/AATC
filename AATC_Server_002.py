@@ -1,4 +1,5 @@
-import codecs,ast,AATC_DB,socket,recvall,os,AATC_AStar,math,random,time,pickle
+import codecs,ast,socket,recvall,os,math,random,time,pickle
+import AATC_AStar,AATC_DB, AATC_Crypto
 from AATC_Coordinate import *
 
 def GetTime():
@@ -43,14 +44,15 @@ class UserConnection:
     def __init__(self,Connection):
         self.DB = AATC_DB.DBConnection()
         self.con = Connection
+        self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER" )
         self.UserID = -1  #Used to identify if has logged in yet
         self.NOFLYZONE_THRESHOLD_COST = 50
         self.GRAPHFOLDERNAME = "GraphFolder"
     def Send(self,data):
-        self.con.sendall(codecs.encode(str(data)))
+        self.con.sendall(self.Crypto.Encrypt(codecs.encode(str(data))))
     def Recv(self):
         try:
-            data = recvall.recvall(self.con)
+            data = self.Crypto.Decrypt(recvall.recvall(self.con))
             data = ast.literal_eval(codecs.decode(data))
             #      (Command,Arguments)
             return data
@@ -470,12 +472,13 @@ class MonitorConnection:
     def __init__(self,Connection):
         self.DB = AATC_DB.DBConnection()
         self.con = Connection
+        self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER")
         self.MonitorID = -1  #Used to identify if has logged in yet
     def Send(self,data):
-        self.con.sendall(codecs.encode(str(data)))
+        self.con.sendall(self.Crypto.Encrypt(codecs.encode(str(data))))
     def Recv(self):
         try:
-            data = recvall.recvall(self.con)
+            data = self.Crypto.Decrypt(recvall.recvall(self.con))
             data = ast.literal_eval(codecs.decode(data))
             #      (Command,Arguments)
             return data
@@ -662,12 +665,13 @@ class DroneConnection:
     def __init__(self,Connection):
         self.DB = AATC_DB.DBConnection()
         self.con = Connection
+        self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER")
         self.DroneID = -1  #Used to identify if has logged in yet
     def Send(self,data):
-        self.con.sendall(codecs.encode(str(data)))
+        self.con.sendall(self.Crypto.Encrypt(codecs.encode(str(data))))
     def Recv(self):
         try:
-            data = recvall.recvall(self.con)
+            data = self.Crypto.Decrypt(recvall.recvall(self.con))
             data = ast.literal_eval(codecs.decode(data))
             #      (Command,Arguments)
             return data

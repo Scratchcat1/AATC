@@ -40,7 +40,7 @@ def Connect(remote_ip,PORT):
 
 
          
-import socket,codecs,ast,recvall
+import socket,codecs,ast,recvall,AATC_Crypto
 #Create Socket
 #Create Connection
 
@@ -56,6 +56,7 @@ import socket,codecs,ast,recvall
 class UserInterface:
     def __init__(self,Connection):
         self.con = Connection
+        self.Crypto = AATC_Crypto.Crypter(self.con)
         self.Username  = ""
         print("Welcome to the AATC connection interface")
 
@@ -233,12 +234,12 @@ class UserInterface:
     ##############################################
     ##############################################
     def Send(self,Code,data):
-        Info = codecs.encode(str((Code,data)))
+        Info = self.Crypto.Encrypt(codecs.encode(str((Code,data))))
         self.con.sendall(Info)
 
     def Recv(self):   #Returns tuple of Sucess,Message,Data   of which data may just be useless for that function
         try:
-            data = recvall.recvall(self.con)
+            data = self.Crypto.Decrypt(recvall.recvall(self.con))
             data = ast.literal_eval(codecs.decode(data))
             #      Sucess, Message , Data
             return data[0],data[1],data[2]
