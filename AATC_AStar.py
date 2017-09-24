@@ -400,12 +400,11 @@ def AStar2(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_
     f[start] = EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize)
     Found = False
     while len(OpenSet) != 0:
-        OpenList = [(f[x],x) for x in OpenSet]  #provides slight speed increase
-##        for x in OpenSet:
-##            OpenList.append((f[x],x))  # f score and ID
-            
-        heapq.heapify(OpenList)
-        current = OpenList.pop(0)[1]  # Gets ID with lowest f
+##        OpenList = [(f[x],x) for x in OpenSet]  #provides slight speed increase           
+##        heapq.heapify(OpenList)
+##        current = OpenList.pop(0)[1]  # Gets ID with lowest f
+
+        current = min(f,key = lambda n:f[n])  #Faster (143 vs 114 ms) and doesnt require OpenList to be made
         
         if current == target:
             #print("Found Target")
@@ -488,7 +487,7 @@ def CAStarBenchmark(Random = False):
         target = random.randint(1,80000)
     else:
         source = 1
-        target = 80000
+        target = 160000
     print("ok")
     _ = AStar2(graph,source,target)
     

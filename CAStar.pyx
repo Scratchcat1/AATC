@@ -362,7 +362,6 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
     cdef float xSize,ySize,zSize,gNode
     cdef dict ClosedSet,OpenSet,cameFrom,g,f
     cdef int NodeID,current,tScore,xCount,yCount,zCount
-    cdef list OpenList
     cdef list FriendList
 
 
@@ -381,12 +380,15 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
     f[start] = EstimateDistance(start,target,xCount,yCount,zCount,xSize,ySize,zSize)
     Found = False
     while len(OpenSet) != 0:
-        OpenList = []
-        for x in OpenSet:
-            OpenList.append((f[x],x))  # f score and ID
-            
-        heapq.heapify(OpenList)
-        current = OpenList.pop(0)[1]  # Gets ID with lowest f
+##        OpenList = []
+##        for x in OpenSet:
+##            OpenList.append((f[x],x))  # f score and ID
+##            
+##        heapq.heapify(OpenList)
+##        current = OpenList.pop(0)[1]  # Gets ID with lowest f
+
+        current = min(f, key = lambda n:f[n])  #Faster (106 vs 62 ms) and doesnt require OpenList to be made
+
         
         if current == target:
             #print("Found Target")
