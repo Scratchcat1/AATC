@@ -1,5 +1,5 @@
 # AATC
-!!!!! WORK IN PROGRESS !!!!!
+!!!!! WORK IN PROGRESS !!!!!  
 Autonomous air traffic control system for *Drones*  
 Coordinates will be in form (x,y,z) where x is across, y is (pole to pole thing) and z is altitude ABOVE GROUND. 
 
@@ -13,6 +13,11 @@ There are 4 components to the system : The **Server, *Drones*, *Users* and *Moni
 
 **User ->** This can be a human or automated system. The *User* will use calls to the server to login and manage *Drones*,NoFlyZones and *Monitor* Permissions. The *User* cannot control the objects belonging to other *User*s unless they have permission to, this not only prevents security issues but isolates each process serving each *User*, allowing to concurrent writes to the database without issues. A *User* can add a *Monitor* to watch the position and paths of it's *Drone*s. Additionally a *User* can set thier flights to be visible to the public or not, as well as giving specific *Monitor*s permission to view the position and paths of the *Drones*.
 
-***Monitor* ->** Can be seen as a watcher. A *Monitor* can view all the public flight data and all non public flight data which it has been given permission to view. This could be used to create a visulization of the current flight situation and/or provide customers a real time view on when the *Drone* will arrive at its destination.
+***Monitor* ->** Can be seen as a watcher. A *Monitor* can view all the public flight data and all non public flight data which it has been given permission to view. This could be used to create a visulization of the current flight situation and/or provide customers a real time view on when the *Drone* will arrive at its destination.  
 
+
+Cython compiler settings:  
+```
+gcc -shared -pthread -fPIC -fwrapv -O3 -Wall -fno-strict-aliasing  -mcpu=cortex-a53 -mfpu=neon-vfpv4  -floop-interchange -floop-strip-mine -floop-block -floop-parallelize-all -ftree-parallelize-loops=2   -I/usr/include/python3.4 -o CAStar.so CAStar.c
+```
 recvall credit belongs to: https://stackoverflow.com/questions/17667903/python-socket-receive-large-amount-of-data
