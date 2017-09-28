@@ -73,7 +73,7 @@ class NoFlyZoneGrapher:
                 for y in range(StartY,EndY+1):
                     for z in range(StartZ,EndZ+1):
                         NodeID = graph.Direct_NodeID(x,y,z)  #Gets NodeID for that area
-                        print(NodeID)
+                        
                         if NodeID in Values:
                             v = max([Zone["Level"],Values[NodeID]])
                         else:

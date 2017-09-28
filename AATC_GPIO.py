@@ -1,20 +1,24 @@
 import threading,queue,time,random
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 
-#GPIO.setmode(GPIO.BOARD)
+##GPIO.setmode(GPIO.BOARD)
 
-#GPIO.setup(11, GPIO.OUT) #red
-#GPIO.setup(13, GPIO.OUT) #amber
-#GPIO.setup(21, GPIO.OUT) #green
-#GPIO.setup(26, GPIO.IN) #button
+##GPIO.setup(11, GPIO.OUT) #red
+##GPIO.setup(13, GPIO.OUT) #amber
+##GPIO.setup(21, GPIO.OUT) #green
+##GPIO.setup(26, GPIO.IN) #button
 
 class GPIO_Thread_Controller:
     def __init__(self,Command_Queue):
+        print("Creating Thread Controller")
         self.Command_Queue = Command_Queue
         self.Threads = {}
         self.Thread_Queues = {}
 
     def Create_Thread(self,Thread_Name):
+        if Thread_Name in Threads: #Close thread if already exists
+            self.Close_Thread(Thread_Name)
+            
         Thread_Queue = queue.Queue()
         thread = threading.Thread(target = GPIO_Thread,args = (Thread_Name,Thread_Queue))
         self.Threads[Thread_Name] = thread
@@ -151,7 +155,7 @@ def BlinkTest(Thread_Name,pin,frequency,cycles):  #prints demonstration of blink
         time.sleep(pauseTime)
     return False
 
-def PatternTest(Thread_Name, Pattern ,ReferenceTime=1):
+def Pattern(Thread_Name, Pattern ,ReferenceTime=1):
     try:
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(11, GPIO.OUT) #red
