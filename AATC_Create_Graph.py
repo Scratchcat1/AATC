@@ -39,6 +39,8 @@ zRange = zEnd - zStart
 graph.Add_Edges(xRange,yRange,zRange)
 ##graph.clean_edges()  #No longer nessesary
 graph.Build_Node_Cache()
+##for node in graph.Nodes.values():
+##  del node.Coords
 graph.SaveGraph()
 
 

@@ -13,9 +13,10 @@ class NoFlyZoneGrapher:
         Could use an A/B method to update if file locking occurs where the Updating takes place on one set of data while the other set of data is read from by eg A* pathfinding
 
     """
-    def __init__(self,Interval = 36000):
+    def __init__(self,KillSwitch,Interval = 36000):
         self.DB = AATC_DB.DBConnection()
         self.Interval = Interval
+        self.KillSwitch = KillSwitch
 
         graph = AATC_AStar.DynoGraph()
         graph.ImportGraph()
@@ -25,7 +26,7 @@ class NoFlyZoneGrapher:
         self.Main_Loop()
         
     def Main_Loop(self):
-        while True:
+        while not self.KillSwitch.is_set():
             try:
                 NoFlyZoneData = self.GetNoFlyZones()
                 self.Make_Values(NoFlyZoneData)
@@ -86,7 +87,7 @@ class NoFlyZoneGrapher:
 
         
         print("[NoFlyZoneGrapher] Length of Values:",len(Values))
-        for NodeID in graph.All_NodeIDs():
+        for NodeID in list(Values.keys()):
             node = graph.GetNode(NodeID)
             if node.NodeID in Values:
                 node.Cost = Values[node.NodeID]

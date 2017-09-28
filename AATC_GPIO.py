@@ -1,4 +1,4 @@
-import threading,queue,time,random
+import threading,multiprocessing,queue,time,random
 #import RPi.GPIO as GPIO
 
 ##GPIO.setmode(GPIO.BOARD)
@@ -8,30 +8,56 @@ import threading,queue,time,random
 ##GPIO.setup(21, GPIO.OUT) #green
 ##GPIO.setup(26, GPIO.IN) #button
 
+class Thread_Handle:
+    def __init__(self,Thread_Name,ThreadPointer,Queue):
+        self.Thread_Name = Thread_Name
+        self.ThreadPointer = ThreadPointer
+        self.Queue = Queue
+
+    def Get_Thread_Name(self):
+        return self.Thread_Name
+
+    def Get_ThreadPointer(self):
+        return self.ThreadPointer
+
+    def Get_Queue(self):
+        return self.Queue
+
 class GPIO_Thread_Controller:
     def __init__(self,Command_Queue):
         print("Creating Thread Controller")
         self.Command_Queue = Command_Queue
         self.Threads = {}
-        self.Thread_Queues = {}
 
-    def Create_Thread(self,Thread_Name):
-        if Thread_Name in Threads: #Close thread if already exists
+    def Create_Thread(self,Thread_Name,Process = False):     #If Process is True, will use a Process rather than a thread.
+        if Thread_Name in self.Threads: #Close thread if already exists
             self.Close_Thread(Thread_Name)
             
-        Thread_Queue = queue.Queue()
-        thread = threading.Thread(target = GPIO_Thread,args = (Thread_Name,Thread_Queue))
-        self.Threads[Thread_Name] = thread
-        self.Thread_Queues[Thread_Name] = Thread_Queue
-        thread.start()
+        if Process:
+            Thread_Queue = multiprocessing.Queue()
+            threadPointer = multiprocessing.Process(target = GPIO_Thread,args = (Thread_Name,Thread_Queue))
+        else:
+            Thread_Queue = queue.Queue()
+            threadPointer = threading.Thread(target = GPIO_Thread,args = (Thread_Name,Thread_Queue))
+        self.Threads[Thread_Name] = Thread_Handle(Thread_Name,threadPointer,Thread_Queue)
+        threadPointer.start()
+        print(self.Threads)
+        
+    def Close_Thread(self,Thread_Name):
+        Thread = self.Threads.pop(Thread_Name)
+        Queue = Thread.Get_Queue()
+        Queue.put(("Exit",()))
+        print("GPIO Controller closed Thread",Thread_Name)
+   
 
     def PassData(self,Thread_Name,Data):
-        self.Thread_Queues[Thread_Name].put(Data)
+        Queue = self.Threads[Thread_Name].Get_Queue()
+        Queue.put(Data)
 
     def Main(self):
         Exit = False
         while not Exit:
-            try:
+##            try:
                 Request = self.Command_Queue.get()   #(Thread_Name/Controller command,"Command",Args)
                 self.Command_Queue.task_done()
                 
@@ -39,6 +65,8 @@ class GPIO_Thread_Controller:
                     Command,Args = Request[1],Request[2]
                     if Command == "Create_Thread":
                         self.Create_Thread(*Args)
+                    elif Command == "Create_Process":
+                        self.Create_Thread(*Args, Process = True)
                     elif Command == "Close_Thread":
                         self.Close_Thread(*Args)
                     elif Command == "Exit":
@@ -52,15 +80,8 @@ class GPIO_Thread_Controller:
 
                 
 
-            except Exception as e:
-                print("Error in GPIO_Thread_Controller",e)
-
-    def Close_Thread(self,Thread_Name):
-        Thread = self.Threads.pop(Thread_Name)
-        Queue = self.Thread_Queues.pop(Thread_Name)
-        Queue.put(("Exit",()))
-        print("GPIO Controller closed Thread",Thread_Name)
-        
+##            except Exception as e:
+##                print("Error in GPIO_Thread_Controller",e)       
 
 
     def Reset(self):
@@ -89,7 +110,7 @@ def GPIO_Thread(Thread_Name,GPIO_Queue):
                 
             if not GPIO_Queue.empty():
                 Data = GPIO_Queue.get()
-                GPIO_Queue.task_done()
+                #GPIO_Queue.task_done()
                 Command,Arguments = Data[0],Data[1]
                 
                 if Command == "Function":
@@ -153,7 +174,7 @@ def BlinkTest(Thread_Name,pin,frequency,cycles):  #prints demonstration of blink
         time.sleep(pauseTime)
         print("Deactivating blink pin",pin, "Cycle:",x)
         time.sleep(pauseTime)
-    return False
+    return True
 
 def Pattern(Thread_Name, Pattern ,ReferenceTime=1):
     try:

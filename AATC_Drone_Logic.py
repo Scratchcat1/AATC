@@ -130,7 +130,7 @@ def DroneHardware(FlightQueue,StatusQueue):
                 VectorCoord = CalculateVector(Coords,Flight.StartCoord,DroneInfo.DroneSpeed)
                 Coords = AddCoords(Coords,VectorCoord)
                 PutStatus(StatusQueue,Coords,Battery)
-                #Coords.Print()
+                Coords.Print()
             print("Reached Start Coordinate")
 
             for point in Waypoints:
@@ -138,14 +138,14 @@ def DroneHardware(FlightQueue,StatusQueue):
                     VectorCoord = CalculateVector(Coords,point.Coord,DroneInfo.DroneSpeed)
                     Coords = AddCoords(Coords,VectorCoord)
                     PutStatus(StatusQueue,Coords,Battery)
-                    #Coords.Print() #probably too verbose
+                    Coords.Print() #probably too verbose
                 print("Reached Waypoint",point.WaypointNumber)
                 
             while not AtWaypoint(Coords,Flight.EndCoord,xSize,ySize,zSize):
                 VectorCoord = CalculateVector(Coords,Flight.EndCoord,DroneInfo.DroneSpeed)
                 Coords = AddCoords(Coords,VectorCoord)
                 PutStatus(StatusQueue,Coords,Battery)
-                #Coords.Print()
+                Coords.Print()
             print("Reached End Coordinate")
             PutStatus(StatusQueue,Coords,Battery,Flight.FlightID,EmptyOverride = True)  # Updates Status and marks flight as complete.
             FlightQueue.task_done()

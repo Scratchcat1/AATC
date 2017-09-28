@@ -798,11 +798,11 @@ class DroneConnection:
 
 
 
-def Cleaner(Interval = 36000,EndTimeThreshold = 72000):
-    while True:
+def Cleaner(KillSwitch,Interval = 36000,EndTimeThreshold = 72000):
+    while not KillSwitch.is_set():
         try:
             DB = AATC_DB.DBConnection()
-            while True:
+            while not KillSwitch.is_set():
                 print("Cleaner starting cleaning")
                 DB.CleanMonitorPermissions()
                 

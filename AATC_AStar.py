@@ -1,6 +1,15 @@
 import os,pickle,heapq,time,math,hashlib
 from AATC_Coordinate import *
 try:
+    try:
+        import PriorityQueue.PriorityQueueC as PriorityQueue
+    except:
+        print("PriotityQueueC not available, defaulting to pure python")
+        import PriorityQueue.PriorityQueue
+    
+except:
+    print("AStarPQ not available")
+try:
     _ = math.inf
 except:
     print("You do not have math.inf object, Python 3.5 onwards. Will use replacement.")
@@ -335,55 +344,64 @@ def EstimateDistance(Node,Target,xSize,ySize,zSize):
     Target_Coords = Target.Get_Coords()
     return abs(Node_Coords.Get_X()-Target_Coords.Get_X())/xSize+abs(Node_Coords.Get_Y()-Target_Coords.Get_Y())/ySize+abs(Node_Coords.Get_Z()-Target_Coords.Get_Z())/zSize
 
-def AStar(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_count + 1
+def AStarPQ(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_count + 1
     StartTime = time.time()
+
+    xSize,ySize,zSize = graph.Get_Size()
+    
     ClosedSet = {}  #Dict to hash find closed nodes
     OpenSet = {start:1}
     cameFrom = {}
     g,f = {},{}
-
-    for NodeID in graph.Nodes:
-        g[NodeID] = NodeCount +1
-        f[NodeID] = NodeCount +1
+    fp = PriorityQueue.PriorityQueue()
 
     g[start] = 0
-    f[start] = EstimateDistance(graph.Nodes[start],graph.Nodes[target],xSize,ySize,zSize)
+    f[start] = EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize)
+    fp.put((EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize),start))
     Found = False
     while len(OpenSet) != 0:
-        OpenList = []
-        for x in OpenSet:
-            OpenList.append((f[x],x))  # f score and ID
-            
-        heapq.heapify(OpenList)
-        current = OpenList.pop(0)[1]  # Gets ID with lowest f
+        current = fp.pop()[1]
         
         if current == target:
-            #print("Found Target")
             Found = True
             break
-
         
         OpenSet.pop(current)
         ClosedSet[current] = 1
-        for NodeID in graph.Nodes[current].Get_Friends():
-            if ClosedSet.get(NodeID) != None:
+        
+        for NodeID in graph.GetNode(current).Get_Friends():
+            if NodeID in ClosedSet:
                 continue
-            if OpenSet.get(NodeID) == None:
+            
+            if NodeID not in OpenSet:
                 OpenSet[NodeID] = 1
+                g[NodeID] = math.inf
+                f[NodeID] = math.inf
+                fp.put((math.inf,NodeID))
 
-            tScore = g[current]+ 1
+            NewNode = graph.GetNode(NodeID)
+            tScore = g[current] + NewNode.Get_Cost()
             if tScore >= g[NodeID]:
                 continue
             cameFrom[NodeID] = current
-            g[NodeID] = tScore + graph.Nodes[NodeID].Get_Cost()
-            f[NodeID] = g[NodeID] + EstimateDistance(graph.Nodes[NodeID],graph.Nodes[target],xSize,ySize,zSize)
+            g[NodeID] = tScore
+            fp.remove((f[NodeID],NodeID))
+            x = g[NodeID] + EstimateDistance(NewNode,graph.GetNode(target),xSize,ySize,zSize)
+            f[NodeID] = x
+            fp.put((x,NodeID))
+
+        f.pop(current) #These values will not be refered to again since the current NodeID has been moved to the closed set . This therefore reduces memory usage very slightly
+        g.pop(current)
+
+
     EndTime = time.time()
-    print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds")
+    print("[A* Time] "+str((EndTime-StartTime)*1000)+" Milliseconds."+" Total Expanded:"+str(len(cameFrom)))
     if Found:
         return FindPath(cameFrom,current)
     else:
         print("A* Search FAILED. Start:",start,"Target:",target)
         print(FindPath(cameFrom,current))
+        return None
 
 def AStar2(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_count + 1
     StartTime = time.time()
@@ -400,18 +418,13 @@ def AStar2(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_
     f[start] = EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize)
     Found = False
     while len(OpenSet) != 0:
-##        OpenList = [(f[x],x) for x in OpenSet]  #provides slight speed increase           
-##        heapq.heapify(OpenList)
-##        current = OpenList.pop(0)[1]  # Gets ID with lowest f
-
         current = min(f,key = lambda n:f[n])  #Faster (143 vs 114 ms) and doesnt require OpenList to be made
         
         if current == target:
-            #print("Found Target")
             Found = True
             break
 
-        
+
         OpenSet.pop(current)
         ClosedSet[current] = 1
         
@@ -497,7 +510,7 @@ def CAStarBenchmark(Random = False):
     print("--------------")
     print()
     print("--- CAStar2 ---")
-    import CAStar
+    from CAStar import CAStar
     for x in range(3):
         _ = CAStar.AStar2(graph,source,target)
     print("--------------")
