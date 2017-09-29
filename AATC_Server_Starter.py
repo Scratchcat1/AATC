@@ -32,7 +32,7 @@ def UserProcessSpawner():
 
 def MakeUserConnection(Thread_Name,Thread_Queue,conn):
     try:
-        UConn = AATC_Server.UserConnection(conn)
+        UConn = AATC_Server.UserConnection(Thread_Name,Thread_Queue,conn)
         UConn.Connection_Loop()
     except Exception as e:
         print("Serious error in UserConnection",e)
@@ -67,7 +67,7 @@ def MonitorProcessSpawner():
 
 def MakeMonitorConnection(Thread_Name,Thread_Queue,conn):
     try:
-        MConn = AATC_Server.MonitorConnection(conn)
+        MConn = AATC_Server.MonitorConnection(Thread_Name,Thread_Queue,conn)
         MConn.Connection_Loop()
     except Exception as e:
         print("Serious error in MonitorConnection",e)
@@ -106,7 +106,7 @@ def DroneProcessSpawner():
 
 def MakeDroneConnection(Thread_Name,Thread_Queue,conn):
     try:
-        DConn = AATC_Server.DroneConnection(conn)
+        DConn = AATC_Server.DroneConnection(Thread_Name,Thread_Queue,conn)
         DConn.Connection_Loop()
     except Exception as e:
         print("Serious error in DroneConnection",e)
@@ -142,7 +142,8 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
                 try:
                     conn, addr = s.accept()
                     print(DisplayName, ' Connected with' , addr[0] , ':' , str(addr[1]), "Type:",Type)
-                    Spawner_Control_Queue.put(("Controller","Create_Process",(ID_Counter,Target,(conn,))))
+                    Thread_Name = Type+str(ID_Counter)
+                    Spawner_Control_Queue.put(("Controller","Create_Process",(Thread_Name,Target,(conn,))))
                     ID_Counter +=1
                 except Exception as e:
                     print("Error creating" ,Type,"connection",str(e))
@@ -158,7 +159,7 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
         except Exception as e:
             print("Error in",Type,"Process Spawner",str(e))
             
-    Spawner_Control_Queue.put(("Exit",()))
+    Spawner_Control_Queue.put(("Controller","Exit",()))
 
 def StartProcesses(Control_Queue):
     Control_Queue.put(("Controller","Create_Process",("USpawner",ProcessSpawner,(8000,"User",MakeUserConnection))))
@@ -169,8 +170,9 @@ def StartProcesses(Control_Queue):
 
 
     Control_Queue.put(("Controller","Create_Process",("Grapher",AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)))
-
     Control_Queue.put(("Controller","Create_Process",("Cleaner",AATC_Server.Cleaner)))
+
+    print("[StartProcesses] All processes started")
     
 
 if __name__ == "__main__":
@@ -224,7 +226,7 @@ if __name__ == "__main__":
     print("Killing all Server processes....")
     print("This may take time, sleeping processes will be killed when resuming from sleep")
 
-    Control_Queue.put(("Exit",()))
+    Control_Queue.put(("Controller","Exit",()))
     
     print("Main process is now exiting...")
     sys.exit()

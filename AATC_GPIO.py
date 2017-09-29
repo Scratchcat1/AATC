@@ -104,13 +104,11 @@ class Thread_Controller:
                         self.Create_Thread(*Args, Process = True)
                     elif Command == "Close_Thread":
                         self.Close_Thread(*Args)
-                    elif Command == "Exit":  #Shutdown Controller only
+                    elif Command == "Exit":  #Shutdown  everything
+                        self.Reset(*Args)
                         self.Exit = True
                     elif Command == "Reset":  #Shutdown all threads, not controller
                         self.Reset(*Args)
-                    elif Command == "Shutdown":  #Shutdown everything
-                        self.Reset(*Args)
-                        self.Exit = True
                         
                 else:
                     self.PassData(Request[0],(Request[1],Request[2]))

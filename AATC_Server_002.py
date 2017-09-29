@@ -41,8 +41,10 @@ def DeltaCoordToMetres(aCoord,bCoord):
     
     
 class UserConnection:
-    def __init__(self,Connection):
+    def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
+        self.Thread_Name = Thread_Name
+        self.Thread_Queue = Thread_Queue
         self.con = Connection
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER" )
         self.UserID = -1  #Used to identify if has logged in yet
@@ -72,7 +74,8 @@ class UserConnection:
             Arguments may be converted from Tuple to Dict in future for clarity
         """
         try:
-            while self.UserID == -1:#Repeats until logs in
+            Exit = False
+            while self.UserID == -1 and not Exit:#Repeats until logs in
                 data = self.Recv()
                 try:
                     Command,Arguments = data[0],data[1]
@@ -87,7 +90,7 @@ class UserConnection:
                     print("Error occured with UserID:",str(self.UserID),"Error :",str(e)," Sending failure message")
                 self.Send((Sucess,Message,Data))
                     
-            Exit = False
+
             while not Exit:
                 data = self.Recv()
                 try:
@@ -469,8 +472,10 @@ class UserConnection:
 
 
 class MonitorConnection:
-    def __init__(self,Connection):
+    def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
+        self.Thread_Name = Thread_Name
+        self.Thread_Queue = Thread_Queue
         self.con = Connection
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER")
         self.MonitorID = -1  #Used to identify if has logged in yet
@@ -497,7 +502,8 @@ class MonitorConnection:
             Arguments may be converted from Tuple to Dict in future for clarity
         """
         try:
-            while self.MonitorID == -1:#Repeats until logs in
+            Exit = False
+            while self.MonitorID == -1 and not Exit:#Repeats until logs in
                 data = self.Recv()
                 try:
                     Command,Arguments = data[0],data[1]
@@ -511,8 +517,8 @@ class MonitorConnection:
                     Sucess,Message,Data = False,"An Error occured"+str(e),[]
                     print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
                 self.Send((Sucess,Message,Data))
+
                     
-            Exit = False
             while not Exit:
                 data = self.Recv()
                 try:
@@ -662,8 +668,10 @@ class MonitorConnection:
 
 
 class DroneConnection:
-    def __init__(self,Connection):
+    def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
+        self.Thread_Name = Thread_Name
+        self.Thread_Queue = Thread_Queue
         self.con = Connection
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER")
         self.DroneID = -1  #Used to identify if has logged in yet
@@ -691,7 +699,8 @@ class DroneConnection:
             Arguments may be converted from Tuple to Dict in future for clarity
         """
         try:
-            while self.DroneID == -1:#Repeats until logs in
+            Exit = False
+            while self.DroneID == -1 and not Exit:#Repeats until logs in
                 data = self.Recv()
                 try:
                     Command,Arguments = data[0],data[1]
@@ -705,7 +714,7 @@ class DroneConnection:
                     print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
                 self.Send((Sucess,Message,Data))
                     
-            Exit = False
+            
             while not Exit:
                 data = self.Recv()
                 try:
