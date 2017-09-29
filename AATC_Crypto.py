@@ -112,4 +112,4 @@ class Crypter:
             return data
             #return data[0],data[1],data[2]
         except Exception as e:
-            print(e)
+            print("Error in Cryptor while receiving ",e)

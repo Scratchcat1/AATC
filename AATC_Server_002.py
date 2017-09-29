@@ -798,11 +798,12 @@ class DroneConnection:
 
 
 
-def Cleaner(KillSwitch,Interval = 36000,EndTimeThreshold = 72000):
-    while not KillSwitch.is_set():
+def Cleaner(Thread_Name,Thread_Queue,Interval = 36000,EndTimeThreshold = 72000):
+    Exit = False
+    while not Exit:
         try:
             DB = AATC_DB.DBConnection()
-            while not KillSwitch.is_set():
+            while not Exit:
                 print("Cleaner starting cleaning")
                 DB.CleanMonitorPermissions()
                 
@@ -813,6 +814,12 @@ def Cleaner(KillSwitch,Interval = 36000,EndTimeThreshold = 72000):
                     DB.CleanCompletedFlightWaypoints(WrappedID[0])
                 print("Cleaner completed cleaning. Sleeping..")
                 time.sleep(Interval)
+
+                if not Thread_Queue.empty():
+                    data = Thread_Queue.get()
+                    Command,Arguments = data[0],data[1]
+                    if Command == "Exit":
+                        Exit = True
             
         except Exception as e:
             print("Error in Cleaner",e)
