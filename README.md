@@ -18,9 +18,11 @@ There are 4 components to the system : The **Server, *Drones*, *Users* and *Moni
 
 Cython compiler settings:  
 ```
+cython -a CAStar.pyx  
 gcc -shared -pthread -fPIC -fwrapv -O3 -Wall -fno-strict-aliasing  -mcpu=cortex-a53 -mfpu=neon-vfpv4  -floop-interchange -floop-strip-mine -floop-block -floop-parallelize-all -ftree-parallelize-loops=2   -I/usr/include/python3.4 -o CAStar.so CAStar.c
 ```
 ```
+cython --cplus CAStar2.pyx  
 g++ -shared -pthread -fPIC -fwrapv -O3 -Wall -L /usr/include/python3.4 -lstdc++ -fno-strict-aliasing  -mcpu=cortex-a53 -mfpu=neon-vfpv4  -floop-interchange -floop-strip-mine -floop-block -floop-parallelize-all -ftree-parallelize-loops=2   -std=gnu++11 -I/usr/include/python3.4 -o CAStar2.so CAStar2.cpp
 ```
 recvall credit belongs to: https://stackoverflow.com/questions/17667903/python-socket-receive-large-amount-of-data
