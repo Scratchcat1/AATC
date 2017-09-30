@@ -83,6 +83,9 @@ class UserConnection:
                         Sucess,Message,Data = self.Login(Arguments)
                     elif Command == "AddUser":  # If adding a new user, one must create it first, then log in seperatly
                         Sucess,Message,Data = self.AddUser(Arguments)
+                    elif Command == "Exit":
+                        Sucess,Message,Data = self.Exit(Arguments)
+                        Exit = True
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
                         
@@ -618,6 +621,9 @@ class MonitorConnection:
                         Sucess,Message,Data = self.Login(Arguments)
                     elif Command == "AddMonitor":  # If adding a new Monitor, one must create it first, then log in seperatly
                         Sucess,Message,Data = self.AddMonitor(Arguments)
+                    elif Command == "Exit":
+                        Sucess,Message,Data = self.Exit(Arguments)
+                        Exit = True
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
 
@@ -886,7 +892,9 @@ class DroneConnection:
                 if self.DroneID == -1:
                     if Command == "Login":
                         Sucess,Message,Data = self.Login(Arguments)
-
+                    elif Command == "Exit":
+                        Sucess,Message,Data = self.Exit(Arguments)
+                        Exit = True
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
 
@@ -908,6 +916,7 @@ class DroneConnection:
 
                     elif Command == "Exit":
                         Sucess,Message,Data = self.Exit(Arguments)
+                        Exit = True
 
                     #Else if command doesnt exist send back Failure
                     else:

@@ -77,11 +77,12 @@ class Thread_Controller:
         threadPointer.start()
         
     def Close_Thread(self,Thread_Name,Wait_Join = False):
-        Thread = self.Threads.pop(Thread_Name)
-        Queue = Thread.Get_Queue()
+        ClosingThreadHandle = self.Threads.pop(Thread_Name)
+        Queue = ClosingThreadHandle.Get_Queue()
         Queue.put(("Exit",()))
         if Wait_Join:
-            Thread.join()
+            ThreadPointer = ClosingThreadHandle.Get_ThreadPointer()
+            ThreadPointer.join()
         print(self.Name,"GPIO Controller closed Thread",Thread_Name)
    
 
@@ -113,12 +114,10 @@ class Thread_Controller:
                 else:
                     self.PassData(Request[0],(Request[1],Request[2]))
                         
-                        
-
-                
 
             except Exception as e:
-                print(self.Name,"Error in GPIO_Thread_Controller",e)       
+                print(self.Name,"Error in GPIO_Thread_Controller",e)
+        print(self.Name,"Shutting down")
 
 
     def Reset(self,Wait_Join = False):

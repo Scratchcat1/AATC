@@ -159,7 +159,7 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
         except Exception as e:
             print("Error in",Type,"Process Spawner",str(e))
             
-    Spawner_Control_Queue.put(("Controller","Exit",()))
+    Spawner_Control_Queue.put(("Controller","Exit",(True,)))
 
 def StartProcesses(Control_Queue):
     Control_Queue.put(("Controller","Create_Process",("USpawner",ProcessSpawner,(8000,"User",MakeUserConnection))))
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     print("Killing all Server processes....")
     print("This may take time, sleeping processes will be killed when resuming from sleep")
 
-    Control_Queue.put(("Controller","Exit",()))
+    Control_Queue.put(("Controller","Exit",(True,)))
     
     print("Main process is now exiting...")
     sys.exit()
