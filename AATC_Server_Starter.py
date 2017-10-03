@@ -1,4 +1,4 @@
-import multiprocessing,socket,AATC_NoFlyZoneGrapher,sys,time
+import multiprocessing,socket,AATC_NoFlyZoneGrapher,sys,time,AATC_GPIO
 import AATC_Server_002 as AATC_Server
 from AATC_Coordinate import *
 
@@ -30,9 +30,12 @@ def UserProcessSpawner():
         except Exception as e:
             print("Error in UserProcessSpawner",str(e))
 
-def MakeUserConnection(conn):
-    UConn = AATC_Server.UserConnection(conn)
-    UConn.Connection_Loop()
+def MakeUserConnection(Thread_Name,Thread_Queue,conn):
+    try:
+        UConn = AATC_Server.UserConnection(Thread_Name,Thread_Queue,conn)
+        UConn.Connection_Loop()
+    except Exception as e:
+        print("Serious error in UserConnection",e)
 
 #####################################################
 
@@ -62,9 +65,12 @@ def MonitorProcessSpawner():
         except Exception as e:
             print("Error in MonitorProcessSpawner",str(e))
 
-def MakeMonitorConnection(conn):
-    MConn = AATC_Server.MonitorConnection(conn)
-    MConn.Connection_Loop()
+def MakeMonitorConnection(Thread_Name,Thread_Queue,conn):
+    try:
+        MConn = AATC_Server.MonitorConnection(Thread_Name,Thread_Queue,conn)
+        MConn.Connection_Loop()
+    except Exception as e:
+        print("Serious error in MonitorConnection",e)
 
 
 
@@ -98,9 +104,12 @@ def DroneProcessSpawner():
         except Exception as e:
             print("Error in DroneProcessSpawner",str(e))
 
-def MakeDroneConnection(conn):
-    DConn = AATC_Server.DroneConnection(conn)
-    DConn.Connection_Loop()
+def MakeDroneConnection(Thread_Name,Thread_Queue,conn):
+    try:
+        DConn = AATC_Server.DroneConnection(Thread_Name,Thread_Queue,conn)
+        DConn.Connection_Loop()
+    except Exception as e:
+        print("Serious error in DroneConnection",e)
 
 
 
@@ -108,67 +117,106 @@ def MakeDroneConnection(conn):
 ##########################################################
 
 
-def ProcessSpawner(Port,Type,Target,KillSwitch):
-    ProcessList = []
-    while not KillSwitch.is_set():
+def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
+    Exit = False
+    Spawner_Control_Queue = AATC_GPIO.Create_Controller()
+    ID_Counter = 1
+    DisplayName = "["+str(Name)+":"+str(Type)+"]"
+    while not Exit:
         try:
             HOST = ''
             PORT = Port
 
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            print( 'Socket created')
+            print(DisplayName,'Socket created')
             s.bind((HOST, PORT))
 
                  
-            print( 'Socket bind complete')
+            print(DisplayName, 'Socket bind complete')
             s.listen(10)
-            print( 'Socket now listening')
+            print(DisplayName, 'Socket now listening')
 
 
-            while not KillSwitch.is_set():
+            while not Exit:
                 try:
                     conn, addr = s.accept()
-                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1])+ "Type:"+Type)
-                    Process = multiprocessing.Process(target = Target, args = (conn,))
-                    Process.start()
-                    ProcessList.append(Process)
+                    print(DisplayName, ' Connected with' , addr[0] , ':' , str(addr[1]), "Type:",Type)
+                    Thread_Name = Type+str(ID_Counter)
+                    Spawner_Control_Queue.put(("Controller","Create_Process",(Thread_Name,Target,(conn,))))
+                    ID_Counter +=1
                 except Exception as e:
                     print("Error creating" ,Type,"connection",str(e))
+
+                #Check for commands from Communications_Queue
+                if not Communications_Queue.empty():
+                    data = Communications_Queue.get()
+                    Command,Arguments = data[0],data[1]
+                    if Command == "Exit":
+                        self.Exit = True
+
+                        
         except Exception as e:
             print("Error in",Type,"Process Spawner",str(e))
-    for Process in ProcessList:
-        Process.join()
+            
+    Spawner_Control_Queue.put(("Controller","Exit",(True,)))
+
+def StartProcesses(Control_Queue):
+    Control_Queue.put(("Controller","Create_Process",("USpawner",ProcessSpawner,(8000,"User",MakeUserConnection))))
+
+    Control_Queue.put(("Controller","Create_Process",("MSpawner",ProcessSpawner,(8001,"Monitor",MakeMonitorConnection))))
+
+    Control_Queue.put(("Controller","Create_Process",("DSpawner",ProcessSpawner,(8002,"Drone",MakeDroneConnection))))
+
+
+    Control_Queue.put(("Controller","Create_Process",("Grapher",AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)))
+    Control_Queue.put(("Controller","Create_Process",("Cleaner",AATC_Server.Cleaner)))
+
+    print("[StartProcesses] All processes started")
     
 
 if __name__ == "__main__":
     print("Server is starting")
-    KillSwitch = multiprocessing.Event()
-    HighProcessList = []
-    #Launch UserProcess spawner
-    UPS = multiprocessing.Process(target = ProcessSpawner,args = (8000,"User",MakeUserConnection,KillSwitch))
-    HighProcessList.append(UPS)
-    UPS.start()
+##    KillSwitch = multiprocessing.Event()
+##    HighProcessList = []
+##    #Launch UserProcess spawner
+##    UPS = multiprocessing.Process(target = ProcessSpawner,args = (8000,"User",MakeUserConnection,KillSwitch))
+##    HighProcessList.append(UPS)
+##    UPS.start()
+##
+##    #Launch MonitorPerocess spawner
+##    MPS = multiprocessing.Process(target = ProcessSpawner,args = (8001,"Monitor",MakeMonitorConnection,KillSwitch))
+##    HighProcessList.append(MPS)
+##    MPS.start()
+##    
+##    #Launch DroneProcess Spawner
+##    DPS = multiprocessing.Process(target = ProcessSpawner,args = (8002,"Drone",MakeDroneConnection,KillSwitch))
+##    HighProcessList.append(DPS)
+##    DPS.start()
+##
+##    #Launch NoFlyZoneGrapher
+##    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher, args = (KillSwitch,))
+##    HighProcessList.append(NFZG)
+##    NFZG.start()
+##
+##    CLN = multiprocessing.Process(target = AATC_Server.Cleaner,args = (KillSwitch,))
+##    HighProcessList.append(CLN)
+##    CLN.start()
 
-    #Launch MonitorPerocess spawner
-    MPS = multiprocessing.Process(target = ProcessSpawner,args = (8001,"Monitor",MakeMonitorConnection,KillSwitch))
-    HighProcessList.append(MPS)
-    MPS.start()
+
+
+    Control_Queue = AATC_GPIO.Create_Controller()
+    StartProcesses(Control_Queue)
+
+
+
+
+
+
+
+
+
     
-    #Launch DroneProcess Spawner
-    DPS = multiprocessing.Process(target = ProcessSpawner,args = (8002,"Drone",MakeDroneConnection,KillSwitch))
-    HighProcessList.append(DPS)
-    DPS.start()
-
-    #Launch NoFlyZoneGrapher
-    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher, args = (KillSwitch,150))
-    HighProcessList.append(NFZG)
-    NFZG.start()
-
-    CLN = multiprocessing.Process(target = AATC_Server.Cleaner,args = (KillSwitch,150))
-    HighProcessList.append(CLN)
-    CLN.start()
-
     Main_Command = ""
     while Main_Command != "EXIT":
         Main_Command = input("Enter main command >>").upper()
@@ -177,10 +225,9 @@ if __name__ == "__main__":
         
     print("Killing all Server processes....")
     print("This may take time, sleeping processes will be killed when resuming from sleep")
-    KillSwitch.set()
-    for Process in HighProcessList:
-        Process.join()
-        print("Process:",Process,"has exited")
+
+    Control_Queue.put(("Controller","Exit",(True,)))
+    
     print("Main process is now exiting...")
     sys.exit()
             

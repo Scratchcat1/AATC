@@ -294,14 +294,17 @@ class DBConnection:
 
     def GetMonitorDrones(self,MonitorID):
         self.cur.execute("SELECT Drone.* FROM Drone,MonitorPermission WHERE Drone.UserID = MonitorPermission.UserID and MonitorPermission.MonitorID = %s",(MonitorID,))
+        self.db_con.commit()
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
     
     def GetMonitorFlights(self,MonitorID):
         self.cur.execute("SELECT Flight.* FROM Flight,Drone,MonitorPermission WHERE Flight.DroneID = Drone.DroneID AND Drone.UserID = MonitorPermission.UserID and MonitorPermission.MonitorID = %s",(MonitorID,))
+        self.db_con.commit()
         return True,str(self.Table_Headers("Flight")),self.cur.fetchall()
     
     def GetMonitorFlightWaypoints(self,MonitorID):
         self.cur.execute("SELECT FlightWaypoints.* FROM FlightWaypoints,Flight,Drone,MonitorPermission WHERE FlightWaypoints.FlightID = Flight.FlightID AND Flight.DroneID = Drone.DroneID AND Drone.UserID = MonitorPermission.UserID and MonitorPermission.MonitorID = %s",(MonitorID,))
+        self.db_con.commit()
         return True,str(self.Table_Headers("FlightWaypoints")),self.cur.fetchall()
 
     def GetMonitorID(self,MonitorName):

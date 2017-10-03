@@ -1,4 +1,4 @@
-import pygame,AATC_Monitor,time,ast,sys
+import pygame,AATC_Monitor,time,ast,sys,random
 from AATC_Coordinate import *
 pygame.init()
 
@@ -9,17 +9,31 @@ def GetImage(xSize,ySize,Colour):  #Efficiently get images
         result = pygame.Surface((xSize,ySize)).convert()
         result.fill(Colour)
         _images[(xSize,ySize,Colour)]=result
-##    result_copy = pygame.Surface(result.get_size())
-##    result_copy.blit(result,(0,0))
+    while len(_images) > 1500:
+        _images.pop(random.sample(_images.keys(),1)[0])   #If cache is full evict old versions
     return result#_copy
 
 _texts= {}
-def GetText(Text,font,AA,Colour):  #Efficiently get text
-    result = _texts.get((Text,font,AA,Colour))
+def GetText(Text,fontParameters,AA,Colour):  #Efficiently get text
+    result = _texts.get((Text,fontParameters,AA,Colour))
     if result == None:
-        result = font.render(Text,AA,Colour)
-        _images[(Text,font,AA,Colour)]=result
+        result = GetFont(*fontParameters).render(Text,AA,Colour)
+        _texts[(Text,fontParameters,AA,Colour)]=result
+    while len(_texts) > 1500:
+        _texts.pop(random.sample(_texts.keys(),1)[0])   #If cache is full evict old versions
     return result
+
+
+_fonts = {}
+def GetFont(Font,Size):
+    result = _fonts.get((Font,Size))
+    if result == None:
+        result = pygame.font.Font(Font,Size)
+        _fonts[(Font,Size)]=result
+    while len(_fonts) > 1500:
+        _fonts.pop(random.sample(_fonts.keys(),1)[0])   #If cache is full evict old versions
+    return result
+    
 
 def MaxLimit(value,Max):
     if value > Max:
@@ -81,14 +95,14 @@ class Camera:
                 PosY = ((Object.Coords.y- self.CameraCoord.y)/self.CameraCoord.ySize)* self.ypixel
 ##                width,height = Object.Coords.xSize*self.CameraZoom ,Object.Coords.ySize*self.CameraZoom
                 width,height = int(Object.Coords.xSize/self.CameraCoord.xSize*self.xpixel) ,int(Object.Coords.ySize/self.CameraCoord.ySize*self.ypixel)
-                if width > 0 or height > 0:
+                if width > 0 and height > 0:
                     width = MaxLimit(width,self.xpixel)
                     height = MaxLimit(height,self.ypixel)
                     font_size = int(100*width/self.xpixel)
                     Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
                     self.gameDisplay.blit(Object.image,(PosX,PosY))
                     if font_size > 5:
-                        font = pygame.font.Font(None, font_size) #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                        font = (None, font_size) #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
                         Object.Make_CoordsText(font)     #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
                         Object.Make_Text(font)          #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
                         Object.Make_Type(font)         #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
@@ -240,8 +254,8 @@ def MakeSprites(M):
 
 
 
-xpixel = 1000
-ypixel = 500
+xpixel = 1200
+ypixel = 700
 Refresh_Delay = 60
 clock = pygame.time.Clock()
 pressed = pygame.key.get_pressed
@@ -257,11 +271,11 @@ while Exit != "Y":
         while True:
             MonCamera.ResetDrawObject()
             Sprites = MakeSprites(M)
-            font = pygame.font.Font(None, 30) 
+            #font = (None, 30) 
             for sprite in Sprites:
-                sprite.Make_CoordsText(font)
-                sprite.Make_Text(font)
-                sprite.Make_Type(font)
+                #sprite.Make_CoordsText(font)
+                #sprite.Make_Text(font)
+                #sprite.Make_Type(font)
                 MonCamera.AddDrawObject(sprite,False)
 
             Last_Refresh_Time = time.time()
@@ -276,20 +290,6 @@ while Exit != "Y":
                         print("Monitor exit was called")
                         pygame.quit()
                         sys.exit()
-                    
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_w:   #Shift camera
-##                        MonCamera.IncrementCameraCoordY(-0.5/MonCamera.GetZoom())  #/ as Greater zoom means need more fidelety
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-##                        MonCamera.IncrementCameraCoordY(0.5/MonCamera.GetZoom())
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
-##                        MonCamera.IncrementCameraCoordX(-0.5/MonCamera.GetZoom())
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_d:
-##                        MonCamera.IncrementCameraCoordX(0.5/MonCamera.GetZoom())
-                        
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:#Zoom out
-##                        MonCamera.SetZoom(0.9*MonCamera.GetZoom())
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_e:#Zoom in
-##                        MonCamera.SetZoom(1.1*MonCamera.GetZoom())
                         
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         print("Camera details")

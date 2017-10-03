@@ -41,8 +41,10 @@ def DeltaCoordToMetres(aCoord,bCoord):
     
     
 class UserConnection:
-    def __init__(self,Connection):
+    def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
+        self.Thread_Name = Thread_Name
+        self.Thread_Queue = Thread_Queue
         self.con = Connection
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER" )
         self.UserID = -1  #Used to identify if has logged in yet
@@ -71,27 +73,23 @@ class UserConnection:
 
             Arguments may be converted from Tuple to Dict in future for clarity
         """
-        try:
-            while self.UserID == -1:#Repeats until logs in
+        Exit = False
+        while not Exit:
+            try:
                 data = self.Recv()
-                try:
-                    Command,Arguments = data[0],data[1]
+                Command,Arguments = data[0],data[1]
+                if self.UserID == -1:
                     if Command == "Login":
                         Sucess,Message,Data = self.Login(Arguments)
                     elif Command == "AddUser":  # If adding a new user, one must create it first, then log in seperatly
                         Sucess,Message,Data = self.AddUser(Arguments)
+                    elif Command == "Exit":
+                        Sucess,Message,Data = self.Exit(Arguments)
+                        Exit = True
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
-                except Exception as e:
-                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                    print("Error occured with UserID:",str(self.UserID),"Error :",str(e)," Sending failure message")
-                self.Send((Sucess,Message,Data))
-                    
-            Exit = False
-            while not Exit:
-                data = self.Recv()
-                try:
-                    Command,Arguments = data[0],data[1]
+                        
+                else:
                     if Command == "GetNoFlyZones":
                         Sucess,Message,Data = self.GetNoFlyZones(Arguments)
                     elif Command == "AddNoFlyZone":
@@ -166,15 +164,130 @@ class UserConnection:
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
                         print("User tried to use unregistered command")
-                except Exception as e:
-                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                    print("Error occured with UserID:",str(self.UserID),". Error :",str(e),". Sending failure message")
+                        
+            except Exception as e:
+                Sucess,Message,Data = False,"An Error occured"+str(e),[]
+                print("Error occured with UserID:",str(self.UserID),". Error :",str(e),". Sending failure message")
+                
+            try:
                 self.Send((Sucess,Message,Data))
-        except Exception as e:
-            if type(e) == BrokenPipeError:
+            except Exception as e:
                 print("UserID:",self.UserID," disconnected")
-            else:
-                print("Serious exception occured with UserID ",self.UserID," Error",e)
+                Exit = True
+                
+            if not self.Thread_Queue.empty():
+                data = Thread_Queue.get()
+                Command,Arguments = data[0],data[1]
+                if Command == "Exit":
+                    Exit = True
+
+
+##        
+##        try:
+##            Exit = False
+##            while self.UserID == -1 and not Exit:#Repeats until logs in
+##                data = self.Recv()
+##                try:
+##                    Command,Arguments = data[0],data[1]
+##                    if Command == "Login":
+##                        Sucess,Message,Data = self.Login(Arguments)
+##                    elif Command == "AddUser":  # If adding a new user, one must create it first, then log in seperatly
+##                        Sucess,Message,Data = self.AddUser(Arguments)
+##                    else:
+##                        Sucess,Message,Data = False,"Command does not exist",[]
+##                except Exception as e:
+##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
+##                    print("Error occured with UserID:",str(self.UserID),"Error :",str(e)," Sending failure message")
+##                self.Send((Sucess,Message,Data))
+##                    
+##
+##            while not Exit:
+##                data = self.Recv()
+##                try:
+##                    Command,Arguments = data[0],data[1]
+##                    if Command == "GetNoFlyZones":
+##                        Sucess,Message,Data = self.GetNoFlyZones(Arguments)
+##                    elif Command == "AddNoFlyZone":
+##                        Sucess,Message,Data = self.AddNoFlyZone(Arguments)
+##                    elif Command == "RemoveNoFlyZone":
+##                        Sucess,Message,Data = self.RemoveNoFlyZone(Arguments)
+##                    elif Command == "ModifyNoFlyZoneLevel":
+##                        Sucess,Message,Data = self.ModifyNoFlyZoneLevel(Arguments)
+##                        
+##                    elif Command == "AddDrone":
+##                        Sucess,Message,Data = self.AddDrone(Arguments)
+##                    elif Command == "RemoveDrone":
+##                        Sucess,Message,Data = self.RemoveDrone(Arguments)
+##                    elif Command == "GetDroneID":
+##                        Sucess,Message,Data = self.GetDroneID(Arguments)
+##                    elif Command == "GetDroneCredentials":
+##                        Sucess,Message,Data = self.GetDroneCredentials(Arguments)
+##                    elif Command == "SetDroneCredentials":
+##                        Sucess,Message,Data = self.SetDroneCredentials(Arguments)
+##                    elif Command == "CheckDroneOwnership":
+##                        Sucess,Message,Data = self.CheckDroneOwnership(Arguments)
+##                    elif Command == "GetDroneInfo":
+##                        Sucess,Message,Data = self.GetDroneInfo(Arguments)
+##                    elif Command == "GetDronesUser":
+##                        Sucess,Message,Data = self.GetDronesUser(Arguments)
+##                    elif Command == "GetDronesAll":
+##                        Sucess,Message,Data = self.GetDronesAll(Arguments)
+##
+##                    elif Command == "Login":   #Can then change UserID without restarting, UserID is changed as well as components on client side
+##                        Sucess,Message,Data = self.Login(Arguments)
+##                    elif Command == "GetUserID":
+##                        Sucess,Message,Data = self.GetUserID(Arguments)
+##                    elif Command == "GetUsername":
+##                        Sucess,Message,Data = self.GetUsername(Arguments)
+##                    elif Command == "SetUserPublicVisibleFlights":
+##                        Sucess,Message,Data = self.SetUserPublicVisibleFlights(Arguments)
+##                    elif Command == "SetAccountType":
+##                        Sucess,Message,Data = self.SetAccountType(Arguments)
+##                    
+##                    elif Command == "GetFlightsUser":
+##                        Sucess,Message,Data = self.GetFlightsUser(Arguments)
+##                    elif Command == "GetFlightsAll":
+##                        Sucess,Message,Data = self.GetFlightsAll(Arguments)
+##                    elif Command == "AddFlight":
+##                        Sucess,Message,Data = self.AddFlight(Arguments)
+##                    elif Command == "RemoveFlight":
+##                        Sucess,Message,Data = self.RemoveFlight(Arguments)
+##                    
+##                    elif Command == "GetFlightWaypointsUser":
+##                        Sucess,Message,Data = self.GetFlightWaypointsUser(Arguments)
+##                    elif Command == "GetFlightWaypointsAll":
+##                        Sucess,Message,Data = self.GetFlightWaypointsAll(Arguments)
+##                    
+##                    elif Command == "GetMonitorID":
+##                        Sucess,Message,Data = self.GetMonitorID(Arguments)
+##                    elif Command == "GetMonitorName":
+##                        Sucess,Message,Data = self.GetMonitorName(Arguments)
+##                    
+##                    elif Command == "AddMonitorPermission":
+##                        Sucess,Message,Data = self.AddMonitorPermission(Arguments)
+##                    elif Command == "RemoveMonitorPermission":
+##                        Sucess,Message,Data = self.RemoveMonitorPermission(Arguments)
+##                    elif Command == "ModifyMonitorPermissionDate":
+##                        Sucess,Message,Data = self.ModifyMonitorPermissionDate(Arguments)
+##                    elif Command == "GetMonitorPermissionUser":
+##                        Sucess,Message,Data = self.GetMonitorPermissionUser(Arguments)
+##
+##                    elif Command == "Exit":
+##                        Sucess,Message,Data = self.Exit(Arguments)
+##                        Exit = True
+##                    #Else if command doesnt exist send back Failure
+##                    else:
+##                        Sucess,Message,Data = False,"Command does not exist",[]
+##                        print("User tried to use unregistered command")
+##                except Exception as e:
+##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
+##                    print("Error occured with UserID:",str(self.UserID),". Error :",str(e),". Sending failure message")
+##                self.Send((Sucess,Message,Data))
+##        except Exception as e:
+##            if type(e) == BrokenPipeError:
+##                print("UserID:",self.UserID," disconnected")
+##            else:
+##                print("Serious exception occured with UserID ",self.UserID," Error",e)
         print("Process will now exit")
             
     def Login(self,Arguments):
@@ -469,8 +582,10 @@ class UserConnection:
 
 
 class MonitorConnection:
-    def __init__(self,Connection):
+    def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
+        self.Thread_Name = Thread_Name
+        self.Thread_Queue = Thread_Queue
         self.con = Connection
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER")
         self.MonitorID = -1  #Used to identify if has logged in yet
@@ -496,27 +611,23 @@ class MonitorConnection:
 
             Arguments may be converted from Tuple to Dict in future for clarity
         """
-        try:
-            while self.MonitorID == -1:#Repeats until logs in
+        Exit = False
+        while not Exit:
+            try:
                 data = self.Recv()
-                try:
-                    Command,Arguments = data[0],data[1]
+                Command,Arguments = data[0],data[1]
+                if self.MonitorID == -1:
                     if Command == "Login":
                         Sucess,Message,Data = self.Login(Arguments)
                     elif Command == "AddMonitor":  # If adding a new Monitor, one must create it first, then log in seperatly
                         Sucess,Message,Data = self.AddMonitor(Arguments)
+                    elif Command == "Exit":
+                        Sucess,Message,Data = self.Exit(Arguments)
+                        Exit = True
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
-                except Exception as e:
-                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                    print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
-                self.Send((Sucess,Message,Data))
-                    
-            Exit = False
-            while not Exit:
-                data = self.Recv()
-                try:
-                    Command,Arguments = data[0],data[1]
+
+                else:
                     if Command == "GetNoFlyZones":
                         Sucess,Message,Data = self.GetNoFlyZones(Arguments)
                         
@@ -559,17 +670,98 @@ class MonitorConnection:
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
                         print("Monitor tried to use unregistered command")
-                except Exception as e:
-                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                    print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
-    ##            print(Message,str(Data))
+            except Exception as e:
+                Sucess,Message,Data = False,"An Error occured"+str(e),[]
+                print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
+            try:
                 self.Send((Sucess,Message,Data))
-                
-        except Exception as e:
-            if type(e) == BrokenPipeError:
+            except Exception as e:
                 print("MonitorID:",self.MonitorID," disconnected")
-            else:
-                print("Serious exception occured with MonitorID ",self.MonitorID," Error",e)
+                Exit = True
+
+            if not self.Thread_Queue.empty():
+                data = Thread_Queue.get()
+                Command,Arguments = data[0],data[1]
+                if Command == "Exit":
+                    Exit = True
+                
+
+                
+##        try:
+##            Exit = False
+##            while self.MonitorID == -1 and not Exit:#Repeats until logs in
+##                data = self.Recv()
+##                try:
+##                    Command,Arguments = data[0],data[1]
+##                    if Command == "Login":
+##                        Sucess,Message,Data = self.Login(Arguments)
+##                    elif Command == "AddMonitor":  # If adding a new Monitor, one must create it first, then log in seperatly
+##                        Sucess,Message,Data = self.AddMonitor(Arguments)
+##                    else:
+##                        Sucess,Message,Data = False,"Command does not exist",[]
+##                except Exception as e:
+##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
+##                    print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
+##                self.Send((Sucess,Message,Data))
+##
+##                    
+##            while not Exit:
+##                data = self.Recv()
+##                try:
+##                    Command,Arguments = data[0],data[1]
+##                    if Command == "GetNoFlyZones":
+##                        Sucess,Message,Data = self.GetNoFlyZones(Arguments)
+##                        
+##                    elif Command == "GetDronesAll":
+##                        Sucess,Message,Data = self.GetDronesAll(Arguments)
+##                        
+##                    elif Command == "GetUserID":
+##                        Sucess,Message,Data = self.GetUserID(Arguments)
+##                    elif Command == "GetUsername":
+##                        Sucess,Message,Data = self.GetUsername(Arguments)
+##
+##                    elif Command == "GetMonitorDrones":
+##                        Sucess,Message,Data = self.GetMonitorDrones(Arguments)
+##                    elif Command == "GetMonitorFlights":
+##                        Sucess,Message,Data = self.GetMonitorFlights(Arguments)
+##                    elif Command == "GetMonitorFlightWaypoints":
+##                        Sucess,Message,Data = self.GetMonitorFlightWaypoints(Arguments)
+##
+##                    elif Command == "GetMonitorID":
+##                        Sucess,Message,Data = self.GetMonitorID(Arguments)
+##                    elif Command == "GetMonitorName":
+##                        Sucess,Message,Data = self.GetMonitorName(Arguments)
+##
+##                    elif Command == "RemoveMonitorPermission":
+##                        Sucess,Message,Data = self.RemoveMonitorPermission(Arguments)
+##                    elif Command == "GetMonitorPermissionMonitor":
+##                        Sucess,Message,Data = self.GetMonitorPermissionMonitor(Arguments)
+##
+##                    elif Command == "GetFlightsAll":
+##                        Sucess,Message,Data = self.GetFlightsAll(Arguments)
+##
+##                    elif Command == "GetFlightWaypointsAll":
+##                        Sucess,Message,Data = self.GetFlightWaypointsAll(Arguments)
+##
+##                    elif Command == "Exit":
+##                        Sucess,Message,Data = self.Exit(Arguments)
+##                        Exit = True
+##
+##                    #Else if command doesnt exist send back Failure
+##                    else:
+##                        Sucess,Message,Data = False,"Command does not exist",[]
+##                        print("Monitor tried to use unregistered command")
+##                except Exception as e:
+##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
+##                    print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
+##    ##            print(Message,str(Data))
+##                self.Send((Sucess,Message,Data))
+##                
+##        except Exception as e:
+##            if type(e) == BrokenPipeError:
+##                print("MonitorID:",self.MonitorID," disconnected")
+##            else:
+##                print("Serious exception occured with MonitorID ",self.MonitorID," Error",e)
         print("Process is exiting")
 
     ################################
@@ -662,8 +854,10 @@ class MonitorConnection:
 
 
 class DroneConnection:
-    def __init__(self,Connection):
+    def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
+        self.Thread_Name = Thread_Name
+        self.Thread_Queue = Thread_Queue
         self.con = Connection
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER")
         self.DroneID = -1  #Used to identify if has logged in yet
@@ -690,26 +884,21 @@ class DroneConnection:
 
             Arguments may be converted from Tuple to Dict in future for clarity
         """
-        try:
-            while self.DroneID == -1:#Repeats until logs in
+        Exit = False
+        while not Exit:
+            try:
                 data = self.Recv()
-                try:
-                    Command,Arguments = data[0],data[1]
+                Command,Arguments = data[0],data[1]
+                if self.DroneID == -1:
                     if Command == "Login":
                         Sucess,Message,Data = self.Login(Arguments)
-
+                    elif Command == "Exit":
+                        Sucess,Message,Data = self.Exit(Arguments)
+                        Exit = True
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
-                except Exception as e:
-                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                    print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
-                self.Send((Sucess,Message,Data))
-                    
-            Exit = False
-            while not Exit:
-                data = self.Recv()
-                try:
-                    Command,Arguments = data[0],data[1]
+
+                else:
                     if Command == "UpdateDroneStatus":
                         Sucess,Message,Data = self.UpdateDroneStatus(Arguments)
 
@@ -727,23 +916,85 @@ class DroneConnection:
 
                     elif Command == "Exit":
                         Sucess,Message,Data = self.Exit(Arguments)
+                        Exit = True
 
                     #Else if command doesnt exist send back Failure
                     else:
                         Sucess,Message,Data = False,"Command does not exist",[]
                         print("Drone tried to use unregistered command")
-                except Exception as e:
-                    if type(e) != TypeError:# if this error type occurs connection has failed and would otherwise flood console with irrelevant errors
-                        print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
-                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-        
+
+            except Exception as e:
+                Sucess,Message,Data = False,"An Error occured"+str(e),[]
+                print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
+            try:
                 self.Send((Sucess,Message,Data))
-                
-        except Exception as e:
-            if type(e) == BrokenPipeError:
+            except Exception as e:
                 print("DroneID:",self.DroneID," disconnected")
-            else:
-                print("Serious exception occured with DroneID ",self.DroneID," Error",e)
+                Exit = True
+
+            if not self.Thread_Queue.empty():
+                data = Thread_Queue.get()
+                Command,Arguments = data[0],data[1]
+                if Command == "Exit":
+                    Exit = True
+                
+       
+        
+##        try:
+##            Exit = False
+##            while self.DroneID == -1 and not Exit:#Repeats until logs in
+##                data = self.Recv()
+##                try:
+##                    Command,Arguments = data[0],data[1]
+##                    if Command == "Login":
+##                        Sucess,Message,Data = self.Login(Arguments)
+##
+##                    else:
+##                        Sucess,Message,Data = False,"Command does not exist",[]
+##                except Exception as e:
+##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
+##                    print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
+##                self.Send((Sucess,Message,Data))
+##                    
+##            
+##            while not Exit:
+##                data = self.Recv()
+##                try:
+##                    Command,Arguments = data[0],data[1]
+##                    if Command == "UpdateDroneStatus":
+##                        Sucess,Message,Data = self.UpdateDroneStatus(Arguments)
+##
+##                    elif Command == "DroneGetDroneInfo":
+##                        Sucess,Message,Data = self.DroneGetDroneInfo(Arguments)
+##                        
+##                    elif Command == "CheckForFlight":
+##                        Sucess,Message,Data = self.CheckForFlight(Arguments)
+##                    elif Command == "GetFlight":
+##                        Sucess,Message,Data = self.GetFlight(Arguments)
+##                    elif Command == "GetFlightWaypoints":
+##                        Sucess,Message,Data = self.GetFlightWaypoints(Arguments)
+##                    elif Command == "MarkFlightComplete":
+##                        Sucess,Message,Data = self.MarkFlightComplete(Arguments)
+##
+##                    elif Command == "Exit":
+##                        Sucess,Message,Data = self.Exit(Arguments)
+##
+##                    #Else if command doesnt exist send back Failure
+##                    else:
+##                        Sucess,Message,Data = False,"Command does not exist",[]
+##                        print("Drone tried to use unregistered command")
+##                except Exception as e:
+##                    if type(e) != TypeError:# if this error type occurs connection has failed and would otherwise flood console with irrelevant errors
+##                        print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
+##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
+##        
+##                self.Send((Sucess,Message,Data))
+##                
+##        except Exception as e:
+##            if type(e) == BrokenPipeError:
+##                print("DroneID:",self.DroneID," disconnected")
+##            else:
+##                print("Serious exception occured with DroneID ",self.DroneID," Error",e)
         print("Process is exiting")
 
     def Login(self,Arguments):
@@ -798,11 +1049,12 @@ class DroneConnection:
 
 
 
-def Cleaner(KillSwitch,Interval = 36000,EndTimeThreshold = 72000):
-    while not KillSwitch.is_set():
+def Cleaner(Thread_Name,Thread_Queue,Interval = 36000,EndTimeThreshold = 72000):
+    Exit = False
+    while not Exit:
         try:
             DB = AATC_DB.DBConnection()
-            while not KillSwitch.is_set():
+            while not Exit:
                 print("Cleaner starting cleaning")
                 DB.CleanMonitorPermissions()
                 
@@ -813,6 +1065,12 @@ def Cleaner(KillSwitch,Interval = 36000,EndTimeThreshold = 72000):
                     DB.CleanCompletedFlightWaypoints(WrappedID[0])
                 print("Cleaner completed cleaning. Sleeping..")
                 time.sleep(Interval)
+
+                if not Thread_Queue.empty():
+                    data = Thread_Queue.get()
+                    Command,Arguments = data[0],data[1]
+                    if Command == "Exit":
+                        Exit = True
             
         except Exception as e:
             print("Error in Cleaner",e)
