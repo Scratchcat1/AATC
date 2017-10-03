@@ -254,8 +254,8 @@ def MakeSprites(M):
 
 
 
-xpixel = 1600
-ypixel = 900
+xpixel = 1200
+ypixel = 700
 Refresh_Delay = 60
 clock = pygame.time.Clock()
 pressed = pygame.key.get_pressed
@@ -290,20 +290,6 @@ while Exit != "Y":
                         print("Monitor exit was called")
                         pygame.quit()
                         sys.exit()
-                    
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_w:   #Shift camera
-##                        MonCamera.IncrementCameraCoordY(-0.5/MonCamera.GetZoom())  #/ as Greater zoom means need more fidelety
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-##                        MonCamera.IncrementCameraCoordY(0.5/MonCamera.GetZoom())
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
-##                        MonCamera.IncrementCameraCoordX(-0.5/MonCamera.GetZoom())
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_d:
-##                        MonCamera.IncrementCameraCoordX(0.5/MonCamera.GetZoom())
-                        
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:#Zoom out
-##                        MonCamera.SetZoom(0.9*MonCamera.GetZoom())
-##                    elif event.type == pygame.KEYDOWN and event.key == pygame.K_e:#Zoom in
-##                        MonCamera.SetZoom(1.1*MonCamera.GetZoom())
                         
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         print("Camera details")

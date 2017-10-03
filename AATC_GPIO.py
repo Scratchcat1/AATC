@@ -76,14 +76,12 @@ class Thread_Controller:
         self.Threads[Thread_Name] = Thread_Handle(Thread_Name,threadPointer,Thread_Queue)
         threadPointer.start()
         
-    def Close_Thread(self,Thread_Name,Wait_Join = False):
+    def Close_Thread(self,Thread_Name):
         ClosingThreadHandle = self.Threads.pop(Thread_Name)
         Queue = ClosingThreadHandle.Get_Queue()
         Queue.put(("Exit",()))
-        if Wait_Join:
-            ThreadPointer = ClosingThreadHandle.Get_ThreadPointer()
-            ThreadPointer.join()
         print(self.Name,"GPIO Controller closed Thread",Thread_Name)
+        return ClosingThreadHandle  #Returns Thread_Handle of thread
    
 
     def PassData(self,Thread_Name,Data):
@@ -123,8 +121,16 @@ class Thread_Controller:
     def Reset(self,Wait_Join = False):
         print(self.Name,"Reseting GPIO Threading Controller...")
         Thread_Names = list(self.Threads.keys())
+        ThreadHandles = []
         for Thread_Name in Thread_Names:
-            self.Close_Thread(Thread_Name,Wait_Join)
+            ClosingThreadHandle = self.Close_Thread(Thread_Name)
+            ThreadHandles.append(ClosingThreadHandle)
+            
+        if Wait_Join:   #In seperate loop to asyncrously call 'Exit'      
+            for ThreadHandle in ThreadHandles:
+                ThreadPointer = ThreadHandle.Get_ThreadPointer()
+                ThreadPointer.join()
+                
         print(self.Name,"Reset GPIO Threading Controller")
                 
         
@@ -135,10 +141,18 @@ class Thread_Controller:
             
         
         
-def Create_Controller():
-    q = queue.Queue()
-    g = Thread_Controller(q)
-    t = threading.Thread(target = g.Main)
+def Create_Controller(process = False):
+    if process:
+        q = multiprocessing.Queue()
+    else:
+        q = queue.Queue()
+        
+    TC = Thread_Controller(q)
+
+    if process:
+        t = multiprocessing.Process(target = TC.Main)
+    else:   
+        t = threading.Thread(target = TC.Main)
     t.start()
     return q
     
