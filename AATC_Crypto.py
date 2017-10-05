@@ -2,7 +2,7 @@
 # Diffie-Hellman from 'pip install diffiehellman '
 #import diffiehellman.diffiehellman as DH
 import codecs,recvall,ast,binascii,os
-from Crypto.Cipher import AES
+from Crypto.Cipher import AES,PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
 class Crypter:
@@ -38,15 +38,15 @@ class Crypter:
             self.ClientGenerateKey(key_size)
         else:
             raise ValueError("Crypter: Incorrect mode set")
-        print("Encryption keys generated",self.shared_key)
+        print("Encryption keys generated",self.AESKey)
 
 
 
-    def ClientGenerateKey(self,RSA_KeySize,AES_KeySize):
+    def ClientGenerateKey(self,RSA_KeySize,AES_KeySize= 32):
         RSAKey = RSA.generate(RSA_KeySize)
 
         privateKey = RSAKey.exportKey("DER")
-        publicKey = RSAKey.publicKey().exportKey("DER")
+        publicKey = RSAKey.publickey().exportKey("DER")
 
         self.Send(("ExchangeKey",(publicKey,AES_KeySize)))   #Format ("ExchangeKey",("a1b2c3.....",))
         data = self.Recv()
@@ -58,11 +58,17 @@ class Crypter:
         data = self.Recv()
         if data[0] == False:
             raise Exception("Server failed to commit to exit")
-
-        RSAPrivateObject = RSA.importKey(privateKey)
         
-        self.AESKey = RSAPrivateObject.decrypt(Message)
-        self.AES = AES.new(self.AESKey)
+        RSAPrivateKey = RSA.import_key(privateKey)
+        RSAPrivateObject = PKCS1_OAEP.new(RSAPrivateKey)
+        
+        self.AESKey = RSAPrivateObject.decrypt(Message[0])
+        self.IV = RSAPrivateObject.decrypt(Message[1])
+        
+        self.EncryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)
+        self.DecryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)
+                
+
 
 
 
@@ -78,11 +84,15 @@ class Crypter:
                 if AES_KeySize not in [16,24,32]:
                     AES_KeySize = 32    #If key size is not valid set size to default of 32
                     
-                self.AESKey = binascii.b2a_hex(os.urandom(AES_KeySize))  # Here to allow regeneration of AES key while still in loop if required.
+                self.AESKey = binascii.b2a_hex(os.urandom(AES_KeySize//2))  # Here to allow regeneration of AES key while still in loop if required.
+                self.IV = binascii.b2a_hex(os.urandom(AES_KeySize//2)) 
                 
-                PublicKeyObject = RSA.importKey(publicKey)
-                EncryptedAESKey = PublicKeyObject.encrypt(self.AESKey,"x")[0]
-                self.Send((True,(self.AESKey,)))
+                RSAPrivateKey = RSA.import_key(publicKey)
+                PublicKeyObject = PKCS1_OAEP.new(RSAPrivateKey)
+                
+                EncryptedAESKey = PublicKeyObject.encrypt(self.AESKey)
+                EncryptedIV = PublicKeyObject.encrypt(self.IV)
+                self.Send((True,(EncryptedAESKey,EncryptedIV)))
                 
             elif Command == "Exit":
                 self.Send((True,()))
@@ -90,8 +100,9 @@ class Crypter:
 
             else:
                 self.Send((False,("Command does not exist",)))
-
-        self.AES = AES.new(self.AESKey)
+                
+        self.EncryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)    #Two seperate instances to encrypt and decrypt as non ECB AES is a stream cipher
+        self.DecryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)    #Errors will occur if encrypt and decrypt are not equal in count.
                 
                 
         
@@ -149,14 +160,14 @@ class Crypter:
         
             
     def Encrypt(self,data):
-        pad_size = 16-len(data)%16
-        data += b" "*pad_size
-        return self.AES.encrypt(data)
+##        pad_size = 16-len(data)%16
+##        data += b" "*pad_size
+        return self.EncryptAES.encrypt(data)
 
     def Decrypt(self,data):
 ##        pad_size = 16-len(data)%16      # - should not be nessesary as data will come in 16 size blocks and change in message would thwart decryption.
 ##        data += b" "*pad_size
-        return self.AES.decrypt(data)
+        return self.DecryptAES.decrypt(data)
 
         
         

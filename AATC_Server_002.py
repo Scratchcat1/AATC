@@ -41,7 +41,7 @@ class UserConnection:
             return data
             #return data[0],data[1],data[2]
         except Exception as e:
-            print("UserID:",self.UserID," Socket data recive error")
+            print("UserID:",self.UserID," Socket data recive error",e)
             data = ("",())#Never references a command
 
     def Connection_Loop(self):
