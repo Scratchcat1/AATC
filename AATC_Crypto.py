@@ -175,10 +175,8 @@ class Crypter:
     def Send(self,data):
         self.con.sendall(codecs.encode(str(data)))
     def Recv(self):
-        try:
-            data = recvall.recvall(self.con)
-            data = ast.literal_eval(codecs.decode(data))
-            #      (Command,Arguments)
-            return data
-        except Exception as e:
-            print("Error in Cryptor while receiving ",e)
+        data = recvall.recvall(self.con)
+        data = ast.literal_eval(codecs.decode(data))
+        #      (Command,Arguments)
+        return data
+
