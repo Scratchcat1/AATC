@@ -16,27 +16,8 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
             BoolList.append(False)
     return all(BoolList)
 
-def toRadian(x):
-    return x*math.pi/180
+           
 
-def toDegree(x):
-    return 180*x/math.pi
-            
-def DeltaCoordToMetres(aCoord,bCoord):
-    #Formula for dx and dy from : https://stackoverflow.com/questions/3024404/transform-longitude-latitude-into-meters
-    dx = abs(aCoord.x - bCoord.x)
-    dy = abs(aCoord.y - bCoord.y) # in degrees
-    dz = abs(aCoord.z - bCoord.z)
-
-
-    yCircumference = 40008000
-    xCircumference = 40075160
-    
-    mdy = dy * yCircumference /360
-    mdx = dx * xCircumference * math.cos(toRadian(aCoord.y)) /360
-
-    Distance = math.sqrt(mdx**2 + mdy**2 + dz**2)
-    return Distance
     
     
     
@@ -482,13 +463,15 @@ class UserConnection:
                 TotalDistance = 0
                 for x in range(len(CoordList)):
                     if x != 0: #If not first Coord add the difference in distance to time etc
-                        Distance = DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
+                        Distance = AATC_Coordinate.DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
                         TotalDistance += Distance
                         DeltaTime = Distance/DroneSpeed
                         Time = Time + DeltaTime
                     CoordList[x]["Time"] = Time
 
                 EndTime = Time # Time at which it would probably complete it
+
+
 
                 #Adding Flight to Database
                 self.DB.AddFlight(self.UserID,DroneID,HighPoints[0],HighPoints[len(HighPoints)-1],StartTime,EndTime,EndTime,TotalDistance,XOffset,YOffset,ZOffset)
@@ -1012,8 +995,8 @@ class DroneConnection:
     ########################################################
 
     def DroneGetDroneInfo(self,Arguments):
-        DroneID,DronePassword = Arguments[0],Arguments[1]
-        Sucess,Message,Data = self.DB.DroneGetDroneInfo(DroneID,DronePassword)
+        DroneID = Arguments[0]
+        Sucess,Message,Data = self.DB.DroneGetDroneInfo(self.DroneID)
         return Sucess,Message,Data
     
     ##########################################################

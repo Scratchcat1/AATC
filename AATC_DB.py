@@ -84,13 +84,8 @@ class DBConnection:
             return False,"Incorrect Drone Credentials",-1
 
     def DroneGetDroneInfo(self,DroneID,DronePassword):
-        self.cur.execute("SELECT 1 FROM DroneCredentials WHERE DroneID = %s AND DronePassword = %s",(DroneID,DronePassword))
-        DroneIDFetch = self.cur.fetchall()
-        if DroneIDFetch != ():
-            self.cur.execute("SELECT * FROM Drone WHERE DroneID = %s",(DroneID,))
-            return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
-        else:
-            return False,"Incorrect Drone Credentials",[]
+        self.cur.execute("SELECT * FROM Drone WHERE DroneID = %s",(DroneID,))
+        return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
         
             
 

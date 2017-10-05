@@ -62,8 +62,8 @@ class DroneInterface:
 
     ############################
 
-    def DroneGetDroneInfo(self,DroneID,DronePassword):
-        self.Send("DroneGetDroneInfo",(DroneID,DronePassword))
+    def DroneGetDroneInfo(self,DroneID):
+        self.Send("DroneGetDroneInfo",(DroneID,))
         Sucess,Message,DroneInfo = self.Recv()
         return Sucess,Message,DroneInfo
 

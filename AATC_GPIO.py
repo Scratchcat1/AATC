@@ -1,5 +1,8 @@
 import threading,multiprocessing,queue,time,random
-#import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except:
+    print("No RPi.GPIO module available. Features depending on this will not work/crash")
 
 ##GPIO.setmode(GPIO.BOARD)
 
@@ -14,9 +17,9 @@ def GPIO_Thread(Thread_Name,GPIO_Queue):
     FuncArgs = ()
     while not Exit:
         try:
-            FuncReset = Function(Thread_Name,*FuncArgs) #calls the function passed to the thread
+            Repeat = Function(Thread_Name,*FuncArgs) #calls the function passed to the thread
             
-            if FuncReset:
+            if Repeat:
                 Function,FuncArgs = BlankFunction,()  #Resets commands. Allows function to exit itself.
                 
             if not GPIO_Queue.empty():
@@ -173,7 +176,7 @@ def Command(Thread_Name,arg1,arg2...):
     ...
     ...
     end of function code
-    return True/False  # return FuncReset value. If True, function will not be repeated. If False, will continue until new command arrives
+    return True/False  # return Repeat value. If True, function will  be repeated. If False will exit.
 
 """
 
@@ -182,24 +185,51 @@ def Command(Thread_Name,arg1,arg2...):
 
 def BlankFunction(Thread_Name):
     time.sleep(0.2)
-    return False
+    return True
 
 def DisplayName(Thread_Name,Sleep_Time):
     print("Message from Thread",Thread_Name,". Sleeping for time",Sleep_Time)
     time.sleep(Sleep_Time)
-    return False
+    return True
     
 
-def BlinkTest(Thread_Name,pin,frequency,cycles):  #prints demonstration of blinking pin in text, Frequency in Hz, cycles = repeats till check for new instruction
+def BlinkTest(Thread_Name,pin,frequency,cycles=1,repeat = False):  #prints demonstration of blinking pin in text, Frequency in Hz, cycles = repeats till check for new instruction
     pauseTime = 1/(frequency*2)
     for x in range(cycles):
         print("Activating blink pin",pin, "Cycle:",x)
         time.sleep(pauseTime)
         print("Deactivating blink pin",pin, "Cycle:",x)
         time.sleep(pauseTime)
-    return True
+        
+    return repeat
 
-def Pattern(Thread_Name, Pattern ,ReferenceTime=1):
+
+
+
+##################General GPIO functions
+
+def Blink(Thread_Name,pin,frequency,cycles = 1,repeat= False):
+    pauseTime = 1/(frequency*2)
+    GPIO.setup(pin,GPIO.OUT)
+    
+    for x in range(cycles):
+        #On
+        GPIO.output(pin,1)
+        time.sleep(pauseTime)
+
+        #Off
+        GPIO.output(pin,0)
+        time.sleep(pauseTime)
+        
+    return repeat
+        
+        
+    
+
+
+
+
+def Pattern(Thread_Name, Pattern ,ReferenceTime=1,repeat = True):
     try:
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(11, GPIO.OUT) #red
@@ -218,7 +248,7 @@ def Pattern(Thread_Name, Pattern ,ReferenceTime=1):
         print("Exception in PatternTest",e)
     finally:
         GPIO.cleanup()
-    return False
+    return repeat
 
 def PatternGenerator(PinSet=[11,13,21],StateSet = [0,1] ,Length = 50 ,MinTime = 0.1 ,MaxTime = 1 , RoundingTime = 2):
     Pattern = []
