@@ -1,8 +1,8 @@
 import AATC_Drone,threading,queue,math,time,AATC_GPIO
-
+import AATC_Coordinate
 
 class DroneLogicSystem:
-    def __init__(DroneID,DronePassword,FlightQueue,StatusQueue,GPIO_Queue,Sleep_Time = 60):
+    def __init__(self,DroneID,DronePassword,FlightQueue,StatusQueue,GPIO_Queue,Sleep_Time = 30):
         self.DroneID = DroneID
         self.DronePassword = DronePassword
         self.FlightQueue = FlightQueue
@@ -20,13 +20,15 @@ class DroneLogicSystem:
                 
                 if LoginSucess:  
                     if not InFlight:
+                        print("Entering Flight Check Mode")
                         self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.Pattern,( [(21,1,5),(21,0,1)],))))  #Let the Thread for the GREEN LED blink on pin 21 at 0.5 Hz for 1 cycle repeatedly until stopped
                         self.CheckForFlight()
+                        InFlight = True
                     else:
+                        print("Entering Run Flight Mode")
                         self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.Blink,(21,0.5,1,True))))  #Let the Thread for the GREEN LED blink on pin 21 at 0.5 Hz for 1 cycle repeatedly until stopped
                         self.RunFlight()
-
-                    InFlight = False #Once RunFlight has completed sucessfully go back to checking for flights. Will only complete once finished, if crashes will not pass here.
+                        InFlight = False #Once RunFlight has completed sucessfully go back to checking for flights. Will only complete once finished, if crashes will not pass here.
 
                 else:
                     self.GPIO_Queue.put(("RED","Function",(AATC_GPIO.Blink,(11,1,10,False))))  #Let the Thread for RED LED blink on pin 11 at 1Hz 10 times and not repeat.
@@ -60,7 +62,7 @@ class DroneLogicSystem:
         print("Obtaining flight and drone information. FlightID :",FlightID)
         DroneInfo, Flight, Waypoints = GetAllFlightInfo(self.D,self.DroneID,FlightID)
         
-        FlightQueue.put((False,(DroneInfo,Flight,Waypoints)))
+        self.FlightQueue.put((False,(DroneInfo,Flight,Waypoints)))
 
     def RunFlight(self):
         complete = False
@@ -144,6 +146,7 @@ def GetAllFlightInfo(D,DRONEID,FlightID):    #Gets all drone flight information 
     FSucess,FlightMessage,FlightData = D.GetFlight(FlightID)
     WSucess,WaypointsMessage,FlightWaypointsData = D.GetFlightWaypoints(FlightID)
     if not (DSucess and FSucess and WSucess):
+        print(DroneMessage,FlightMessage,WaypointsMessage)
         raise Exception("FlightData or FlightWaypointData was not sucessfully obtained")
 
     DroneInfo = AATC_Drone.MakeDroneInfo(DroneMessage, DroneData)
@@ -162,6 +165,12 @@ def AtWaypoint(Coords,WaypointCoords,xSize,ySize,zSize):
     if abs(Coords.z-WaypointCoords.z) <= zSize:
         z = True
     return all([x,y,z])
+
+
+def SimulateMovement(Coord,VectorCoord,Sleep_Time = 0.1):
+    Coord = AATC_Coordinate.AddCoords(Coord,VectorCoord)
+    time.sleep(Sleep_Time)
+    return Coord
 
 
 def PutStatus(StatusQueue,Coords,Battery,MarkComplete = None,EmptyOverride = False):
@@ -187,35 +196,57 @@ def DroneHardware(FlightQueue,StatusQueue):
 
             while not AtWaypoint(Coords,Flight.StartCoord,xSize,ySize,zSize):
                 VectorCoord = AATC_Coordinate.CalculateVector(Coords,Flight.StartCoord,DroneInfo.DroneSpeed)
-                Coords = AATC_Coordinate.AddCoords(Coords,VectorCoord)
+                Coords = SimulateMovement(Coords,VectorCoord)
                 PutStatus(StatusQueue,Coords,Battery)
 
             print("Reached Start Coordinate")
+            Coords.Print()
+            
 
             for point in Waypoints:
                 while not AtWaypoint(Coords,point.Coord,xSize,ySize,zSize):
                     VectorCoord = AATC_Coordinate.CalculateVector(Coords,point.Coord,DroneInfo.DroneSpeed)
-                    Coords = AATC_Coordinate.AddCoords(Coords,VectorCoord)
+                    Coords = SimulateMovement(Coords,VectorCoord)
                     PutStatus(StatusQueue,Coords,Battery)
                     
                 print("Reached Waypoint",point.WaypointNumber)
+                Coords.Print()
+                
                 
             while not AtWaypoint(Coords,Flight.EndCoord,xSize,ySize,zSize):
                 VectorCoord = AATC_Coordinate.CalculateVector(Coords,Flight.EndCoord,DroneInfo.DroneSpeed)
-                Coords = AATC_Coordinate.AddCoords(Coords,VectorCoord)
+                Coords = SimulateMovement(Coords,VectorCoord)
                 PutStatus(StatusQueue,Coords,Battery)
 
             print("Reached End Coordinate")
+            Coords.Print()
 
             
             PutStatus(StatusQueue,Coords,Battery,Flight.FlightID,EmptyOverride = True)  # Updates Status and marks flight as complete.
             FlightQueue.task_done()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             
 def Startup(DroneID,DronePassword):
     FlightQueue = queue.Queue()
     StatusQueue = queue.Queue()
+    
     GPIO_Queue = AATC_GPIO.Create_Controller()
+    for thread_name in ["GREEN","RED"]:
+        GPIO_Queue.put(("Controller","Create_Thread",(thread_name,)))
 
     droneLogicObject = DroneLogicSystem(DroneID,DronePassword,FlightQueue,StatusQueue,GPIO_Queue)
     

@@ -4,7 +4,7 @@ try:
 except:
     print("No RPi.GPIO module available. Features depending on this will not work/crash")
 
-##GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BOARD)
 
 ##GPIO.setup(11, GPIO.OUT) #red
 ##GPIO.setup(13, GPIO.OUT) #amber
@@ -19,7 +19,7 @@ def GPIO_Thread(Thread_Name,GPIO_Queue):
         try:
             Repeat = Function(Thread_Name,*FuncArgs) #calls the function passed to the thread
             
-            if Repeat:
+            if not Repeat:
                 Function,FuncArgs = BlankFunction,()  #Resets commands. Allows function to exit itself.
                 
             if not GPIO_Queue.empty():
@@ -210,16 +210,19 @@ def BlinkTest(Thread_Name,pin,frequency,cycles=1,repeat = False):  #prints demon
 
 def Blink(Thread_Name,pin,frequency,cycles = 1,repeat= False):
     pauseTime = 1/(frequency*2)
+    GPIO.setmode(GPIO.BOARD)
     GPIO.setup(pin,GPIO.OUT)
-    
-    for x in range(cycles):
-        #On
-        GPIO.output(pin,1)
-        time.sleep(pauseTime)
+    try:
+        for x in range(cycles):
+            #On
+            GPIO.output(pin,1)
+            time.sleep(pauseTime)
 
-        #Off
-        GPIO.output(pin,0)
-        time.sleep(pauseTime)
+            #Off
+            GPIO.output(pin,0)
+            time.sleep(pauseTime)
+    finally:
+        GPIO.cleanup()
         
     return repeat
         

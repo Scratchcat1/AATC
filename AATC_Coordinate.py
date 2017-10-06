@@ -1,3 +1,5 @@
+import math
+
 class Coordinate:
     def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
         self.x = x
@@ -28,7 +30,6 @@ def AddCoords(Coord,VectorCoord):   #Simulates the drone moving
     Coord.x += VectorCoord.x
     Coord.y += VectorCoord.y
     Coord.z += VectorCoord.z
-    time.sleep(0.1)
     return Coord
 
 def CalculateVector(Coords,TargetCoords,Speed):
@@ -48,7 +49,7 @@ def CalculateVector(Coords,TargetCoords,Speed):
     svx = dx*ratio  #Gets Speed vectors
     svy = dy*ratio
     svz = dz*ratio
-    return AATC_Drone.Coordinate(svx,svy,svz)
+    return Coordinate(svx,svy,svz)
 
 def toRadian(x):
     return x*math.pi/180

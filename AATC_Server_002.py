@@ -463,7 +463,7 @@ class UserConnection:
                 TotalDistance = 0
                 for x in range(len(CoordList)):
                     if x != 0: #If not first Coord add the difference in distance to time etc
-                        Distance = AATC_Coordinate.DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
+                        Distance = DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
                         TotalDistance += Distance
                         DeltaTime = Distance/DroneSpeed
                         Time = Time + DeltaTime
