@@ -183,7 +183,7 @@ def PutStatus(StatusQueue,Coords,Battery,MarkComplete = None,EmptyOverride = Fal
 
 def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):
     distance = AATC_Coordinate.DeltaCoordToMetres(CoordA,CoordB)
-    decAmount = distance/DroneInfo.DroneRange
+    decAmount = (distance/DroneInfo.DroneRange)*100
     Battery -= decAmount
     return Battery
     
