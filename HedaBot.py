@@ -1,4 +1,5 @@
-#import telepot,time,random,multiprocessing
+import telepot,time,random,multiprocessing
+import AATC_Server_002 as AATC_Server
 
 
 
@@ -120,7 +121,7 @@ class Telebot:
                 result = packet
 
 
-                p = multiprocessing.Process(target = AATC_Server_002.BotConnection, args = (UserID,chat_id,packet,self.bot))
+                p = multiprocessing.Process(target = AATC_Server.BotConnection, args = (UserID,chat_id,packet))
                 p.start()
                 #return "I did something"+str(result)+ " for the userID "+str(UserID)
             else:
@@ -325,7 +326,7 @@ class DB_Connection:
                 
         
 
-BOT_TOKEN = "YOUR BOT TOKEN"
+BOT_TOKEN = "YOU TOKEN HERE"
 if __name__ == "__main__":
     bot = telepot.Bot(BOT_TOKEN)
     print(bot.getMe())

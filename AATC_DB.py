@@ -466,8 +466,8 @@ class DBConnection:
         self.cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY AUTO_INCREMENT, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT)")
         self.cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT ,DronePassword TEXT)")
 
-        self.cur.execute("CREATE TABLE IF NOT EXISTS InputStack(chat_id INT , stack_pos INT, value TEXT)")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS Sessions(chat_id INT PRIMARY KEY, UserID INT)")
+        self.cur.execute("CREATE TABLE InputStack(chat_id INT , stack_pos INT, value TEXT)")
+        self.cur.execute("CREATE TABLE Sessions(chat_id INT PRIMARY KEY, UserID INT)")
         
         self.cur.execute("SET FOREIGN_KEY_CHECKS = 1")
         self.db_con.commit()

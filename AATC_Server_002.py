@@ -1,5 +1,5 @@
 import codecs,ast,socket,recvall,os,math,random,time,pickle
-import AATC_AStar,AATC_DB, AATC_Crypto
+import AATC_AStar,AATC_DB, AATC_Crypto,HedaBot
 from AATC_Coordinate import *
 
 def GetTime():
@@ -165,7 +165,7 @@ class UserConnection:
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
                 print("User tried to use unregistered command")
-            return Sucess,Message,Data
+        return Sucess,Message,Data
             
     def Login(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
@@ -456,9 +456,10 @@ class UserConnection:
 
 
 class BotConnection(UserConnection):
-    def __init__(self,UserID,chat_id,packet,bot):
+    def __init__(self,UserID,chat_id,packet):
         self.UserID = UserID
         self.chat_id = chat_id
+        bot = HedaBot.telepot.Bot(HedaBot.BOT_TOKEN)
         self.bot = HedaBot.Telebot(bot)
         self.bot.setChatID(chat_id)
         self.DB = AATC_DB.DBConnection()
@@ -469,10 +470,8 @@ class BotConnection(UserConnection):
 
     def Main(self,Command,Arguments):
         try:
-            data = self.Recv()
-            Command,Arguments = data[0],data[1]
             Sucess,Message,Data = self.ProcessCommand(Command,Arguments)
-                    
+                
         except Exception as e:
             Sucess,Message,Data = False,"An Error occured"+str(e),[]
             print("Error occured with UserID:",str(self.UserID),". Error :",str(e),". Sending failure message")
