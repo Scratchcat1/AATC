@@ -25,6 +25,9 @@ class Coordinate:
     def __str__(self):
         return str((round(self.x,8),round(self.y,8),round(self.z,8)))
 
+    def copy(self):
+        return Coordinate(self.x,self.y,self.z,self.xSize,self.ySize,self.zSize)
+
 
 def AddCoords(Coord,VectorCoord):   #Simulates the drone moving
     Coord.x += VectorCoord.x

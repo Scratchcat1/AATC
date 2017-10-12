@@ -180,6 +180,12 @@ def PutStatus(StatusQueue,Coords,Battery,MarkComplete = None,EmptyOverride = Fal
             data["MarkComplete"] = MarkComplete
         StatusQueue.put(data)
 
+
+def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):
+    distance = AATC_Coordinate.DeltaCoordToMetres(CoordA,CoordB)
+    decAmount = distance/DroneInfo.DroneRange
+    Battery -= decAmount
+    return Battery
     
 def DroneHardware(FlightQueue,StatusQueue):
     Battery = 100
@@ -192,34 +198,57 @@ def DroneHardware(FlightQueue,StatusQueue):
         if not FlightQueue.empty():
             data = FlightQueue.get()
             DroneInfo,Flight,Waypoints = data[1][0],data[1][1],data[1][2]
-
-
-            while not AtWaypoint(Coords,Flight.StartCoord,xSize,ySize,zSize):
-                VectorCoord = AATC_Coordinate.CalculateVector(Coords,Flight.StartCoord,DroneInfo.DroneSpeed)
-                Coords = SimulateMovement(Coords,VectorCoord)
-                PutStatus(StatusQueue,Coords,Battery)
-
-            print("Reached Start Coordinate")
-            Coords.Print()
             
 
-            for point in Waypoints:
+            AllWaypoints = [Flight.StartCoord]+Waypoints+[Flight.EndCoord]
+            
+            for number,point in enumerate(AllWaypoints):
                 while not AtWaypoint(Coords,point.Coord,xSize,ySize,zSize):
+                    LastCoord = Coords.copy()
                     VectorCoord = AATC_Coordinate.CalculateVector(Coords,point.Coord,DroneInfo.DroneSpeed)
                     Coords = SimulateMovement(Coords,VectorCoord)
+                    Battery = DecrementBattery(DroneInfo,Coords,LastCoord,Battery)
                     PutStatus(StatusQueue,Coords,Battery)
-                    
-                print("Reached Waypoint",point.WaypointNumber)
-                Coords.Print()
-                
-                
-            while not AtWaypoint(Coords,Flight.EndCoord,xSize,ySize,zSize):
-                VectorCoord = AATC_Coordinate.CalculateVector(Coords,Flight.EndCoord,DroneInfo.DroneSpeed)
-                Coords = SimulateMovement(Coords,VectorCoord)
-                PutStatus(StatusQueue,Coords,Battery)
 
-            print("Reached End Coordinate")
-            Coords.Print()
+                if number == 0:
+                    print("Reached Start Coordinate")
+                elif number == len(AllWaypoints)-1:
+                    print("Reached End Coordinate")
+                else:
+                    print("Reached Waypoint",point.WaypointNumber)
+
+
+
+
+
+
+
+##            while not AtWaypoint(Coords,Flight.StartCoord,xSize,ySize,zSize):
+##                VectorCoord = AATC_Coordinate.CalculateVector(Coords,Flight.StartCoord,DroneInfo.DroneSpeed)
+##                Coords = SimulateMovement(Coords,VectorCoord)
+##                PutStatus(StatusQueue,Coords,Battery)
+##
+##            print("Reached Start Coordinate")
+##            Coords.Print()
+##            
+##
+##            for point in Waypoints:
+##                while not AtWaypoint(Coords,point.Coord,xSize,ySize,zSize):
+##                    VectorCoord = AATC_Coordinate.CalculateVector(Coords,point.Coord,DroneInfo.DroneSpeed)
+##                    Coords = SimulateMovement(Coords,VectorCoord)
+##                    PutStatus(StatusQueue,Coords,Battery)
+##                    
+##                print("Reached Waypoint",point.WaypointNumber)
+##                Coords.Print()
+##                
+##                
+##            while not AtWaypoint(Coords,Flight.EndCoord,xSize,ySize,zSize):
+##                VectorCoord = AATC_Coordinate.CalculateVector(Coords,Flight.EndCoord,DroneInfo.DroneSpeed)
+##                Coords = SimulateMovement(Coords,VectorCoord)
+##                PutStatus(StatusQueue,Coords,Battery)
+##
+##            print("Reached End Coordinate")
+##            Coords.Print()
 
             
             PutStatus(StatusQueue,Coords,Battery,Flight.FlightID,EmptyOverride = True)  # Updates Status and marks flight as complete.
