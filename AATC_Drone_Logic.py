@@ -1,4 +1,4 @@
-import AATC_Drone,threading,queue,math,time,AATC_GPIO
+import AATC_Drone,threading,queue,math,time,AATC_GPIO,random
 import AATC_Coordinate
 
 class DroneLogicSystem:
@@ -183,7 +183,7 @@ def PutStatus(StatusQueue,Coords,Battery,MarkComplete = None,EmptyOverride = Fal
 
 def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):
     distance = AATC_Coordinate.DeltaCoordToMetres(CoordA,CoordB)
-    decAmount = (distance/DroneInfo.DroneRange)*100
+    decAmount = (distance/DroneInfo.DroneRange)*100*(1+random.randint(-1,1)*0.1)
     Battery -= decAmount
     return Battery
     

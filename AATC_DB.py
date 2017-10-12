@@ -140,7 +140,7 @@ class DBConnection:
     def AddUser(self,Username,Password):
         self.cur.execute("SELECT 1 FROM User WHERE Username = %s",(Username,))
         if self.cur.fetchall() == ():
-            self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,ZoneCreatorPermission,ZoneRemoverPermission,ZoneModifierPermission) VALUES(%s,%s,0,0,0,0)",(Username,Password))
+            self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,PermissionAdder,ZoneCreatorPermission,ZoneRemoverPermission,ZoneModifierPermission) VALUES(%s,%s,0,0,0,0,0)",(Username,Password))
             self.db_con.commit()
             return True,"Added User"
         else:
@@ -165,7 +165,7 @@ class DBConnection:
         options = ["ZoneCreatorPermission","ZoneRemoverPermission","ZoneModifierPermission"]
         if Permission not in options:
             return False,"This setting does not exist. Options are :"+str(options)
-        self.cur.execute("UPDATE User SET "+Permission+" =%s WHERE UserID = %s ",(Value,UserID))  #The string concatation is safe as only strings which are found exactly in options can be inserted and so are safe strings, cannot contain any other commands
+        self.cur.execute("UPDATE User SET "+Permission+" =%s WHERE UserID = %s and PermissionAdder > 2",(Value,UserID))  #The string concatation is safe as only strings which are found exactly in options can be inserted and so are safe strings, cannot contain any other commands
         self.db_con.commit()
         return True,"Set AccountType Value"
 
@@ -407,7 +407,7 @@ class DBConnection:
         for item in TABLES:
             self.cur.execute("DROP TABLE IF EXISTS {0}".format(item))
         
-        self.cur.execute("CREATE TABLE User(UserID INTEGER PRIMARY KEY AUTO_INCREMENT, Username TEXT,Password TEXT, PublicVisibleFlights INT, ZoneCreatorPermission INT, ZoneRemoverPermission INT,ZoneModifierPermission INT)")
+        self.cur.execute("CREATE TABLE User(UserID INTEGER PRIMARY KEY AUTO_INCREMENT, Username TEXT,Password TEXT, PublicVisibleFlights INT, PermissionAdder INT , ZoneCreatorPermission INT, ZoneRemoverPermission INT,ZoneModifierPermission INT)")
         self.cur.execute("CREATE TABLE Drone(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT, UserID INT, DroneName TEXT, DroneType TEXT, DroneSpeed INT, DroneRange INT, DroneWeight REAL, FlightsFlown INT, LastCoords TEXT, LastBattery REAL)")
         self.cur.execute("CREATE TABLE Monitor(MonitorID INTEGER PRIMARY KEY AUTO_INCREMENT, MonitorName TEXT, MonitorPassword TEXT)")
         self.cur.execute("CREATE TABLE MonitorPermission(MonitorID INT ,UserID INT, LastAccessed TEXT, ExpiryDate TEXT,PRIMARY KEY(MonitorID,UserID),FOREIGN KEY(MonitorID) REFERENCES Monitor(MonitorID))")
