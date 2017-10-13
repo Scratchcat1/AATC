@@ -1,6 +1,5 @@
-import telepot,time,random,multiprocessing
+import telepot,time,random,multiprocessing,AATC_DB
 import AATC_Server_002 as AATC_Server
-
 
 
 def printUpdates(Bot):
@@ -14,12 +13,14 @@ class Telebot:
         self.update_id = start_update_id
         self.chat_id = 464193112
         self.Update_Queue = []
-        self.DB = DB_Connection()
+        self.DB = AATC_DB.DBConnection()
 
     def setChatID(self,chat_id):
         self.chat_id = chat_id
 
-    def sendMessage(self,message):
+    def sendMessage(self,message,chat_id = None):
+        if chat_id != None:
+            self.chat_id = chat_id
         self.bot.sendMessage(self.chat_id,message+self.signature)
 
     def getUpdate(self):
@@ -42,12 +43,15 @@ class Telebot:
         self.bot.sendMessage(self.chat_id, Message + self.signature)
         return self.getUpdate()["message"]["text"]
 
-    def sendMessage(self,Message):
-        self.bot.sendMessage(self.chat_id,Message+self.signature)
-
     def mainLoop(self):
         self.update_id = 0
+        self.OutputQueue = multiprocessing.Queue()
         while True:
+            print(self.OutputQueue.empty())
+            while not self.OutputQueue.empty():  #Sends the messages which have been created.
+                packet = self.OutputQueue.get()
+                self.sendMessage(*packet)
+                
             update = self.bot.getUpdates(self.update_id + 1)
             for packet in update:
                 self.update_id = max([self.update_id,packet["update_id"]])
@@ -63,9 +67,9 @@ class Telebot:
                     print("Message:",messageText)
                     print("Response:",response)
 
-                    self.bot.sendMessage(chatID,response+self.signature)
+                    self.sendMessage(response,chatID)
                 
-            time.sleep(1)
+            time.sleep(0.5)
             
 
     def processMessage(self,messageText,chat_id = 0):
@@ -121,7 +125,7 @@ class Telebot:
                 result = packet
 
 
-                p = multiprocessing.Process(target = AATC_Server.BotConnection, args = (UserID,chat_id,packet))
+                p = multiprocessing.Process(target = AATC_Server.BotConnection, args = (UserID,chat_id,packet,self.OutputQueue))
                 p.start()
                 #return "I did something"+str(result)+ " for the userID "+str(UserID)
             else:
@@ -130,30 +134,31 @@ class Telebot:
         except Exception as e:
             return "Error processing message "+str(e)
     
-class StringStack:
-    def __init__(self):
-        self.stack = []
-    def load_stack(self,string):
-        self.stack = ast.literal_eval(string)
-    def push(self,item):
-        self.stack.append(item)
-    def pop(self):
-        return self.stack.pop()
-    def __str__(self):
-        return str(self.stack)
-    def __len__(self):
-        return len(self.stack)
-
-
-def convertStack(stack):
-    arguments = []
-    while len(stack) > 1:
-        arguments.append(stack.pop())
-    command = stack.pop()
-    packet = (command,arguments)
-    return packet
+##class StringStack:
+##    def __init__(self):
+##        self.stack = []
+##    def load_stack(self,string):
+##        self.stack = ast.literal_eval(string)
+##    def push(self,item):
+##        self.stack.append(item)
+##    def pop(self):
+##        return self.stack.pop()
+##    def __str__(self):
+##        return str(self.stack)
+##    def __len__(self):
+##        return len(self.stack)
+##
+##
+##def convertStack(stack):
+##    arguments = []
+##    while len(stack) > 1:
+##        arguments.append(stack.pop())
+##    command = stack.pop()
+##    packet = (command,arguments)
+##    return packet
 
 def convertDBStack(result,CommandDictionary):
+    result = list(result)
     command = result.pop(0)[0]
     arguments = []
     for i,item in enumerate(result):
@@ -250,74 +255,74 @@ def CreateCommandDictionary():
 
     return Commands
 
-        
-import sqlite3 as sql    
-class DB_Connection:
-    def __init__(self):
-        self.db_con = sql.connect("db.name")
-        self.cur = self.db_con.cursor()
-            
-    def addValue(self,value,chat_id):
-        self.cur.execute("SELECT MAX(stack_pos) FROM InputStack WHERE chat_id = ?",(chat_id,))
-        result = self.cur.fetchall()
-        if not result[0][0] == None:
-            stack_pos = result[0][0] +1
-        else:
-            stack_pos = 0
-        self.cur.execute("INSERT INTO InputStack VALUES(?,?,?)",(chat_id,stack_pos,value))
-        self.db_con.commit()
     
-    def getCommand(self,chat_id):
-        self.cur.execute("SELECT value FROM InputStack WHERE chat_id = ? AND stack_pos = 0",(chat_id,))
-        result = self.cur.fetchall()
-        return result[0][0]
-    
-    def getStack(self,chat_id):
-        self.cur.execute("SELECT value FROM InputStack WHERE chat_id = ? ORDER BY stack_pos ASC",(chat_id,))
-        result = self.cur.fetchall()
-        return result
-
-    def getStackSize(self,chat_id):
-        self.cur.execute("SELECT COUNT(1) FROM InputStack WHERE chat_id = ?",(chat_id,))
-        result = self.cur.fetchall()
-        return result[0][0]
-    
-    def flushStack(self,chat_id):
-        self.cur.execute("DELETE FROM InputStack WHERE chat_id = ?",(chat_id,))
-        self.db_con.commit()
-
-
-    ##############################################################
-
-    def SetUserID(self,chat_id,UserID):
-        self.cur.execute("SELECT 1 FROM Sessions WHERE chat_id = ?",(chat_id,))
-        if len(self.cur.fetchall()) == 0:
-            self.cur.execute("INSERT INTO Sessions VALUES(?,?)",(chat_id,UserID))
-        else:
-            self.cur.execute("UPDATE Sessions SET UserID = ? WHERE chat_id = ?",(UserID,chat_id))
-        self.db_con.commit()
-
-    def GetUserID(self,chat_id):
-        self.cur.execute("SELECT UserID FROM Sessions WHERE chat_id = ?",(chat_id,))
-        result = self.cur.fetchall()
-        if len(result) == 0:
-            return -1
-        else:
-            return result[0][0]
-            
-        
-
-    ##############################################################
-
-
-    def reset(self,drop_tables = True):
-        if drop_tables:
-            self.cur.execute("DROP TABLE IF EXISTS InputStack")
-            self.cur.execute("DROP TABLE IF EXISTS Sessions")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS InputStack(chat_id INT , stack_pos INT, value TEXT)")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS Sessions(chat_id INT PRIMARY KEY, UserID INT)")
-        self.db_con.commit()
-        
+##import sqlite3 as sql    
+##class DB_Connection:
+##    def __init__(self):
+##        self.db_con = sql.connect("db.name")
+##        self.cur = self.db_con.cursor()
+##            
+##    def addValue(self,value,chat_id):
+##        self.cur.execute("SELECT MAX(stack_pos) FROM InputStack WHERE chat_id = ?",(chat_id,))
+##        result = self.cur.fetchall()
+##        if not result[0][0] == None:
+##            stack_pos = result[0][0] +1
+##        else:
+##            stack_pos = 0
+##        self.cur.execute("INSERT INTO InputStack VALUES(?,?,?)",(chat_id,stack_pos,value))
+##        self.db_con.commit()
+##    
+##    def getCommand(self,chat_id):
+##        self.cur.execute("SELECT value FROM InputStack WHERE chat_id = ? AND stack_pos = 0",(chat_id,))
+##        result = self.cur.fetchall()
+##        return result[0][0]
+##    
+##    def getStack(self,chat_id):
+##        self.cur.execute("SELECT value FROM InputStack WHERE chat_id = ? ORDER BY stack_pos ASC",(chat_id,))
+##        result = self.cur.fetchall()
+##        return result
+##
+##    def getStackSize(self,chat_id):
+##        self.cur.execute("SELECT COUNT(1) FROM InputStack WHERE chat_id = ?",(chat_id,))
+##        result = self.cur.fetchall()
+##        return result[0][0]
+##    
+##    def flushStack(self,chat_id):
+##        self.cur.execute("DELETE FROM InputStack WHERE chat_id = ?",(chat_id,))
+##        self.db_con.commit()
+##
+##
+##    ##############################################################
+##
+##    def SetUserID(self,chat_id,UserID):
+##        self.cur.execute("SELECT 1 FROM Sessions WHERE chat_id = ?",(chat_id,))
+##        if len(self.cur.fetchall()) == 0:
+##            self.cur.execute("INSERT INTO Sessions VALUES(?,?)",(chat_id,UserID))
+##        else:
+##            self.cur.execute("UPDATE Sessions SET UserID = ? WHERE chat_id = ?",(UserID,chat_id))
+##        self.db_con.commit()
+##
+##    def GetUserID(self,chat_id):
+##        self.cur.execute("SELECT UserID FROM Sessions WHERE chat_id = ?",(chat_id,))
+##        result = self.cur.fetchall()
+##        if len(result) == 0:
+##            return -1
+##        else:
+##            return result[0][0]
+##            
+##        
+##
+##    ##############################################################
+##
+##
+##    def reset(self,drop_tables = True):
+##        if drop_tables:
+##            self.cur.execute("DROP TABLE IF EXISTS InputStack")
+##            self.cur.execute("DROP TABLE IF EXISTS Sessions")
+##        self.cur.execute("CREATE TABLE IF NOT EXISTS InputStack(chat_id INT , stack_pos INT, value TEXT)")
+##        self.cur.execute("CREATE TABLE IF NOT EXISTS Sessions(chat_id INT PRIMARY KEY, UserID INT)")
+##        self.db_con.commit()
+##        
     
         
         
@@ -326,7 +331,9 @@ class DB_Connection:
                 
         
 
-BOT_TOKEN = "YOU TOKEN HERE"
+BOT_TOKEN = "YOUR TOKEN HERE"
 if __name__ == "__main__":
     bot = telepot.Bot(BOT_TOKEN)
+    heda = Telebot(bot)
+    heda.mainLoop()
     print(bot.getMe())

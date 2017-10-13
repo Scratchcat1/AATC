@@ -455,17 +455,19 @@ class UserConnection:
         return True,"Server process is exiting",[]
 
 
+
+
+
+
+
 class BotConnection(UserConnection):
-    def __init__(self,UserID,chat_id,packet):
+    def __init__(self,UserID,chat_id,packet,OutputQueue):
         self.UserID = UserID
         self.chat_id = chat_id
-        bot = HedaBot.telepot.Bot(HedaBot.BOT_TOKEN)
-        self.bot = HedaBot.Telebot(bot)
-        self.bot.setChatID(chat_id)
+        self.OutputQueue = OutputQueue
         self.DB = AATC_DB.DBConnection()
 
         Command, Arguments = packet[0],packet[1]
-
         self.Main(Command,Arguments)
 
     def Main(self,Command,Arguments):
@@ -486,14 +488,26 @@ class BotConnection(UserConnection):
     def Send(self,data):
         Sucess,Message,Data = data[0],data[1],data[2]
         data = str(Sucess) +"\n" +str(Message)+ "\n" + str(Data)
-        self.bot.sendMessage(data)
+        self.OutputQueue.put((data,self.chat_id))
 
     def Login(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
         Sucess,Message,UserID = self.DB.CheckCredentials(Username,Password)
-        if UserID != -1:
-            self.DB.SetUserID(self.chat_id,UserID)
+        self.DB.SetUserID(self.chat_id,UserID)
         return Sucess,Message,[]
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     
 
