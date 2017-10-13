@@ -83,14 +83,9 @@ class DBConnection:
         else:
             return False,"Incorrect Drone Credentials",-1
 
-    def DroneGetDroneInfo(self,DroneID,DronePassword):
-        self.cur.execute("SELECT 1 FROM DroneCredentials WHERE DroneID = %s AND DronePassword = %s",(DroneID,DronePassword))
-        DroneIDFetch = self.cur.fetchall()
-        if DroneIDFetch != ():
-            self.cur.execute("SELECT * FROM Drone WHERE DroneID = %s",(DroneID,))
-            return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
-        else:
-            return False,"Incorrect Drone Credentials",[]
+    def DroneGetDroneInfo(self,DroneID):
+        self.cur.execute("SELECT * FROM Drone WHERE DroneID = %s",(DroneID,))
+        return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
         
             
 
@@ -145,7 +140,7 @@ class DBConnection:
     def AddUser(self,Username,Password):
         self.cur.execute("SELECT 1 FROM User WHERE Username = %s",(Username,))
         if self.cur.fetchall() == ():
-            self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,AccountType) VALUES(%s,%s,0,'Default')",(Username,Password))
+            self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,PermissionAdder,ZoneCreatorPermission,ZoneRemoverPermission,ZoneModifierPermission) VALUES(%s,%s,0,0,0,0,0)",(Username,Password))
             self.db_con.commit()
             return True,"Added User"
         else:
@@ -166,8 +161,11 @@ class DBConnection:
             return True,"Changed PublicVisibleFlights Value"
         else:
             return False,"Invalid PublicVisibleFlights Value"
-    def SetAccountType(self,UserID,Value):
-        self.cur.execute("UPDATE User SET AccountType =%s WHERE UserID = %s ",(Value,UserID))
+    def SetAccountType(self,UserID,Permission,Value):
+        options = ["ZoneCreatorPermission","ZoneRemoverPermission","ZoneModifierPermission"]
+        if Permission not in options:
+            return False,"This setting does not exist. Options are :"+str(options)
+        self.cur.execute("UPDATE User SET "+Permission+" =%s WHERE UserID = %s and PermissionAdder > 2",(Value,UserID))  #The string concatation is safe as only strings which are found exactly in options can be inserted and so are safe strings, cannot contain any other commands
         self.db_con.commit()
         return True,"Set AccountType Value"
 
@@ -278,7 +276,7 @@ class DBConnection:
     def AddMonitor(self,MonitorName,MonitorPassword):
         self.cur.execute("SELECT 1 FROM Monitor WHERE MonitorName = %s",(MonitorName,))
         if self.cur.fetchall() == ():
-            self.cur.execute("INSERT INTO Monitor(MonitorName,MonitorPassword,AccountType) VALUES(%s,%s,'Default')",(MonitorName,MonitorPassword))
+            self.cur.execute("INSERT INTO Monitor(MonitorName,MonitorPassword) VALUES(%s,%s)",(MonitorName,MonitorPassword))
             self.db_con.commit()
             return True,"Added Monitor"
         else:
@@ -365,7 +363,7 @@ class DBConnection:
         else:
             if type(Level) is not int or Level <= 0:
                 return False, "Invalid Level. Must be an integer and > 0"
-            self.cur.execute("SELECT 1 FROM User WHERE UserID = %s AND AccountType LIKE '%%ZoneCreator%%'",(UserID,))
+            self.cur.execute("SELECT 1 FROM User WHERE UserID = %s AND ZoneCreatorPermission =1",(UserID,))
             if self.cur.fetchall() !=  ():
                 self.cur.execute("INSERT INTO NoFlyZone(StartCoord,EndCoord,Level,OwnerUserID) VALUES(%s,%s,%s,%s)",(str(Coord1),str(Coord2),Level,UserID))
                 self.db_con.commit()
@@ -373,7 +371,7 @@ class DBConnection:
             else:
                 return False,"You do not have ZoneCreator Permission"
     def RemoveNoFlyZone(self,UserID,ZoneID):
-        self.cur.execute("SELECT 1 FROM NoFlyZone,User WHERE (NoFlyZone.ZoneID = %s AND NoFlyZone.OwnerUserID = %s ) OR (User.UserID = %s AND User.AccountType LIKE '%%ZoneRemover%%')",(ZoneID,UserID,UserID))   # Gets 1 if (Zone with ZoneID has UserID as owner) OR (User with UserID has ZoneRemoverPermission) 
+        self.cur.execute("SELECT 1 FROM NoFlyZone,User WHERE (NoFlyZone.ZoneID = %s AND NoFlyZone.OwnerUserID = %s ) OR (User.UserID = %s AND User.ZoneRemoverPermission = 1)",(ZoneID,UserID,UserID))   # Gets 1 if (Zone with ZoneID has UserID as owner) OR (User with UserID has ZoneRemoverPermission) 
         if self.cur.fetchall() != ():
             #Runs if user has permission to delete this no fly zone
             self.cur.execute("DELETE FROM NoFlyZone WHERE ZoneID = %s",(ZoneID,))
@@ -386,7 +384,7 @@ class DBConnection:
     def ModifyNoFlyZoneLevel(self,UserID,ZoneID,Level):
         if type(Level) is not int or Level <=0:
             return False,"Invalid Level. Must be an integer and > 0"
-        self.cur.execute("SELECT 1 FROM NoFlyZone,User WHERE (NoFlyZone.ZoneID = %s AND NoFlyZone.OwnerUserID = %s ) OR (User.UserID = %s AND User.AccountType LIKE '%%ZoneModifier%%')",(ZoneID,UserID,UserID))   # Gets 1 if (Zone with ZoneID has UserID as owner) OR (User with UserID has ZoneModifier Permission) 
+        self.cur.execute("SELECT 1 FROM NoFlyZone,User WHERE (NoFlyZone.ZoneID = %s AND NoFlyZone.OwnerUserID = %s ) OR (User.UserID = %s AND User.ZoneModifierPermission = 1)",(ZoneID,UserID,UserID))   # Gets 1 if (Zone with ZoneID has UserID as owner) OR (User with UserID has ZoneModifier Permission) 
         if self.cur.fetchall() != ():
             #Runs if user has permission to delete this no fly zone
             self.cur.execute("UPDATE NoFlyZone SET Level = %s WHERE ZoneID = %s",(Level,ZoneID))
@@ -409,9 +407,9 @@ class DBConnection:
         for item in TABLES:
             self.cur.execute("DROP TABLE IF EXISTS {0}".format(item))
         
-        self.cur.execute("CREATE TABLE User(UserID INTEGER PRIMARY KEY AUTO_INCREMENT, Username TEXT,Password TEXT, PublicVisibleFlights INT, AccountType TEXT)")
+        self.cur.execute("CREATE TABLE User(UserID INTEGER PRIMARY KEY AUTO_INCREMENT, Username TEXT,Password TEXT, PublicVisibleFlights INT, PermissionAdder INT , ZoneCreatorPermission INT, ZoneRemoverPermission INT,ZoneModifierPermission INT)")
         self.cur.execute("CREATE TABLE Drone(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT, UserID INT, DroneName TEXT, DroneType TEXT, DroneSpeed INT, DroneRange INT, DroneWeight REAL, FlightsFlown INT, LastCoords TEXT, LastBattery REAL)")
-        self.cur.execute("CREATE TABLE Monitor(MonitorID INTEGER PRIMARY KEY AUTO_INCREMENT, MonitorName TEXT, MonitorPassword TEXT,AccountType TEXT)")
+        self.cur.execute("CREATE TABLE Monitor(MonitorID INTEGER PRIMARY KEY AUTO_INCREMENT, MonitorName TEXT, MonitorPassword TEXT)")
         self.cur.execute("CREATE TABLE MonitorPermission(MonitorID INT ,UserID INT, LastAccessed TEXT, ExpiryDate TEXT,PRIMARY KEY(MonitorID,UserID),FOREIGN KEY(MonitorID) REFERENCES Monitor(MonitorID))")
         self.cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY AUTO_INCREMENT, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime REAL, ETA REAL, EndTime REAL, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,Completed INT)")
         self.cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA REAL, BlockTime INT)")

@@ -1,4 +1,4 @@
-import prettytable,AATC_Client,ast
+import prettytable,AATC_Client,ast,HedaBot
 MenuOptions = {
             1:"Login",
             
@@ -48,6 +48,7 @@ class UserTextUI:
     def __init__(self,UserInterface,MenuOptions):
         self.UserInterface = UserInterface
         self.MenuOptions = MenuOptions
+        self.bot = HedaBot.Telebot(HedaBot.telepot.Bot(HedaBot.BOT_TOKEN))
 
     def Main_Loop(self):
         self.Exit = False
@@ -56,23 +57,25 @@ class UserTextUI:
                 self.PrintMainMenu()
                 MenuChoice = self.GetMenuChoice()
                 self.EvaluateChoice(MenuChoice)
-                _ = input()
+                _ = self.bot.textInput("Any message when ready")
             except Exception as e:
                 print("Error occured in Client Text UI",e)
                 
     def PrintMainMenu(self):
-        print("\n"*2)
-        print("AATC Client Main Menu")
+        #self.bot.sendMessage("\n"*2)
+        menu = ""
+        menu += "AATC Client Main Menu" +"\n"
         for x in self.MenuOptions.items():
-            print("{0:>3} : {1}".format(str(x[0]),x[1]))
+            menu += "{0:>3} : {1}".format(str(x[0]),x[1])+"\n"
+        self.bot.sendMessage(menu)
             
     def GetMenuChoice(self):
         MenuChoice = -99
         while MenuChoice not in self.MenuOptions:  #will exit once valid menu option is chosen
             try:
-                 MenuChoice = int(input("Choice >>"))
+                 MenuChoice = int(self.bot.textInput("Choice >>"))
             except:
-                print("Integers only")
+                self.bot.sendMessage("Integers only")
         return MenuChoice
 
     def EvaluateChoice(self,MenuChoice):
@@ -153,27 +156,29 @@ class UserTextUI:
         elif Command == "Exit":
             self.Call_Exit()
         else:
-            print("Please correctly register method to EvaluateChoice method")
+            self.bot.sendMessage("Please correctly register method to EvaluateChoice method")
 
     def DisplayResults(self,Sucess,Message,Data = None):
-        print("Sucess >>",Sucess)
-        print("Message >>",Message)
+        result = ""
+        result +="Sucess >>"+str(Sucess)+"\n"
+        result +="Message >>"+str(Message)+"\n"
         if Data not in [None,[]]:
             try:
                 Columns = ast.literal_eval(Message)
                 Table = prettytable.PrettyTable(Columns)
                 for row in Data:
                     Table.add_row(row)
-                print(Table)
+                result += str(Table) +"\n"
             except Exception as e:
-                print("Error creating asthetic table",e)
+                result += "Error creating asthetic table" + str(e) +"\n"
                 for row in Data:
-                    print(row)
+                    result += str(row) +"\n"
+        self.bot.sendMessage(result)
         
 
     def Login(self):
-        Username = input("Username >>")
-        Password = input("Password >>")
+        Username = self.bot.textInput("Username >>")
+        Password = self.bot.textInput("Password >>")
         Sucess,Message = self.UserInterface.Login(Username,Password)
         self.DisplayResults(Sucess,Message)
 
@@ -184,20 +189,20 @@ class UserTextUI:
         self.DisplayResults(Sucess,Message,NoFlyZones)
 
     def AddNoFlyZone(self):
-        StartCoords = input("Enter Start Coordinates in form (x,y,z) >>")
-        EndCoords = input("Enter End Coordinates in form (x,y,z) >>")
-        Level = int(input("Enter Level of No Fly Zone >>"))
+        StartCoords = self.bot.textInput("Enter Start Coordinates in form (x,y,z) >>")
+        EndCoords = self.bot.textInput("Enter End Coordinates in form (x,y,z) >>")
+        Level = int(self.bot.textInput("Enter Level of No Fly Zone >>"))
         Sucess,Message = self.UserInterface.AddNoFlyZone(StartCoords,EndCoords,Level)
         self.DisplayResults(Sucess,Message)
         
     def RemoveNoFlyZone(self):
-        ZoneID = int(input("Enter ZoneID >>"))
+        ZoneID = int(self.bot.textInput("Enter ZoneID >>"))
         Sucess,Message = self.UserInterface.RemoveNoFlyZone(ZoneID)
         self.DisplayResults(Sucess,Message)
 
     def ModifyNoFlyZoneLevel(self):
-        ZoneID = int(input("Enter ZoneID >>"))
-        Level = int(input("Enter Level >>"))
+        ZoneID = int(self.bot.textInput("Enter ZoneID >>"))
+        Level = int(self.bot.textInput("Enter Level >>"))
         Sucess,Message = self.UserInterface.ModifyNoFlyZoneLevel(ZoneID,Level)
         self.DisplayResults(Sucess,Message)
 
@@ -205,44 +210,44 @@ class UserTextUI:
     #####################################
     
     def AddDrone(self):
-        DroneName = input("Drone Name >>")
-        DronePassword = input("Drone Password >>")
-        Type = input("Drone Type >>")
-        Speed = int(input("Speed (m/s) >>"))
-        Range = int(input("Range (m) >>"))
-        Weight = float(input("Weight (kg) >>"))
+        DroneName = self.bot.textInput("Drone Name >>")
+        DronePassword = self.bot.textInput("Drone Password >>")
+        Type = self.bot.textInput("Drone Type >>")
+        Speed = int(self.bot.textInput("Speed (m/s) >>"))
+        Range = int(self.bot.textInput("Range (m) >>"))
+        Weight = float(self.bot.textInput("Weight (kg) >>"))
         Sucess,Message = self.UserInterface.AddDrone(DroneName,DronePassword,Type,Speed,Range,Weight)
         self.DisplayResults(Sucess,Message)
 
     def RemoveDrone(self):
-        DroneID = int(input("DroneID >>"))
+        DroneID = int(self.bot.textInput("DroneID >>"))
         Sucess,Message = self.UserInterface.RemoveDrone(DroneID)
         self.DisplayResults(Sucess,Message)
 
     def GetDroneID(self):
-        DroneName = input("Drone Name >>")
+        DroneName = self.bot.textInput("Drone Name >>")
         Sucess,Message,DroneID = self.UserInterface.GetDroneID(DroneName)
         self.DisplayResults(Sucess,Message,DroneID)
         
     def GetDroneCredentials(self):
-        DroneID = int(input("DroneID >>"))
+        DroneID = int(self.bot.textInput("DroneID >>"))
         Sucess,Message,Credentials = self.UserInterface.GetDroneCredentials(DroneID)
         self.DisplayResults(Sucess,Message,Credentials)
 
     def SetDroneCredentials(self):
-        DroneID = int(input("DroneID >>"))
-        DronePassword = input("Drone Password >>")
+        DroneID = int(self.bot.textInput("DroneID >>"))
+        DronePassword = self.bot.textInput("Drone Password >>")
         Sucess,Message = self.UserInterface.SetDroneCredentials(DroneID,DronePassword)
         self.DisplayResults(Sucess,Message,Credentials)
 
     def CheckDroneOwnership(self):
-        UserID = int(input("UserID >>"))
-        DroneID = int(input("DroneID >>"))
+        UserID = int(self.bot.textInput("UserID >>"))
+        DroneID = int(self.bot.textInput("DroneID >>"))
         Sucess,Message,Ownership = self.UserInterface.CheckDroneOwnership(UserID,DroneID)
         self.DisplayResults(Sucess,Message,Ownership)
 
     def GetDroneInfo(self):
-        DroneID = int(input("DroneID >>"))
+        DroneID = int(self.bot.textInput("DroneID >>"))
         Sucess,Message,DroneInfo = self.UserInterface.GetDroneInfo(DroneID)
         self.DisplayResults(Sucess,Message,DroneInfo)
 
@@ -257,29 +262,29 @@ class UserTextUI:
     ###############################################
 
     def GetUserID(self):
-        Username = input("Username >>")
+        Username = self.bot.textInput("Username >>")
         Sucess,Message,UserID = self.UserInterface.GetUserID(Username)
         self.DisplayResults(Sucess,Message,UserID)
 
     def GetUsername(self):
-        UserID = int(input("UserID >>"))
+        UserID = int(self.bot.textInput("UserID >>"))
         Sucess,Message,Username = self.UserInterface.GetUsername(UserID)
         self.DisplayResults(Sucess,Message,Username)
 
     def AddUser(self):
-        Username = input("Username >>")
-        Password = input("Password >>")
+        Username = self.bot.textInput("Username >>")
+        Password = self.bot.textInput("Password >>")
         Sucess,Message = self.UserInterface.AddUser(Username,Password)
         self.DisplayResults(Sucess,Message)
 
     def SetFlightVisibility(self):
-        Visibility = int(input("Visibility >>"))
+        Visibility = int(self.bot.textInput("Visibility >>"))
         Sucess,Message = self.UserInterface.SetFlightVisibility(Visibility)
         self.DisplayResults(Sucess,Message)
 
     def SetAccountType(self):
-        Permission = input("Account Type >>")
-        Type = int(input("Account Type >>"))
+        Permission = self.bot.textInput("Permission >>")
+        Type = self.bot.textInput("Account Type >>")
         Sucess,Message = self.UserInterface.SetAccountType(Permission,Type)
         self.DisplayResults(Sucess,Message)
 
@@ -294,22 +299,22 @@ class UserTextUI:
         self.DisplayResults(Sucess,Message,AllFlights)
 
     def AddFlight(self):
-        DroneID = int(input("DroneID >>"))
+        DroneID = int(self.bot.textInput("DroneID >>"))
 
         HighPoints = []
         point = ""
-        print("Enter Coordinates one by one, enter 'Done' once complete")
+        self.bot.sendMessage("Enter Coordinates one by one, enter 'Done' once complete")
         while point != "Done":
-            point = input("Enter Coordinate in form (x,y,z) >>")
+            point = self.bot.textInput("Enter Coordinate in form (x,y,z) >>")
             if point != "Done":
                 HighPoints.append(point)
-        StartTime = int(input("Enter start time in seconds since UNIX time >>"))
+        StartTime = int(self.bot.textInput("Enter start time in seconds since UNIX time >>"))
         Sucess,Message,FlightInfo = self.UserInterface.AddFlight(DroneID,HighPoints,StartTime)
         self.DisplayResults(Sucess,Message,FlightInfo)
     
         
     def RemoveFlight(self):
-        FlightID = int(input("FlightID >>"))
+        FlightID = int(self.bot.textInput("FlightID >>"))
         Sucess,Message = self.UserInterface.RemoveFlight(FlightID)
         self.DisplayResults(Sucess,Message)
 
@@ -326,31 +331,31 @@ class UserTextUI:
     ###################################################
 
     def GetMonitorID(self):
-        MonitorName = input("MonitorName >>")
+        MonitorName = self.bot.textInput("MonitorName >>")
         Sucess,Message,MonitorID = self.UserInterface.GetMonitorID(MonitorName)
         self.DisplayResults(Sucess,Message,MonitorID)
 
     def GetMonitorName(self):
-        MonitorID = int(input("MonitorID >>"))
+        MonitorID = int(self.bot.textInput("MonitorID >>"))
         Sucess,Message,MonitorName = self.UserInterface.GetMonitorName(MonitorID)
         self.DisplayResults(Sucess,Message,MonitorName)
 
     ##################################################
 
     def AddMonitorPermission(self):
-        MonitorID = int(input("MonitorID >>"))
-        ExpiryDate = int(input("Expiry Date >>"))
+        MonitorID = int(self.bot.textInput("MonitorID >>"))
+        ExpiryDate = int(self.bot.textInput("Expiry Date >>"))
         Sucess,Message = self.UserInterface.AddMonitorPermission(MonitorID,ExpiryDate)
         self.DisplayResults(Sucess,Message)
 
     def RemoveMonitorPermission(self):
-        MonitorID = int(input("MonitorID >>"))
+        MonitorID = int(self.bot.textInput("MonitorID >>"))
         Sucess,Message = self.UserInterface.RemoveMonitorPermission(MonitorID)
         self.DisplayResults(Sucess,Message)
 
     def ModifyMonitorPermissionDate(self):
-        MonitorID = int(input("MonitorID >>"))
-        ExpiryDate = int(input("ExpiryDate"))
+        MonitorID = int(self.bot.textInput("MonitorID >>"))
+        ExpiryDate = int(self.bot.textInput("ExpiryDate"))
         Sucess,Message = self.UserInterface.ModifyMonitorPermissionDate(MonitorID,ExpiryDate)
         self.DisplayResults(Sucess,Message)
 
@@ -361,17 +366,17 @@ class UserTextUI:
     #################################################
 
     def Call_Exit(self):
-        Choice = input("Exit? (Y/N) >>").upper()
+        Choice = self.bot.textInput("Exit? (Y/N) >>").upper()
         if Choice == "Y":
-            print("Exiting..")
+            self.bot.sendMessage("Exiting..")
             try:
                 Sucess,Message = self.UserInterface.Exit()
                 self.DisplayResults(Sucess,Message)
             except:
-                print("Unable to close server connection")
+                self.bot.sendMessage("Unable to close server connection")
             self.Exit = True
         else:
-            print("Exit cancelled")
+            self.bot.sendMessage("Exit cancelled")
 
 
 

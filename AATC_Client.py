@@ -153,8 +153,8 @@ class UserInterface:
         Sucess,Message,_ =  self.Recv()
         return Sucess,Message
 
-    def SetAccountType(self,Value):
-        self.Send("SetAccountType",(Value,))
+    def SetAccountType(self,Permission,Value):
+        self.Send("SetAccountType",(Permission,Value))
         Sucess,Message,_ = self.Recv()
         return Sucess,Message
 

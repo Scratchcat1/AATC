@@ -220,6 +220,7 @@ if __name__ == "__main__":
     Main_Command = ""
     while Main_Command != "EXIT":
         Main_Command = input("Enter main command >>").upper()
+        AATC_GPIO.multiprocessing.active_children()
         
         
         

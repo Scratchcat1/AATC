@@ -62,8 +62,8 @@ class DroneInterface:
 
     ############################
 
-    def DroneGetDroneInfo(self,DroneID,DronePassword):
-        self.Send("DroneGetDroneInfo",(DroneID,DronePassword))
+    def DroneGetDroneInfo(self,DroneID):
+        self.Send("DroneGetDroneInfo",(DroneID,))
         Sucess,Message,DroneInfo = self.Recv()
         return Sucess,Message,DroneInfo
 
@@ -129,8 +129,12 @@ def GetFlightObject(Message,Data):
 
     FlightID = Data[FlightIDIndex]
     DroneID = Data[DroneIDIndex]
-    StartCoord = ConvertCoordString(Data[StartCoordsIndex])
-    EndCoord = ConvertCoordString(Data[EndCoordsIndex])
+##    StartCoord = ConvertCoordString(Data[StartCoordsIndex])
+##    EndCoord = ConvertCoordString(Data[EndCoordsIndex])
+    StartCoord = Waypoint(FlightID,-1,ConvertCoordString(Data[StartCoordsIndex]),-1)
+    EndCoord = Waypoint(FlightID,-2,ConvertCoordString(Data[EndCoordsIndex]),-1)
+
+    
     StartTime = Data[FlightIDIndex]
     ETA = Data[FlightIDIndex]
     Distance = Data[DistanceIndex]
