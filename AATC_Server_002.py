@@ -288,7 +288,10 @@ class UserConnection:
     def AddFlight(self,Arguments):
         DroneID,HighPoints,StartTime = Arguments[0],Arguments[1],Arguments[2]
         if StartTime < GetTime():
-            return False,"Attempting to add flight in the past",[]
+            if StartTime <= 2678400:   #Allow starting of flights up to 1 month ahead. No need to enter very large numbers for no reason.
+                StartTime += GetTime()
+            else:
+                return False,"Attempting to add flight in the past",[]
         #load graph
         graph = AATC_AStar.DynoGraph()
         graph.ImportGraph()
@@ -466,6 +469,7 @@ class BotConnection(UserConnection):
         self.chat_id = chat_id
         self.OutputQueue = OutputQueue
         self.DB = AATC_DB.DBConnection()
+        self.NOFLYZONE_THRESHOLD_COST = 50
 
         Command, Arguments = packet[0],packet[1]
         self.Main(Command,Arguments)

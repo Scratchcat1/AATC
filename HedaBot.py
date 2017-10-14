@@ -47,7 +47,6 @@ class Telebot:
         self.update_id = 0
         self.OutputQueue = multiprocessing.Queue()
         while True:
-            print(self.OutputQueue.empty())
             while not self.OutputQueue.empty():  #Sends the messages which have been created.
                 packet = self.OutputQueue.get()
                 self.sendMessage(*packet)
@@ -107,6 +106,9 @@ class Telebot:
                 else:
                     self.DB.flushStack(chat_id)
                     text = text.replace("/","")
+            elif text.lower() in ["help","?"]:
+                return ShowCommands()
+                
                     
             self.DB.addValue(text,chat_id)
             
@@ -124,7 +126,7 @@ class Telebot:
                 UserID = self.DB.GetUserID(chat_id)
                 result = packet
 
-
+                self.DB.flushStack(chat_id)  
                 p = multiprocessing.Process(target = AATC_Server.BotConnection, args = (UserID,chat_id,packet,self.OutputQueue))
                 p.start()
                 #return "I did something"+str(result)+ " for the userID "+str(UserID)
@@ -132,7 +134,7 @@ class Telebot:
                 return CommandDictionary[command][stack_size]["Query"]
             
         except Exception as e:
-            return "Error processing message "+str(e)
+            return "Error processing message "+str(e) + "\n" + ShowCommands()
     
 ##class StringStack:
 ##    def __init__(self):
@@ -171,12 +173,22 @@ def SplitWaypoints(string):
     waypoints = string.split("\n")
     return waypoints
 
+def ShowCommands():
+    result = "Here is a list of commands you can use"
+    commands = CreateCommandDictionary()
+    for command in commands:
+        result += "\n/"+command
+    return result
+    
+
 
 def CreateCommandDictionary():
     Commands = {}
     # Format Commands["Commnad String"] = {ArgumentNumber:{"Quergy":"Query text","Type":type of response eg int. Must be callable }}
     Commands["Login"] = {1:{"Query":"Enter Username","Type":str},
                           2:{"Query":"Enter Password","Type":str}}
+
+    #####################################################
 
     Commands["GetNoFlyZones"] = {}
     Commands["AddNoFlyZone"] = {1: {'Type': str, 'Query': 'Enter first coordinate'},
@@ -187,7 +199,7 @@ def CreateCommandDictionary():
     Commands["ModifyNoFlyZoneLevel"] = {1: {'Type': int, 'Query': 'Enter ZoneID'},
                                         2: {'Type': int, 'Query': 'Enter new level of Zone'}}
 
-
+    #####################################################
 
 
     Commands["AddDrone"] = {1: {'Type': str, 'Query': 'Enter Drone Name'},
@@ -215,6 +227,8 @@ def CreateCommandDictionary():
     Commands["GetDronesUser"]= {}
     Commands["GetDronesAll"]= {}
 
+    ######################################
+
     Commands["GetUserID"]= {1: {'Query': 'Enter Username', 'Type': str}}
     Commands["GetUsername"]= {1: {'Query': 'Enter UserID', 'Type': int}}
 
@@ -226,6 +240,8 @@ def CreateCommandDictionary():
     Commands["SetAccountType"]= {1: {'Query': 'Enter Permission', 'Type': str},
                                  2: {'Query': 'Enter Account Type', 'Type': int}}
 
+
+    #######################################
 
     Commands["GetFlightsUser"]= {}
     Commands["GetFlightsAll"]= {}
@@ -239,6 +255,8 @@ def CreateCommandDictionary():
 
     Commands["GetFlightWaypointsUser"]= {}
     Commands["GetFlightWaypointsAll"]= {}
+
+    ################################################
 
     Commands["GetMonitorID"]= {1: {'Query': 'Enter MonitorName', 'Type': str}}
     Commands["GetMonitorName"]= {1: {'Query': 'Enter MonitorID', 'Type': int}}
@@ -331,7 +349,7 @@ def CreateCommandDictionary():
                 
         
 
-BOT_TOKEN = "YOUR TOKEN HERE"
+BOT_TOKEN = "472230564:AAEHTSJ446LE_BO_hQ8B4PeVmUTrB8gRsEA"
 if __name__ == "__main__":
     bot = telepot.Bot(BOT_TOKEN)
     heda = Telebot(bot)
