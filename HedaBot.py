@@ -1,4 +1,4 @@
-import telepot,time,random,multiprocessing,AATC_DB
+import telepot,time,random,multiprocessing,AATC_DB,AATC_GPIO
 import AATC_Server_002 as AATC_Server
 
 
@@ -7,13 +7,21 @@ def printUpdates(Bot):
         print(item)
 
 class Telebot:
-    def __init__(self,bot,signature = "\nHeda ∞",start_update_id= 0):
+    def __init__(self,bot,signature = "\nHeda ∞",start_update_id= 0,inputSorterNumber = 4):
         self.bot = bot
         self.signature = signature
         self.update_id = start_update_id
         self.chat_id = 464193112
         self.Update_Queue = []
         self.DB = AATC_DB.DBConnection()
+        self.OutputQueue = multiprocessing.Queue()
+        
+        self.inputSorterNumber = inputSorterNumber
+        self.TC_Queue = AATC_GPIO.Create_Controller()
+        for ProcessID in range(self.inputSorterNumber):
+            self.TC_Queue.put(("Controller","Create_Process",(ProcessID,inputSorter,(self.OutputQueue,))))
+        
+        
 
     def setChatID(self,chat_id):
         self.chat_id = chat_id
@@ -40,35 +48,32 @@ class Telebot:
 
     
     def textInput(self,Message=""):  #relays message between user and machine
-        self.bot.sendMessage(self.chat_id, Message + self.signature)
+        self.sendMessage(Message,self.chat_id)
         return self.getUpdate()["message"]["text"]
 
     def mainLoop(self):
-        self.update_id = 0
-        self.OutputQueue = multiprocessing.Queue()
         while True:
-            while not self.OutputQueue.empty():  #Sends the messages which have been created.
-                packet = self.OutputQueue.get()
-                self.sendMessage(*packet)
-                
-            update = self.bot.getUpdates(self.update_id + 1)
-            for packet in update:
-                self.update_id = max([self.update_id,packet["update_id"]])
+            try:
+                while not self.OutputQueue.empty():  #Sends the messages which have been created.
+                    packet = self.OutputQueue.get()
+                    self.sendMessage(*packet)
+                    
+                update = self.bot.getUpdates(self.update_id + 1)
+                for packet in update:
+                    self.update_id = max([self.update_id,packet["update_id"]])
 
-                messageText = packet["message"]["text"]
-                chatID = packet["message"]["chat"]["id"]
-                if ord(messageText[0]) >200:  #Deal with emojis -_-
-                    continue
+                    messageText = packet["message"]["text"]
+                    chatID = packet["message"]["chat"]["id"]
+                    if ord(messageText[0]) >200:  #Deal with emojis -_-
+                        continue
 
-                response = self.inputSorter(messageText,chatID)
-                if response != None:
-                    print()
-                    print("Message:",messageText)
-                    print("Response:",response)
-
-                    self.sendMessage(response,chatID)
-                
-            time.sleep(0.5)
+                    Thread_Name = chatID % self.inputSorterNumber
+                    self.TC_Queue.put((Thread_Name,"ProcessMessage",(messageText,chatID)))
+                    
+                time.sleep(0.5)
+            except:
+                pass
+        self.TC_Queue.put(("Controller","Exit",(True,)))
             
 
     def processMessage(self,messageText,chat_id = 0):
@@ -97,67 +102,136 @@ class Telebot:
 
         return response
 
-    def inputSorter(self,text,chat_id):
+    
+
+class inputSorter:
+    def __init__(self,Thread_Name,Input_Queue,OutputQueue,Exec_Processes = 2):
+        self.Thread_Name = Thread_Name
+        self.Input_Queue = Input_Queue
+        self.OutputQueue = OutputQueue
+        self.Exec_Processes = Exec_Processes
+        
+        self.DB = AATC_DB.DBConnection()
+        self.ShowCommandsList = ShowCommands()
+        self.CommandDictionary = CreateCommandDictionary()
+
+        self.EC_Queue = AATC_GPIO.Create_Controller()
+        for ProcessID in range(self.Exec_Processes):
+            self.EC_Queue.put(("Controller","Create_Process",(ProcessID,CommandExecutor,(self.OutputQueue,))))
+
+        self.mainLoop()
+
+    def mainLoop(self):
+        Exit = False
+        while not Exit:
+            try:
+                data = self.Input_Queue.get()
+                command,arguments = data[0],data[1]
+                if command == "Exit":
+                    Exit = True
+                    continue
+            
+                messageText,chat_id = arguments[0],arguments[1]
+
+                response = self.processInput(messageText,chat_id)
+                if response != None:
+                    print()
+                    print("Message:",messageText)
+                    print("Response:",response)
+                    self.OutputQueue.put((response,chat_id))
+            except Exception as e:
+                print("Error in inputSorter",self.Thread_Name,"Error:",e)
+        self.EC_Queue.put(("Controller","Exit",(True,)))
+
+
+    def processInput(self,messageText,chat_id):
+        lowerText = messageText.lower()
         try:
-            if "/" in text:
-                if "/cancel" == text:
+            if "/" in messageText:
+                if "/cancel" == messageText:
                     self.DB.flushStack(chat_id)
                     return "Command cancelled"
                 else:
                     self.DB.flushStack(chat_id)
-                    text = text.replace("/","")
-            elif text.lower() in ["help","?"]:
-                return ShowCommands()
+                    messageText = messageText.replace("/","")
+            elif lowerText in ["help","?"]:
+                return self.ShowCommandsList
                 
                     
-            self.DB.addValue(text,chat_id)
+            self.DB.addValue(messageText,chat_id)
             
             stack_size = self.DB.getStackSize(chat_id)
-            
             command = self.DB.getCommand(chat_id)
-            CommandDictionary = CreateCommandDictionary()
-            
-            command_size = len(CommandDictionary[command])
+            command_size = len(self.CommandDictionary[command])
             
             if stack_size == command_size+1:
-                stack = self.DB.getStack(chat_id)
-                packet = convertDBStack(stack,CommandDictionary)
-                
                 UserID = self.DB.GetUserID(chat_id)
-                result = packet
+                stack = self.DB.getStack(chat_id)
+                self.DB.flushStack(chat_id)
+                
+                packet = convertDBStack(stack,self.CommandDictionary)
 
-                self.DB.flushStack(chat_id)  
-                p = multiprocessing.Process(target = AATC_Server.BotConnection, args = (UserID,chat_id,packet,self.OutputQueue))
-                p.start()
-                #return "I did something"+str(result)+ " for the userID "+str(UserID)
+##                p = multiprocessing.Process(target = AATC_Server.BotConnection, args = (UserID,chat_id,packet,self.OutputQueue))
+##                p.start()
+                Thread_Name = random.randint(0,self.Exec_Processes-1)
+                self.EC_Queue.put((Thread_Name,"RunCommand",(UserID,chat_id,packet)))
+                
             else:
-                return CommandDictionary[command][stack_size]["Query"]
+                return self.CommandDictionary[command][stack_size]["Query"]
             
         except Exception as e:
-            return "Error processing message "+str(e) + "\n" + ShowCommands()
-    
-##class StringStack:
-##    def __init__(self):
-##        self.stack = []
-##    def load_stack(self,string):
-##        self.stack = ast.literal_eval(string)
-##    def push(self,item):
-##        self.stack.append(item)
-##    def pop(self):
-##        return self.stack.pop()
-##    def __str__(self):
-##        return str(self.stack)
-##    def __len__(self):
-##        return len(self.stack)
-##
-##
-##def convertStack(stack):
-##    arguments = []
-##    while len(stack) > 1:
-##        arguments.append(stack.pop())
-##    command = stack.pop()
-##    packet = (command,arguments)
-##    return packet
+            return "Error processing message "+str(e) + "\n" + self.ShowCommandsList
+
+
+
+
+
+class CommandExecutor:
+    def __init__(self,Thread_Name,Input_Queue,OutputQueue):
+        self.Thread_Name = Thread_Name
+        self.Input_Queue = Input_Queue
+        self.OutputQueue = OutputQueue
+
+        self.mainLoop()
+
+    def mainLoop(self):
+        Exit = False
+        while not Exit:
+            try:
+                data = self.Input_Queue.get()
+                command,arguments = data[0],data[1]
+                if command == "Exit":
+                    Exit = True
+                    continue
+
+                
+                elif command == "RunCommand":
+                    UserID,chat_id,packet = arguments[0],arguments[1],arguments[2]
+                    AATC_Server.BotConnection(UserID,chat_id,packet,self.OutputQueue)
+
+                else:
+                    print("CommandExecutor",self.Thread_Name," obtained incorrect command",command)
+
+            except Exception as e:
+                print("Exception in CommandExecutor",self.Thread_Name,"Error:",e)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def convertDBStack(result,CommandDictionary):
     result = list(result)
@@ -349,7 +423,7 @@ def CreateCommandDictionary():
                 
         
 
-BOT_TOKEN = "472230564:AAEHTSJ446LE_BO_hQ8B4PeVmUTrB8gRsEA"
+BOT_TOKEN = "YOUR TOKEN HERE"
 if __name__ == "__main__":
     bot = telepot.Bot(BOT_TOKEN)
     heda = Telebot(bot)

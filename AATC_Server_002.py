@@ -1,5 +1,5 @@
 import codecs,ast,socket,recvall,os,math,random,time,pickle
-import AATC_AStar,AATC_DB, AATC_Crypto,HedaBot
+import AATC_AStar,AATC_DB, AATC_Crypto
 from AATC_Coordinate import *
 
 def GetTime():
@@ -76,6 +76,7 @@ class UserConnection:
                 if Command == "Exit":
                     Exit = True
 
+        self.DB.Exit()
         print("Process will now exit")
 
     def ProcessCommand(self,Command,Arguments):
@@ -486,6 +487,7 @@ class BotConnection(UserConnection):
             self.Send((Sucess,Message,Data))
         except Exception as e:
             print("Error sending message back to chat",e)
+        self.DB.Exit()
             
         
 
@@ -696,6 +698,7 @@ class MonitorConnection:
 ##                print("MonitorID:",self.MonitorID," disconnected")
 ##            else:
 ##                print("Serious exception occured with MonitorID ",self.MonitorID," Error",e)
+        self.DB.Exit()
         print("Process is exiting")
 
     ################################
@@ -929,6 +932,7 @@ class DroneConnection:
 ##                print("DroneID:",self.DroneID," disconnected")
 ##            else:
 ##                print("Serious exception occured with DroneID ",self.DroneID," Error",e)
+        self.DB.Exit()
         print("Process is exiting")
 
     def Login(self,Arguments):
