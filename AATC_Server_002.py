@@ -58,92 +58,7 @@ class UserConnection:
             try:
                 data = self.Recv()
                 Command,Arguments = data[0],data[1]
-                if self.UserID == -1:
-                    if Command == "Login":
-                        Sucess,Message,Data = self.Login(Arguments)
-                    elif Command == "AddUser":  # If adding a new user, one must create it first, then log in seperatly
-                        Sucess,Message,Data = self.AddUser(Arguments)
-                    elif Command == "Exit":
-                        Sucess,Message,Data = self.Exit(Arguments)
-                        Exit = True
-                    else:
-                        Sucess,Message,Data = False,"Command does not exist",[]
-                        
-                else:
-                    if Command == "GetNoFlyZones":
-                        Sucess,Message,Data = self.GetNoFlyZones(Arguments)
-                    elif Command == "AddNoFlyZone":
-                        Sucess,Message,Data = self.AddNoFlyZone(Arguments)
-                    elif Command == "RemoveNoFlyZone":
-                        Sucess,Message,Data = self.RemoveNoFlyZone(Arguments)
-                    elif Command == "ModifyNoFlyZoneLevel":
-                        Sucess,Message,Data = self.ModifyNoFlyZoneLevel(Arguments)
-                        
-                    elif Command == "AddDrone":
-                        Sucess,Message,Data = self.AddDrone(Arguments)
-                    elif Command == "RemoveDrone":
-                        Sucess,Message,Data = self.RemoveDrone(Arguments)
-                    elif Command == "GetDroneID":
-                        Sucess,Message,Data = self.GetDroneID(Arguments)
-                    elif Command == "GetDroneCredentials":
-                        Sucess,Message,Data = self.GetDroneCredentials(Arguments)
-                    elif Command == "SetDroneCredentials":
-                        Sucess,Message,Data = self.SetDroneCredentials(Arguments)
-                    elif Command == "CheckDroneOwnership":
-                        Sucess,Message,Data = self.CheckDroneOwnership(Arguments)
-                    elif Command == "GetDroneInfo":
-                        Sucess,Message,Data = self.GetDroneInfo(Arguments)
-                    elif Command == "GetDronesUser":
-                        Sucess,Message,Data = self.GetDronesUser(Arguments)
-                    elif Command == "GetDronesAll":
-                        Sucess,Message,Data = self.GetDronesAll(Arguments)
-
-                    elif Command == "Login":   #Can then change UserID without restarting, UserID is changed as well as components on client side
-                        Sucess,Message,Data = self.Login(Arguments)
-                    elif Command == "GetUserID":
-                        Sucess,Message,Data = self.GetUserID(Arguments)
-                    elif Command == "GetUsername":
-                        Sucess,Message,Data = self.GetUsername(Arguments)
-                    elif Command == "SetUserPublicVisibleFlights":
-                        Sucess,Message,Data = self.SetUserPublicVisibleFlights(Arguments)
-                    elif Command == "SetAccountType":
-                        Sucess,Message,Data = self.SetAccountType(Arguments)
-                    
-                    elif Command == "GetFlightsUser":
-                        Sucess,Message,Data = self.GetFlightsUser(Arguments)
-                    elif Command == "GetFlightsAll":
-                        Sucess,Message,Data = self.GetFlightsAll(Arguments)
-                    elif Command == "AddFlight":
-                        Sucess,Message,Data = self.AddFlight(Arguments)
-                    elif Command == "RemoveFlight":
-                        Sucess,Message,Data = self.RemoveFlight(Arguments)
-                    
-                    elif Command == "GetFlightWaypointsUser":
-                        Sucess,Message,Data = self.GetFlightWaypointsUser(Arguments)
-                    elif Command == "GetFlightWaypointsAll":
-                        Sucess,Message,Data = self.GetFlightWaypointsAll(Arguments)
-                    
-                    elif Command == "GetMonitorID":
-                        Sucess,Message,Data = self.GetMonitorID(Arguments)
-                    elif Command == "GetMonitorName":
-                        Sucess,Message,Data = self.GetMonitorName(Arguments)
-                    
-                    elif Command == "AddMonitorPermission":
-                        Sucess,Message,Data = self.AddMonitorPermission(Arguments)
-                    elif Command == "RemoveMonitorPermission":
-                        Sucess,Message,Data = self.RemoveMonitorPermission(Arguments)
-                    elif Command == "ModifyMonitorPermissionDate":
-                        Sucess,Message,Data = self.ModifyMonitorPermissionDate(Arguments)
-                    elif Command == "GetMonitorPermissionUser":
-                        Sucess,Message,Data = self.GetMonitorPermissionUser(Arguments)
-
-                    elif Command == "Exit":
-                        Sucess,Message,Data = self.Exit(Arguments)
-                        Exit = True
-                    #Else if command doesnt exist send back Failure
-                    else:
-                        Sucess,Message,Data = False,"Command does not exist",[]
-                        print("User tried to use unregistered command")
+                Sucess,Message,Data = self.ProcessCommand(Command,Arguments)
                         
             except Exception as e:
                 Sucess,Message,Data = False,"An Error occured"+str(e),[]
@@ -161,8 +76,98 @@ class UserConnection:
                 if Command == "Exit":
                     Exit = True
 
+
+        self.DB.Exit()
         print("Process will now exit")
 
+    def ProcessCommand(self,Command,Arguments):
+        if self.UserID == -1:
+            if Command == "Login":
+                Sucess,Message,Data = self.Login(Arguments)
+            elif Command == "AddUser":  # If adding a new user, one must create it first, then log in seperatly
+                Sucess,Message,Data = self.AddUser(Arguments)
+            elif Command == "Exit":
+                Sucess,Message,Data = self.Exit(Arguments)
+                Exit = True
+            else:
+                Sucess,Message,Data = False,"Command does not exist",[]
+                
+        else:
+            if Command == "GetNoFlyZones":
+                Sucess,Message,Data = self.GetNoFlyZones(Arguments)
+            elif Command == "AddNoFlyZone":
+                Sucess,Message,Data = self.AddNoFlyZone(Arguments)
+            elif Command == "RemoveNoFlyZone":
+                Sucess,Message,Data = self.RemoveNoFlyZone(Arguments)
+            elif Command == "ModifyNoFlyZoneLevel":
+                Sucess,Message,Data = self.ModifyNoFlyZoneLevel(Arguments)
+                
+            elif Command == "AddDrone":
+                Sucess,Message,Data = self.AddDrone(Arguments)
+            elif Command == "RemoveDrone":
+                Sucess,Message,Data = self.RemoveDrone(Arguments)
+            elif Command == "GetDroneID":
+                Sucess,Message,Data = self.GetDroneID(Arguments)
+            elif Command == "GetDroneCredentials":
+                Sucess,Message,Data = self.GetDroneCredentials(Arguments)
+            elif Command == "SetDroneCredentials":
+                Sucess,Message,Data = self.SetDroneCredentials(Arguments)
+            elif Command == "CheckDroneOwnership":
+                Sucess,Message,Data = self.CheckDroneOwnership(Arguments)
+            elif Command == "GetDroneInfo":
+                Sucess,Message,Data = self.GetDroneInfo(Arguments)
+            elif Command == "GetDronesUser":
+                Sucess,Message,Data = self.GetDronesUser(Arguments)
+            elif Command == "GetDronesAll":
+                Sucess,Message,Data = self.GetDronesAll(Arguments)
+
+            elif Command == "Login":   #Can then change UserID without restarting, UserID is changed as well as components on client side
+                Sucess,Message,Data = self.Login(Arguments)
+            elif Command == "GetUserID":
+                Sucess,Message,Data = self.GetUserID(Arguments)
+            elif Command == "GetUsername":
+                Sucess,Message,Data = self.GetUsername(Arguments)
+            elif Command == "SetUserPublicVisibleFlights":
+                Sucess,Message,Data = self.SetUserPublicVisibleFlights(Arguments)
+            elif Command == "SetAccountType":
+                Sucess,Message,Data = self.SetAccountType(Arguments)
+            
+            elif Command == "GetFlightsUser":
+                Sucess,Message,Data = self.GetFlightsUser(Arguments)
+            elif Command == "GetFlightsAll":
+                Sucess,Message,Data = self.GetFlightsAll(Arguments)
+            elif Command == "AddFlight":
+                Sucess,Message,Data = self.AddFlight(Arguments)
+            elif Command == "RemoveFlight":
+                Sucess,Message,Data = self.RemoveFlight(Arguments)
+            
+            elif Command == "GetFlightWaypointsUser":
+                Sucess,Message,Data = self.GetFlightWaypointsUser(Arguments)
+            elif Command == "GetFlightWaypointsAll":
+                Sucess,Message,Data = self.GetFlightWaypointsAll(Arguments)
+            
+            elif Command == "GetMonitorID":
+                Sucess,Message,Data = self.GetMonitorID(Arguments)
+            elif Command == "GetMonitorName":
+                Sucess,Message,Data = self.GetMonitorName(Arguments)
+            
+            elif Command == "AddMonitorPermission":
+                Sucess,Message,Data = self.AddMonitorPermission(Arguments)
+            elif Command == "RemoveMonitorPermission":
+                Sucess,Message,Data = self.RemoveMonitorPermission(Arguments)
+            elif Command == "ModifyMonitorPermissionDate":
+                Sucess,Message,Data = self.ModifyMonitorPermissionDate(Arguments)
+            elif Command == "GetMonitorPermissionUser":
+                Sucess,Message,Data = self.GetMonitorPermissionUser(Arguments)
+
+            elif Command == "Exit":
+                Sucess,Message,Data = self.Exit(Arguments)
+                Exit = True
+            #Else if command doesnt exist send back Failure
+            else:
+                Sucess,Message,Data = False,"Command does not exist",[]
+                print("User tried to use unregistered command")
+        return Sucess,Message,Data
 
             
     def Login(self,Arguments):
@@ -286,7 +291,10 @@ class UserConnection:
     def AddFlight(self,Arguments):
         DroneID,HighPoints,StartTime = Arguments[0],Arguments[1],Arguments[2]
         if StartTime < GetTime():
-            return False,"Attempting to add flight in the past",[]
+            if StartTime <= 2678400:   #Allow starting of flights up to 1 month ahead. No need to enter very large numbers for no reason.
+                StartTime += GetTime()
+            else:
+                return False,"Attempting to add flight in the past",[]
         #load graph
         graph = AATC_AStar.DynoGraph()
         graph.ImportGraph()
@@ -475,6 +483,62 @@ class BotConnection(UserConnection):
 
     
 
+
+
+
+class BotConnection(UserConnection):
+    def __init__(self,UserID,chat_id,packet,OutputQueue):
+        self.UserID = UserID
+        self.chat_id = chat_id
+        self.OutputQueue = OutputQueue
+        self.DB = AATC_DB.DBConnection()
+        self.NOFLYZONE_THRESHOLD_COST = 50
+
+        Command, Arguments = packet[0],packet[1]
+        self.Main(Command,Arguments)
+
+    def Main(self,Command,Arguments):
+        try:
+            Sucess,Message,Data = self.ProcessCommand(Command,Arguments)
+                
+        except Exception as e:
+            Sucess,Message,Data = False,"An Error occured"+str(e),[]
+            print("Error occured with UserID:",str(self.UserID),". Error :",str(e),". Sending failure message")
+            
+        try:
+            self.Send((Sucess,Message,Data))
+        except Exception as e:
+            print("Error sending message back to chat",e)
+        self.DB.Exit()
+            
+        
+
+    def Send(self,data):
+        Sucess,Message,Data = data[0],data[1],data[2]
+        data = str(Sucess) +"\n" +str(Message)+ "\n" + str(Data)
+        self.OutputQueue.put((data,self.chat_id))
+
+    def Login(self,Arguments):
+        Username,Password = Arguments[0],Arguments[1]
+        Sucess,Message,UserID = self.DB.CheckCredentials(Username,Password)
+        self.DB.SetUserID(self.chat_id,UserID)
+        return Sucess,Message,[]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
 class MonitorConnection:
     def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
@@ -656,6 +720,7 @@ class MonitorConnection:
 ##                print("MonitorID:",self.MonitorID," disconnected")
 ##            else:
 ##                print("Serious exception occured with MonitorID ",self.MonitorID," Error",e)
+        self.DB.Exit()
         print("Process is exiting")
 
     ################################
@@ -889,6 +954,7 @@ class DroneConnection:
 ##                print("DroneID:",self.DroneID," disconnected")
 ##            else:
 ##                print("Serious exception occured with DroneID ",self.DroneID," Error",e)
+        self.DB.Exit()
         print("Process is exiting")
 
     def Login(self,Arguments):

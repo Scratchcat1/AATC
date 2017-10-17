@@ -124,7 +124,7 @@ class DBConnection:
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
 
     def UpdateDroneStatus(self,DroneID,LastCoords,LastBattery):
-        self.cur.execute("UPDATE Drone SET LastCoords = %s,LastBattery = %s WHERE DroneID = %s",(str(LastCoords),LastBattery,DroneID))
+        self.cur.execute("UPDATE Drone SET LastCoords = %s,LastBattery = %s WHERE DroneID = %s",(str(LastCoords),int(LastBattery),DroneID))
         self.db_con.commit()
         return True,"Updated Drone Status"
 
@@ -397,13 +397,63 @@ class DBConnection:
         self.cur.execute("SELECT * FROM NoFlyZone")
         Headers = self.Table_Headers("NoFlyZone")    #Gets Headers of table to be sent as message
         return True,str(Headers),self.cur.fetchall()
+    
+###########################################################################
+    ##################  InputStack   #################################
 
+    def addValue(self,value,chat_id):
+        self.cur.execute("SELECT MAX(stack_pos) FROM InputStack WHERE chat_id = %s",(chat_id,))
+        result = self.cur.fetchall()
+        if not result[0][0] == None:
+            stack_pos = result[0][0] +1
+        else:
+            stack_pos = 0
+        self.cur.execute("INSERT INTO InputStack VALUES(%s,%s,%s)",(chat_id,stack_pos,value))
+        self.db_con.commit()
+    
+    def getCommand(self,chat_id):
+        self.cur.execute("SELECT value FROM InputStack WHERE chat_id = %s AND stack_pos = 0",(chat_id,))
+        result = self.cur.fetchall()
+        return result[0][0]
+    
+    def getStack(self,chat_id):
+        self.cur.execute("SELECT value FROM InputStack WHERE chat_id = %s ORDER BY stack_pos ASC",(chat_id,))
+        result = self.cur.fetchall()
+        return result
+
+    def getStackSize(self,chat_id):
+        self.cur.execute("SELECT COUNT(1) FROM InputStack WHERE chat_id = %s",(chat_id,))
+        result = self.cur.fetchall()
+        return result[0][0]
+    
+    def flushStack(self,chat_id):
+        self.cur.execute("DELETE FROM InputStack WHERE chat_id = %s",(chat_id,))
+        self.db_con.commit()
+
+    ##################################################################
+    ####################### Sessions ##########################
+
+    def SetUserID(self,chat_id,UserID):
+        self.cur.execute("SELECT 1 FROM Sessions WHERE chat_id = %s",(chat_id,))
+        if len(self.cur.fetchall()) == 0:
+            self.cur.execute("INSERT INTO Sessions VALUES(%s,%s)",(chat_id,UserID))
+        else:
+            self.cur.execute("UPDATE Sessions SET UserID = %s WHERE chat_id = %s",(UserID,chat_id))
+        self.db_con.commit()
+
+    def GetUserID(self,chat_id):
+        self.cur.execute("SELECT UserID FROM Sessions WHERE chat_id = %s",(chat_id,))
+        result = self.cur.fetchall()
+        if len(result) == 0:
+            return -1
+        else:
+            return result[0][0]    
 
 ##########################################################################    
         
     def ResetDatabase(self):
         self.cur.execute("SET FOREIGN_KEY_CHECKS = 0")
-        TABLES = ["User","Drone","Monitor","MonitorPermission","Flight","FlightWaypoints","NoFlyZone","DroneCredentials"]
+        TABLES = ["User","Drone","Monitor","MonitorPermission","Flight","FlightWaypoints","NoFlyZone","DroneCredentials","InputStack","Sessions"]
         for item in TABLES:
             self.cur.execute("DROP TABLE IF EXISTS {0}".format(item))
         
@@ -415,6 +465,10 @@ class DBConnection:
         self.cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA REAL, BlockTime INT)")
         self.cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY AUTO_INCREMENT, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT)")
         self.cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT ,DronePassword TEXT)")
+
+        self.cur.execute("CREATE TABLE InputStack(chat_id INT , stack_pos INT, value TEXT)")
+        self.cur.execute("CREATE TABLE Sessions(chat_id INT PRIMARY KEY, UserID INT)")
+        
         self.cur.execute("SET FOREIGN_KEY_CHECKS = 1")
         self.db_con.commit()
     
