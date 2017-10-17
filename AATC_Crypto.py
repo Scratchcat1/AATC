@@ -1,7 +1,5 @@
 #AATC crypto module
-# Diffie-Hellman from 'pip install diffiehellman '
-#import diffiehellman.diffiehellman as DH
-import codecs,recvall,ast,binascii,os
+import codecs,recvall,ast,binascii,os,AATC_Config
 from Crypto.Cipher import AES,PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
@@ -24,13 +22,16 @@ class Crypter:
     def __init__(self, con, mode = "CLIENT",AutoGenerate = True):
         self.con = con
         self.SetMode(mode)
-        if AutoGenerate:
+        if AATC_Config.PRE_SHARED_ENCRYPTION_KEYS_ENABLE:   #Allows preshared encryption keys to be used 
+            self.SetEncryptionKeys(AATC_Config.PRE_SHARED_AES_KEY, AATC_Config.PRE_SHARED_IV_KEY)
+                
+        elif AutoGenerate:
             self.GenerateKey()
 
     def SetMode(self,mode):
         self.mode = mode
 
-    def GenerateKey(self,key_size = 2048):
+    def GenerateKey(self,key_size = AATC_Config.DEFAULT_RSA_KEYSIZE):
         print("Generating encryption keys. Please stand by...")  #Generating keys takes a long time and have found no way to shorted key length
         if self.mode == "SERVER":
             self.ServerGenerateKey()
@@ -42,7 +43,7 @@ class Crypter:
 
 
 
-    def ClientGenerateKey(self,RSA_KeySize,AES_KeySize= 32):
+    def ClientGenerateKey(self,RSA_KeySize,AES_KeySize= AATC_Config.DEFAULT_AES_KEYSIZE):
         RSAKey = RSA.generate(RSA_KeySize)
 
         privateKey = RSAKey.exportKey("DER")
@@ -65,8 +66,7 @@ class Crypter:
         self.AESKey = RSAPrivateObject.decrypt(Message[0])
         self.IV = RSAPrivateObject.decrypt(Message[1])
         
-        self.EncryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)
-        self.DecryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)
+        self.SetEncryptionKeys(self.AESKey,self.IV)
                 
 
 
@@ -81,8 +81,8 @@ class Crypter:
 
             if Command == "ExchangeKey":
                 publicKey,AES_KeySize = Arguments[0],Arguments[1]
-                if AES_KeySize not in [16,24,32]:
-                    AES_KeySize = 32    #If key size is not valid set size to default of 32
+                if AES_KeySize not in AATC_Config.ALLOWED_AES_KEYSIZES:
+                    AES_KeySize = AATC_Config.DEFAULT_AES_KEYSIZE    #If key size is not valid set size to default of AATC_Config.DEFAULT_AES_KEYSIZE
                     
                 self.AESKey = binascii.b2a_hex(os.urandom(AES_KeySize//2))  # Here to allow regeneration of AES key while still in loop if required.
                 self.IV = binascii.b2a_hex(os.urandom(AES_KeySize//2)) 
@@ -100,7 +100,13 @@ class Crypter:
 
             else:
                 self.Send((False,("Command does not exist",)))
-                
+
+        self.SetEncryptionKeys(self.AESKey,self.IV)
+
+
+    def SetEncryptionKeys(self,AESKey,IV):
+        self.AESKey = AESKey
+        self.IV = IV
         self.EncryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)    #Two seperate instances to encrypt and decrypt as non ECB AES is a stream cipher
         self.DecryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)    #Errors will occur if encrypt and decrypt are not equal in count.
                 
@@ -109,53 +115,6 @@ class Crypter:
         
         
 
-
-##    def DHServerGenerateKey(self):
-##        DifHel = DH.DiffieHellman()
-##        
-##
-##        Exit = False
-##        while not Exit :
-##            data = self.Recv()
-##            Command, Arguments = data[0],data[1]
-##
-##            if Command == "PublicKey":
-##                try:
-##                    DifHel.generate_public_key()
-##                    DifHel.generate_shared_secret(Arguments[0])
-##                    self.Send(("PublicKey",(DifHel.public_key,)))
-##                except:
-##                    self.Send((False,()))
-##
-##            elif Command == "Exit":
-##                self.Send((True,()))
-##                Exit = True
-##
-##        self.shared_key = DifHel.shared_key[0:32]
-##        self.AES = AES.new(self.shared_key)
-##                
-##        
-##
-##
-##    def DHClientGenerateKey(self,key_size):
-##        DifHel = DH.DiffieHellman()
-##        DifHel.generate_public_key()
-##
-##        
-##        self.Send(("PublicKey",(DifHel.public_key,)))
-##        data = self.Recv()
-##        if data[0] == False:
-##            raise Exception("Error occured while transmitting public key")
-##        DifHel.generate_shared_secret(data[1][0])
-##        
-##        self.Send(("Exit",()))
-##        data = self.Recv()
-##        if data[0] == False:
-##            raise Exception("Server failed to commit to exit")
-##        
-##        self.shared_key = DifHel.shared_key[0:32]
-##        self.AES = AES.new(self.shared_key)
-        
         
         
             

@@ -1,4 +1,4 @@
-import multiprocessing,socket,AATC_NoFlyZoneGrapher,sys,time,AATC_GPIO
+import multiprocessing,socket,AATC_NoFlyZoneGrapher,sys,time,AATC_GPIO,HedaBot
 import AATC_Server_002 as AATC_Server
 from AATC_Coordinate import *
 
@@ -172,6 +172,7 @@ def StartProcesses(Control_Queue):
     Control_Queue.put(("Controller","Create_Process",("Grapher",AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)))
     Control_Queue.put(("Controller","Create_Process",("Cleaner",AATC_Server.Cleaner)))
 
+    Control_Queue.put(("Controller","Create_Process",("Hedabot",HedaBot.TelebotLaunch,(HedaBot.telepot.Bot(HedaBot.BOT_TOKEN),))))
     print("[StartProcesses] All processes started")
     
 

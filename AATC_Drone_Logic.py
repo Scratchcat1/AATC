@@ -1,4 +1,4 @@
-import AATC_Drone,threading,queue,math,time,AATC_GPIO,random
+import AATC_Drone,threading,queue,math,time,AATC_GPIO,random, AATC_Config
 import AATC_Coordinate
 
 class DroneLogicSystem:
@@ -83,62 +83,7 @@ class DroneLogicSystem:
             
         
 
-##def LaunchDroneLogic(DRONEID,DRONEPASSWORD,FlightQueue,StatusQueue,GPIO_Queue,SLEEP_TIME = 60):
-##    Exit = False
-##    while not Exit:
-##        try:
-##            D = AATC_Drone.CreateDroneInterface()
-##            LoginSucess,Message = D.Login(DRONEID,DRONEPASSWORD)
-##            print(LoginSucess,Message)
-##            if LoginSucess:
-##                
-##                AvailableFlight = False
-##                while not AvailableFlight:
-##                    
-##                    if not StatusQueue.empty():
-##                        Status = StatusQueue.get()
-##                        StatusQueue.task_done()
-##                        D.UpdateDroneStatus(Status["Coords"],Status["Battery"])#dfjsafkdsajdfjs
-##                        
-##                    Sucess,Message,FlightID  = D.CheckForFlight()
-##                    AvailableFlight = Sucess
-##                    time.sleep(SLEEP_TIME)  #At the end to pause to wait so that if the server is still writing waypoints it can finish.
-##                    
-##
-##                FlightID = FlightID[0][0]
-##                print("Obtaining flight and drone information. FlightID :",FlightID)
-##                DroneInfo, Flight, Waypoints = GetAllFlightInfo(D,DRONEID,FlightID)
-##                
-##                FlightQueue.put((False,(DroneInfo,Flight,Waypoints)))
-##                
-##        except Exception as e:
-##            print("Error occured in Drone Logic",str(e))
-##            AvailableFlight = False
-##
-##        if AvailableFlight:
-##            
-##            complete = False
-##            crashed = False
-##            while not complete:    #While drone not at target location
-##                try:
-##                    if crashed:
-##                        D = AATC_Drone.CreateDroneInterface()
-##                        LoginSucess,Message = D.Login(DRONEID,DRONEPASSWORD)
-##                        crashed = False
-##                    while StatusQueue.empty():
-##                        time.sleep(SLEEP_TIME)
-##                    Status = StatusQueue.get()
-##                    StatusQueue.task_done()
-##                    Sucess,Message = D.UpdateDroneStatus(Status["Coords"],Status["Battery"])
-##                    if "MarkComplete" in Status:
-##                        complete = True
-##                        print("Flight ",Status["MarkComplete"]," complete")
-##                        Sucess,Message = D.MarkFlightComplete(Status["MarkComplete"],1)
-##                        print("Sucess",Sucess,"   Message:",Message)
-##                    time.sleep(SLEEP_TIME)
-##                except Exception as e:
-##                    print("Error in drone logic flight stage",e)
-##                    crashed = True
+
 
 
 def GetAllFlightInfo(D,DRONEID,FlightID):    #Gets all drone flight information and packages the information into objects
@@ -183,14 +128,14 @@ def PutStatus(StatusQueue,Coords,Battery,MarkComplete = None,EmptyOverride = Fal
 
 def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):
     distance = AATC_Coordinate.DeltaCoordToMetres(CoordA,CoordB)
-    decAmount = (distance/DroneInfo.DroneRange)*100*(1+random.randint(-1,1)*0.1)
+    decAmount = (distance/DroneInfo.DroneRange)*100*(1+random.randint(-1,1)*0.1) * AATC_Config.DRONE_BATTERY_DRAIN_MULT
     Battery -= decAmount
     return Battery
     
 def DroneHardware(FlightQueue,StatusQueue):
-    Battery = 100
-    Coords = AATC_Drone.Coordinate(0,0,0)
-    xSize,ySize,zSize = 0.001,0.001,5
+    Battery = AATC_Config.DEFAULT_DRONE_BATTERY_VALUE
+    Coords = AATC_Drone.Coordinate(*AATC_Config.DEFAULT_DRONE_COORDINATE)
+    xSize,ySize,zSize = AATC_Config.DEFAULT_DRONE_ATWAYPOINT_SIZES
     
     while True:
         time.sleep(1)

@@ -175,19 +175,20 @@ def MakeDroneInfo(DroneMessage,DroneData):
 
 class DroneInformation:
     def __init__(self,Message,DroneInfo):
+        DroneInfo = DroneInfo[0]
         Message = ast.literal_eval(Message)
-        Index = {}
+        ColumnValue = {}
         Titles = ["DroneID","UserID","DroneName","DroneType","DroneSpeed","DroneRange","DroneWeight"]
         for title in Titles:
-            Index[title] = Message.index(title)
+            ColumnValue[title] = DroneInfo[Message.index(title)]
 
-        self.DroneID = Index["DroneID"]
-        self.UserID = Index["UserID"]
-        self.DroneName = Index["DroneName"]
-        self.DroneType = Index["DroneType"]
-        self.DroneSpeed = Index["DroneSpeed"]
-        self.DroneRange = Index["DroneRange"]
-        self.DroneWeight = Index["DroneWeight"]
+        self.DroneID = ColumnValue["DroneID"]
+        self.UserID = ColumnValue["UserID"]
+        self.DroneName = ColumnValue["DroneName"]
+        self.DroneType = ColumnValue["DroneType"]
+        self.DroneSpeed = ColumnValue["DroneSpeed"]
+        self.DroneRange = ColumnValue["DroneRange"]
+        self.DroneWeight = ColumnValue["DroneWeight"]
 
 
 
