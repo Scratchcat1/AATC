@@ -439,7 +439,7 @@ def CreateCommandDictionary():
                 
         
 
-BOT_TOKEN = "472230564:AAEHTSJ446LE_BO_hQ8B4PeVmUTrB8gRsEA"
+BOT_TOKEN = "YOUR TOKEN HERE"
 if __name__ == "__main__":
     bot = telepot.Bot(BOT_TOKEN)
     heda = Telebot(bot)
