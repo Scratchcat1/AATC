@@ -278,8 +278,9 @@ class UserTextUI:
         self.DisplayResults(Sucess,Message)
 
     def SetAccountType(self):
-        Type = input("Account Type >>")
-        Sucess,Message = self.UserInterface.SetAccountType(Type)
+        Permission = input("Account Type >>")
+        Type = int(input("Account Type >>"))
+        Sucess,Message = self.UserInterface.SetAccountType(Permission,Type)
         self.DisplayResults(Sucess,Message)
 
     ################################################

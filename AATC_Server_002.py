@@ -76,6 +76,7 @@ class UserConnection:
                 if Command == "Exit":
                     Exit = True
 
+
         self.DB.Exit()
         print("Process will now exit")
 
@@ -167,6 +168,7 @@ class UserConnection:
                 Sucess,Message,Data = False,"Command does not exist",[]
                 print("User tried to use unregistered command")
         return Sucess,Message,Data
+
             
     def Login(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
@@ -459,7 +461,27 @@ class UserConnection:
         return True,"Server process is exiting",[]
 
 
+class BotConnection(UserConnection):
+    def __init__(self,UserID,chat_id,packet,bot):
+        self.UserID = UserID
+        self.chat_id = chat_id
+        self.bot = HedaBot.Telebot(bot)
+        self.bot.setChatID(chat_id)
+        self.DB = AATC_DB.DBConnection()
 
+    def Send(self,data):
+        Sucess,Message,Data = data[0],data[1],data[2]
+        data = str(Sucess) +"\n" +str(Message)+ "\n" + str(Data)
+        self.bot.sendMessage(data)
+
+    def Login(self,Arguments):
+        Username,Password = Arguments[0],Arguments[1]
+        Sucess,Message,UserID = self.DB.CheckCredentials(Username,Password)
+        if UserID != -1:
+            self.DB.SetUserID(self.chat_id,UserID)
+        return Sucess,Message,[]
+
+    
 
 
 

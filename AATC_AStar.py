@@ -210,7 +210,7 @@ class DynoGraph:
             return self.Node_Cache[Key]
         else:
              #Raises error if cannot get node
-            raise ValueError("Node_Cache Key requested is not in the NCBlockID checked. Check BlockSize or regenerate blockfiles")
+            raise ValueError("Node_Cache Key requested is not in the NCBlockID checked. Check BlockSize or regenerate blockfiles.")
 
             
     def Direct_NodeID(self,x,y,z):
@@ -291,7 +291,7 @@ class DynoGraph:
             return self.Nodes[NodeID]
         else:
              #Raises error if cannot get node
-            raise ValueError("NodeID requested is not in the BlockID checked. Check BlockSize or regenerate blockfiles")
+            raise ValueError("NodeID requested is not in the BlockID checked. Check BlockSize or regenerate blockfiles. NodeID: "+str(NodeID))
 
     def SaveNodes(self):
         Sets = {}
@@ -305,11 +305,12 @@ class DynoGraph:
 
 
         for Set in Sets: #Set = BlockID
-            filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+"N"+str(Set)+self.BlockFileSuffix)
-            file = open(filename,"wb")
-            data = Sets[Set]
-            pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
-            file.close()
+            if len(Sets[Set]) != 0:  #If set is not empty. Empty sets may cause issues with delta Node change saving.
+                filename = os.path.join(self.cwd,self.FolderName,self.BlockFileName+"N"+str(Set)+self.BlockFileSuffix)
+                file = open(filename,"wb")
+                data = Sets[Set]
+                pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
+                file.close()
 
     def EvictNode(self,NodeID):  #Removes a node from the Nodes dict
         if NodeID in self.Nodes:
