@@ -124,7 +124,7 @@ class DBConnection:
         return True,str(self.Table_Headers("Drone")),self.cur.fetchall()
 
     def UpdateDroneStatus(self,DroneID,LastCoords,LastBattery):
-        self.cur.execute("UPDATE Drone SET LastCoords = %s,LastBattery = %s WHERE DroneID = %s",(str(LastCoords),LastBattery,DroneID))
+        self.cur.execute("UPDATE Drone SET LastCoords = %s,LastBattery = %s WHERE DroneID = %s",(str(LastCoords),int(LastBattery),DroneID))
         self.db_con.commit()
         return True,"Updated Drone Status"
 

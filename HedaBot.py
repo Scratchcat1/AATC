@@ -6,12 +6,20 @@ def printUpdates(Bot):
     for item in Bot.getUpdates():
         print(item)
 
+def TelebotLaunch(Thread_Name,Input_Queue,bot):
+    Heda = Telebot(Thread_Name,Input_Queue,bot)
+    print("Starting Telebot",Thread_Name)
+    Heda.mainLoop()
+
+
 class Telebot:
-    def __init__(self,bot,signature = "\nHeda ∞",start_update_id= 0,inputSorterNumber = 4):
+    def __init__(self,Thread_Name,Input_Queue,bot,signature = "\nHeda ∞",start_update_id= 0,inputSorterNumber = 2):
+        self.Thread_Name = Thread_Name
+        self.Input_Queue = Input_Queue
         self.bot = bot
         self.signature = signature
         self.update_id = start_update_id
-        self.chat_id = 464193112
+        self.chat_id = 0
         self.Update_Queue = []
         self.DB = AATC_DB.DBConnection()
         self.OutputQueue = multiprocessing.Queue()
@@ -52,7 +60,8 @@ class Telebot:
         return self.getUpdate()["message"]["text"]
 
     def mainLoop(self):
-        while True:
+        Exit = False
+        while not Exit:
             try:
                 while not self.OutputQueue.empty():  #Sends the messages which have been created.
                     packet = self.OutputQueue.get()
@@ -71,9 +80,15 @@ class Telebot:
                     self.TC_Queue.put((Thread_Name,"ProcessMessage",(messageText,chatID)))
                     
                 time.sleep(0.5)
-            except:
-                pass
+            except Exception as e:
+                print("Error in Telebot",self.Thread_Name,"Error:",e)
+            if not self.Input_Queue.empty():
+                data = self.Input_Queue.get()
+                command,arguments = data[0],data[1]
+                if command == "Exit":
+                    Exit = True
         self.TC_Queue.put(("Controller","Exit",(True,)))
+        print("Telebot", self.Thread_Name," is exiting")
             
 
     def processMessage(self,messageText,chat_id = 0):
@@ -105,7 +120,7 @@ class Telebot:
     
 
 class inputSorter:
-    def __init__(self,Thread_Name,Input_Queue,OutputQueue,Exec_Processes = 2):
+    def __init__(self,Thread_Name,Input_Queue,OutputQueue,Exec_Processes = 1):
         self.Thread_Name = Thread_Name
         self.Input_Queue = Input_Queue
         self.OutputQueue = OutputQueue
@@ -135,13 +150,14 @@ class inputSorter:
 
                 response = self.processInput(messageText,chat_id)
                 if response != None:
-                    print()
-                    print("Message:",messageText)
-                    print("Response:",response)
+##                    print()
+##                    print("Message:",messageText)
+##                    print("Response:",response)
                     self.OutputQueue.put((response,chat_id))
             except Exception as e:
                 print("Error in inputSorter",self.Thread_Name,"Error:",e)
         self.EC_Queue.put(("Controller","Exit",(True,)))
+        print("Closing inputSorter",self.Thread_Name)
 
 
     def processInput(self,messageText,chat_id):
@@ -423,7 +439,7 @@ def CreateCommandDictionary():
                 
         
 
-BOT_TOKEN = "YOUR TOKEN HERE"
+BOT_TOKEN = "472230564:AAEHTSJ446LE_BO_hQ8B4PeVmUTrB8gRsEA"
 if __name__ == "__main__":
     bot = telepot.Bot(BOT_TOKEN)
     heda = Telebot(bot)
