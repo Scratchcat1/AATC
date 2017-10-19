@@ -200,7 +200,7 @@ class DBConnection:
 
     def CheckForFlight(self,DroneID,MaxLookAheadTime):
         InvalidateDelay = 1800
-        self.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime < (%s+%s) AND StartTime > (%s-%s) ORDER BY StartTime ASC LIMIT 1",(DroneID,GetTime(),MaxLookAheadTime, GetTime(),InvalidateDelay))
+        self.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime < (%s+%s) AND StartTime > (%s-%s) AND Completed = 0 ORDER BY StartTime ASC LIMIT 1",(DroneID,GetTime(),MaxLookAheadTime, GetTime(),InvalidateDelay))
         FlightIDFetch = self.cur.fetchall()
         self.db_con.commit()
         if FlightIDFetch != ():
@@ -227,7 +227,7 @@ class DBConnection:
             return False,"You do not have permission to mark this flight complete"
         
     def GetCompletedFlightIDs(self,EndTimeThreshold):
-        self.cur.execute("SELECT FlightID FROM Flight WHERE Completed > 0 AND (EndTime + %s) > %s",(EndTimeThreshold,GetTime()))
+        self.cur.execute("SELECT FlightID FROM Flight WHERE (Completed > 0 AND (EndTime + %s) > %s) OR (EndTime+ %s) > %s",(EndTimeThreshold,GetTime(),EndTimeThreshold*3,GetTime()))
         return True,"['FlightID']",self.cur.fetchall()
 
     def CleanCompletedFlights(self,EndTimeThreshold):

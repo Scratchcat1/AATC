@@ -361,17 +361,14 @@ class UserTextUI:
     #################################################
 
     def Call_Exit(self):
-        Choice = input("Exit? (Y/N) >>").upper()
-        if Choice == "Y":
-            print("Exiting..")
-            try:
-                Sucess,Message = self.UserInterface.Exit()
-                self.DisplayResults(Sucess,Message)
-            except:
-                print("Unable to close server connection")
-            self.Exit = True
-        else:
-            print("Exit cancelled")
+        print("Exiting..")
+        try:
+            Sucess,Message = self.UserInterface.Exit()
+            self.DisplayResults(Sucess,Message)
+        except:
+            print("Unable to close server connection")
+        self.Exit = True
+
 
 
 
@@ -386,7 +383,13 @@ if __name__ == "__main__":
 
             TextUI = UserTextUI(U,MenuOptions)
             TextUI.Main_Loop()
-            Exit = True  #When user selects exit
+            
+            Choice = input("Exit? (Y/N) >>").upper()
+            if Choice == "Y":
+                print("Exiting")
+                Exit = True  #When user selects exit
+            else:
+                print("Exit cancelled")
                 
         except Exception as e:
             print("Error occured creating user interface",e)

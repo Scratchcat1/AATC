@@ -153,7 +153,7 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
                     data = Communications_Queue.get()
                     Command,Arguments = data[0],data[1]
                     if Command == "Exit":
-                        self.Exit = True
+                        Exit = True
 
                         
         except Exception as e:

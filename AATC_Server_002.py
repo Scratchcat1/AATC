@@ -18,10 +18,25 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
 
            
 
+class ClientConnection:
+    """This is the base class for Connections, all other connection objects will inherit from this object.
+       Will contain all similar components i.e. send, receive
+
+    """
+
+    def Send(self,data):
+        self.con.sendall(self.Crypto.Encrypt(codecs.encode(str(data))))
+    def Recv(self):
+        try:
+            data = self.Crypto.Decrypt(recvall.recvall(self.con))
+            data = ast.literal_eval(codecs.decode(data))
+            return data
+        except Exception as e:
+            return ("",())#Never references a command
+        
     
     
-    
-class UserConnection:
+class UserConnection(ClientConnection):
     def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
         self.Thread_Name = Thread_Name
@@ -30,18 +45,7 @@ class UserConnection:
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER" )
         self.UserID = -1  #Used to identify if has logged in yet
         self.NOFLYZONE_THRESHOLD_COST = 50
-    def Send(self,data):
-        self.con.sendall(self.Crypto.Encrypt(codecs.encode(str(data))))
-    def Recv(self):
-        try:
-            data = self.Crypto.Decrypt(recvall.recvall(self.con))
-            data = ast.literal_eval(codecs.decode(data))
-            #      (Command,Arguments)
-            return data
-            #return data[0],data[1],data[2]
-        except Exception as e:
-            print("UserID:",self.UserID," Socket data recive error",e)
-            data = ("",())#Never references a command
+
 
     def Connection_Loop(self):
         """
@@ -454,7 +458,7 @@ class UserConnection:
     #################################################
 
     def Exit(self,Arguments = None):
-        self.DB.db_con.close()
+        #self.DB.db_con.close()
         print("Process for UserID:",self.UserID," is exiting..")
         return True,"Server process is exiting",[]
 
@@ -517,7 +521,7 @@ class BotConnection(UserConnection):
 
     
 
-class MonitorConnection:
+class MonitorConnection(ClientConnection):
     def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
         self.Thread_Name = Thread_Name
@@ -525,17 +529,7 @@ class MonitorConnection:
         self.con = Connection
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER")
         self.MonitorID = -1  #Used to identify if has logged in yet
-    def Send(self,data):
-        self.con.sendall(self.Crypto.Encrypt(codecs.encode(str(data))))
-    def Recv(self):
-        try:
-            data = self.Crypto.Decrypt(recvall.recvall(self.con))
-            data = ast.literal_eval(codecs.decode(data))
-            #      (Command,Arguments)
-            return data
-            #return data[0],data[1],data[2]
-        except Exception as e:
-            print("MonitorID:",self.MonitorID," Socket data recive error")
+
 
     def Connection_Loop(self):
         """
@@ -621,83 +615,6 @@ class MonitorConnection:
                 if Command == "Exit":
                     Exit = True
                 
-
-                
-##        try:
-##            Exit = False
-##            while self.MonitorID == -1 and not Exit:#Repeats until logs in
-##                data = self.Recv()
-##                try:
-##                    Command,Arguments = data[0],data[1]
-##                    if Command == "Login":
-##                        Sucess,Message,Data = self.Login(Arguments)
-##                    elif Command == "AddMonitor":  # If adding a new Monitor, one must create it first, then log in seperatly
-##                        Sucess,Message,Data = self.AddMonitor(Arguments)
-##                    else:
-##                        Sucess,Message,Data = False,"Command does not exist",[]
-##                except Exception as e:
-##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-##                    print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
-##                self.Send((Sucess,Message,Data))
-##
-##                    
-##            while not Exit:
-##                data = self.Recv()
-##                try:
-##                    Command,Arguments = data[0],data[1]
-##                    if Command == "GetNoFlyZones":
-##                        Sucess,Message,Data = self.GetNoFlyZones(Arguments)
-##                        
-##                    elif Command == "GetDronesAll":
-##                        Sucess,Message,Data = self.GetDronesAll(Arguments)
-##                        
-##                    elif Command == "GetUserID":
-##                        Sucess,Message,Data = self.GetUserID(Arguments)
-##                    elif Command == "GetUsername":
-##                        Sucess,Message,Data = self.GetUsername(Arguments)
-##
-##                    elif Command == "GetMonitorDrones":
-##                        Sucess,Message,Data = self.GetMonitorDrones(Arguments)
-##                    elif Command == "GetMonitorFlights":
-##                        Sucess,Message,Data = self.GetMonitorFlights(Arguments)
-##                    elif Command == "GetMonitorFlightWaypoints":
-##                        Sucess,Message,Data = self.GetMonitorFlightWaypoints(Arguments)
-##
-##                    elif Command == "GetMonitorID":
-##                        Sucess,Message,Data = self.GetMonitorID(Arguments)
-##                    elif Command == "GetMonitorName":
-##                        Sucess,Message,Data = self.GetMonitorName(Arguments)
-##
-##                    elif Command == "RemoveMonitorPermission":
-##                        Sucess,Message,Data = self.RemoveMonitorPermission(Arguments)
-##                    elif Command == "GetMonitorPermissionMonitor":
-##                        Sucess,Message,Data = self.GetMonitorPermissionMonitor(Arguments)
-##
-##                    elif Command == "GetFlightsAll":
-##                        Sucess,Message,Data = self.GetFlightsAll(Arguments)
-##
-##                    elif Command == "GetFlightWaypointsAll":
-##                        Sucess,Message,Data = self.GetFlightWaypointsAll(Arguments)
-##
-##                    elif Command == "Exit":
-##                        Sucess,Message,Data = self.Exit(Arguments)
-##                        Exit = True
-##
-##                    #Else if command doesnt exist send back Failure
-##                    else:
-##                        Sucess,Message,Data = False,"Command does not exist",[]
-##                        print("Monitor tried to use unregistered command")
-##                except Exception as e:
-##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-##                    print("Error occured with MonitorID:",str(self.MonitorID),"Error :",str(e)," Sending failure message")
-##    ##            print(Message,str(Data))
-##                self.Send((Sucess,Message,Data))
-##                
-##        except Exception as e:
-##            if type(e) == BrokenPipeError:
-##                print("MonitorID:",self.MonitorID," disconnected")
-##            else:
-##                print("Serious exception occured with MonitorID ",self.MonitorID," Error",e)
         self.DB.Exit()
         print("Process is exiting")
 
@@ -783,14 +700,14 @@ class MonitorConnection:
     #############################################
 
     def Exit(self,Arguments = None):
-        self.DB.db_con.close()
+        #self.DB.db_con.close()
         print("Process for MonitorID:",self.MonitorID," is exiting..")
         return True,"Server process is exiting",[]
 
 
 
 
-class DroneConnection:
+class DroneConnection(ClientConnection):
     def __init__(self,Thread_Name,Thread_Queue,Connection):
         self.DB = AATC_DB.DBConnection()
         self.Thread_Name = Thread_Name
@@ -798,17 +715,6 @@ class DroneConnection:
         self.con = Connection
         self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER")
         self.DroneID = -1  #Used to identify if has logged in yet
-    def Send(self,data):
-        self.con.sendall(self.Crypto.Encrypt(codecs.encode(str(data))))
-    def Recv(self):
-        try:
-            data = self.Crypto.Decrypt(recvall.recvall(self.con))
-            data = ast.literal_eval(codecs.decode(data))
-            #      (Command,Arguments)
-            return data
-            #return data[0],data[1],data[2]
-        except Exception as e:
-            print("DroneID:",self.DroneID," Socket data recive error")
             
 
     def Connection_Loop(self):
@@ -875,63 +781,7 @@ class DroneConnection:
                 if Command == "Exit":
                     Exit = True
                 
-       
-        
-##        try:
-##            Exit = False
-##            while self.DroneID == -1 and not Exit:#Repeats until logs in
-##                data = self.Recv()
-##                try:
-##                    Command,Arguments = data[0],data[1]
-##                    if Command == "Login":
-##                        Sucess,Message,Data = self.Login(Arguments)
-##
-##                    else:
-##                        Sucess,Message,Data = False,"Command does not exist",[]
-##                except Exception as e:
-##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-##                    print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
-##                self.Send((Sucess,Message,Data))
-##                    
-##            
-##            while not Exit:
-##                data = self.Recv()
-##                try:
-##                    Command,Arguments = data[0],data[1]
-##                    if Command == "UpdateDroneStatus":
-##                        Sucess,Message,Data = self.UpdateDroneStatus(Arguments)
-##
-##                    elif Command == "DroneGetDroneInfo":
-##                        Sucess,Message,Data = self.DroneGetDroneInfo(Arguments)
-##                        
-##                    elif Command == "CheckForFlight":
-##                        Sucess,Message,Data = self.CheckForFlight(Arguments)
-##                    elif Command == "GetFlight":
-##                        Sucess,Message,Data = self.GetFlight(Arguments)
-##                    elif Command == "GetFlightWaypoints":
-##                        Sucess,Message,Data = self.GetFlightWaypoints(Arguments)
-##                    elif Command == "MarkFlightComplete":
-##                        Sucess,Message,Data = self.MarkFlightComplete(Arguments)
-##
-##                    elif Command == "Exit":
-##                        Sucess,Message,Data = self.Exit(Arguments)
-##
-##                    #Else if command doesnt exist send back Failure
-##                    else:
-##                        Sucess,Message,Data = False,"Command does not exist",[]
-##                        print("Drone tried to use unregistered command")
-##                except Exception as e:
-##                    if type(e) != TypeError:# if this error type occurs connection has failed and would otherwise flood console with irrelevant errors
-##                        print("Error occured with DroneID:",str(self.DroneID),"Error :",str(e)," Sending failure message")
-##                    Sucess,Message,Data = False,"An Error occured"+str(e),[]
-##        
-##                self.Send((Sucess,Message,Data))
-##                
-##        except Exception as e:
-##            if type(e) == BrokenPipeError:
-##                print("DroneID:",self.DroneID," disconnected")
-##            else:
-##                print("Serious exception occured with DroneID ",self.DroneID," Error",e)
+
         self.DB.Exit()
         print("Process is exiting")
 
@@ -979,7 +829,7 @@ class DroneConnection:
     ######################################################
 
     def Exit(self,Arguments = None):
-        self.DB.db_con.close()
+        #self.DB.db_con.close()
         print("Process for DroneID:",self.DroneID," is exiting..")
         return True,"Server process is exiting",[]
 
@@ -1031,34 +881,34 @@ def Cleaner(Thread_Name,Thread_Queue,Interval = 36000,EndTimeThreshold = 72000):
 
 
 
-if __name__ == "__main__": #For testing purposes
-    HOST = ''
-    PORT = 8000
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    print( 'Socket created')
-
-    try:
-        s.bind((HOST, PORT))
-    except:
-        print("Error binding port")
-        s.close()
-        sys.exit()
-         
-    print( 'Socket bind complete')
-    s.listen(10)
-    print( 'Socket now listening')
-
-
-    while 1:
-        try:
-            conn, addr = s.accept()
-            print( '\nConnected with ' + addr[0] + ':' + str(addr[1]))
-            UConn = MonitorConnection(conn)
-            UConn.Connection_Loop()
-        except Exception as e:
-            print(str(e))
+##if __name__ == "__main__": #For testing purposes
+##    HOST = ''
+##    PORT = 8000
+##
+##    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+##    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+##    print( 'Socket created')
+##
+##    try:
+##        s.bind((HOST, PORT))
+##    except:
+##        print("Error binding port")
+##        s.close()
+##        sys.exit()
+##         
+##    print( 'Socket bind complete')
+##    s.listen(10)
+##    print( 'Socket now listening')
+##
+##
+##    while 1:
+##        try:
+##            conn, addr = s.accept()
+##            print( '\nConnected with ' + addr[0] + ':' + str(addr[1]))
+##            UConn = MonitorConnection(conn)
+##            UConn.Connection_Loop()
+##        except Exception as e:
+##            print(str(e))
 
 
 

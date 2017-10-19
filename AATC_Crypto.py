@@ -81,14 +81,15 @@ class Crypter:
 
             if Command == "ExchangeKey":
                 publicKey,AES_KeySize = Arguments[0],Arguments[1]
+                
                 if AES_KeySize not in AATC_Config.ALLOWED_AES_KEYSIZES:
                     AES_KeySize = AATC_Config.DEFAULT_AES_KEYSIZE    #If key size is not valid set size to default of AATC_Config.DEFAULT_AES_KEYSIZE
                     
                 self.AESKey = binascii.b2a_hex(os.urandom(AES_KeySize//2))  # Here to allow regeneration of AES key while still in loop if required.
-                self.IV = binascii.b2a_hex(os.urandom(AES_KeySize//2)) 
+                self.IV     = binascii.b2a_hex(os.urandom(AES_KeySize//2)) 
                 
-                RSAPrivateKey = RSA.import_key(publicKey)
-                PublicKeyObject = PKCS1_OAEP.new(RSAPrivateKey)
+                RSAPublicKey = RSA.import_key(publicKey)
+                PublicKeyObject = PKCS1_OAEP.new(RSAPublicKey)
                 
                 EncryptedAESKey = PublicKeyObject.encrypt(self.AESKey)
                 EncryptedIV = PublicKeyObject.encrypt(self.IV)
@@ -136,6 +137,5 @@ class Crypter:
     def Recv(self):
         data = recvall.recvall(self.con)
         data = ast.literal_eval(codecs.decode(data))
-        #      (Command,Arguments)
         return data
 
