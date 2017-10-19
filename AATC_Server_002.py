@@ -304,30 +304,24 @@ class UserConnection(ClientConnection):
         graph = AATC_AStar.DynoGraph()
         graph.ImportGraph()
 
-        temp = []
-        for point in HighPoints:
-            temp.append(ast.literal_eval(point))
-        HighPoints = temp
-        
-
-        HighPointOK = []
+        tempHighPoints = HighPoints
+        HighPoints = []
         try:
-            for point in HighPoints:  #Checks all points are not NoFlyZones
+            for rawPoint in tempHighPoints:
+                point = ast.literal_eval(rawPoint)
+                HighPoints.append(point)
                 NodeID = graph.Find_NodeID(*point)
                 if graph.GetNode(NodeID).Cost > AATC_Config.NOFLYZONE_THRESHOLD_COST: #If it exceeds Threshold one cannot go through here
-                    HighPointOK.append(False)
-                else:
-                    HighPointOK.append(True)
-        except Exception as e:
-            print(e)
-            HighPointOK.append(False)  #If out of bounds the loop will generate an exception. This will then cause the program to return.
+                    return False,"A point in this set is in a restricted area or not in service area. Flight denied.",[]
 
-        if not all(HighPointOK):
+        except Exception as e:
+            print(self.Thread_Name,":",self.ClientID,"Error in AddFlight HighPointOK assesment",e)
             return False,"A point in this set is in a restricted area or not in service area. Flight denied.",[]
+            
               
         
         S_,M_,Result = self.DB.CheckDroneOwnership(self.ClientID,DroneID)
-        if Result != []:
+        if len(Result) !=0:
             Start = 0
             Next = 1
             Max = len(HighPoints)
@@ -759,7 +753,8 @@ def Cleaner(Thread_Name,Thread_Queue,Interval = 36000,EndTimeThreshold = 72000):
                 DB.CleanMonitorPermissions()
                 
                 Sucess,Message,FlightIDs = DB.GetCompletedFlightIDs(EndTimeThreshold)
-                DB.CleanCompletedFlights(EndTimeThreshold)
+                print(FlightIDs)
+                DB.CleanFlights(FlightIDs)
                 
                 for WrappedID in FlightIDs: #Wrapped as will be in for FlightIDs = [[a,],[b,],[c,]] where letters mean flightIDs
                     DB.CleanCompletedFlightWaypoints(WrappedID[0])

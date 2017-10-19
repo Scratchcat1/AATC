@@ -183,7 +183,7 @@ class DBConnection:
     def AddFlight(self,UserID,DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset):
         self.cur.execute("SELECT 1 FROM User,Drone WHERE Drone.DroneID = %s AND Drone.UserID = %s",(DroneID,UserID))
         if self.cur.fetchall() !=():
-            self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset,Completed) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)",(DroneID,str(StartCoords),str(EndCoords),StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset))
+            self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset,Completed) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)",(DroneID,str(StartCoords),str(EndCoords),int(StartTime),int(ETA),int(EndTime),Distance,XOffset,YOffset,ZOffset))
             self.db_con.commit()
             return True,"Flight added"
         else:
@@ -227,11 +227,12 @@ class DBConnection:
             return False,"You do not have permission to mark this flight complete"
         
     def GetCompletedFlightIDs(self,EndTimeThreshold):
-        self.cur.execute("SELECT FlightID FROM Flight WHERE (Completed > 0 AND (EndTime + %s) > %s) OR (EndTime+ %s) > %s",(EndTimeThreshold,GetTime(),EndTimeThreshold*3,GetTime()))
+        print((EndTimeThreshold+GetTime(),EndTimeThreshold*3+GetTime(),GetTime()))
+        self.cur.execute("SELECT FlightID FROM Flight WHERE (Completed > 0 AND (EndTime + %s) < %s) OR (EndTime+ %s) < %s",(EndTimeThreshold,GetTime(),EndTimeThreshold*3,GetTime()))
         return True,"['FlightID']",self.cur.fetchall()
 
-    def CleanCompletedFlights(self,EndTimeThreshold):
-        self.cur.execute("DELETE FROM Flight WHERE Completed > 0 AND (EndTime + %s) > %s",(EndTimeThreshold,GetTime()))
+    def CleanFlights(self,FlightIDList):
+        self.cur.executemany("DELETE FROM Flight WHERE FlightID = %s",FlightIDList)
         self.db_con.commit()
         return True,"Deleted completed flights above threshold"    
 
@@ -251,7 +252,7 @@ class DBConnection:
     def AddWaypoint(self,UserID,FlightID,WaypointNumber,Coords,ETA,BlockTime=0):
         self.cur.execute("SELECT 1 FROM User,Flight,Drone WHERE User.UserID = %s AND User.UserID = Drone.UserID AND Drone.DroneID = Flight.DroneID AND Flight.FlightID = %s",(UserID,FlightID))
         if self.cur.fetchall() !=():
-            self.cur.execute("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(%s,%s,%s,%s,%s)",(FlightID,WaypointNumber,str(Coords),ETA,BlockTime))
+            self.cur.execute("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(%s,%s,%s,%s,%s)",(FlightID,WaypointNumber,str(Coords),int(ETA),BlockTime))
             self.db_con.commit()
             return True,"Added Waypoint"
         else:
