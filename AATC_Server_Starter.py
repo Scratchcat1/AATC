@@ -163,9 +163,7 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
 
 def StartProcesses(Control_Queue):
     Control_Queue.put(("Controller","Create_Process",("USpawner",ProcessSpawner,(8000,"User",MakeUserConnection))))
-
     Control_Queue.put(("Controller","Create_Process",("MSpawner",ProcessSpawner,(8001,"Monitor",MakeMonitorConnection))))
-
     Control_Queue.put(("Controller","Create_Process",("DSpawner",ProcessSpawner,(8002,"Drone",MakeDroneConnection))))
 
 
@@ -178,44 +176,11 @@ def StartProcesses(Control_Queue):
 
 if __name__ == "__main__":
     print("Server is starting")
-##    KillSwitch = multiprocessing.Event()
-##    HighProcessList = []
-##    #Launch UserProcess spawner
-##    UPS = multiprocessing.Process(target = ProcessSpawner,args = (8000,"User",MakeUserConnection,KillSwitch))
-##    HighProcessList.append(UPS)
-##    UPS.start()
-##
-##    #Launch MonitorPerocess spawner
-##    MPS = multiprocessing.Process(target = ProcessSpawner,args = (8001,"Monitor",MakeMonitorConnection,KillSwitch))
-##    HighProcessList.append(MPS)
-##    MPS.start()
-##    
-##    #Launch DroneProcess Spawner
-##    DPS = multiprocessing.Process(target = ProcessSpawner,args = (8002,"Drone",MakeDroneConnection,KillSwitch))
-##    HighProcessList.append(DPS)
-##    DPS.start()
-##
-##    #Launch NoFlyZoneGrapher
-##    NFZG = multiprocessing.Process(target = AATC_NoFlyZoneGrapher.NoFlyZoneGrapher, args = (KillSwitch,))
-##    HighProcessList.append(NFZG)
-##    NFZG.start()
-##
-##    CLN = multiprocessing.Process(target = AATC_Server.Cleaner,args = (KillSwitch,))
-##    HighProcessList.append(CLN)
-##    CLN.start()
 
 
 
     Control_Queue = AATC_GPIO.Create_Controller()
     StartProcesses(Control_Queue)
-
-
-
-
-
-
-
-
 
     
     Main_Command = ""
