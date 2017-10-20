@@ -1,5 +1,5 @@
 #AATC crypto module
-import codecs,recvall,ast,binascii,os,AATC_Config
+import codecs,recvall,ast,binascii,os,AATC_Config,time
 from Crypto.Cipher import AES,PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
@@ -21,11 +21,8 @@ class Crypter:
     """
     def __init__(self, con, mode = "CLIENT",AutoGenerate = True):
         self.con = con
-        self.SetMode(mode)
-        if AATC_Config.PRE_SHARED_ENCRYPTION_KEYS_ENABLE:   #Allows preshared encryption keys to be used 
-            self.SetEncryptionKeys(AATC_Config.PRE_SHARED_AES_KEY, AATC_Config.PRE_SHARED_IV_KEY)
-                
-        elif AutoGenerate:
+        self.SetMode(mode)                
+        if AutoGenerate:
             self.GenerateKey()
 
     def SetMode(self,mode):
@@ -44,33 +41,77 @@ class Crypter:
 
 
     def ClientGenerateKey(self,RSA_KeySize,AES_KeySize= AATC_Config.DEFAULT_AES_KEYSIZE):
+
+        self.Send(("GetServerName",()))
+        Sucess,Message,Data = self.SplitData(self.Recv())
+        if not Sucess:
+            raise ValueError("Server did not recognise command"+Message)
+        ServerName = Data[0]
+
+        if AATC_Config.SET_ENCRYPTION_KEYS_ENABLE:   #Allows preshared encryption keys to be used 
+            self.SetEncryptionKeys(AATC_Config.SET_AES_KEY, AATC_Config.SET_IV_KEY)
+
+        elif AATC_Config.ENCRYPTION_USE_PRESHARED_KEYS:
+            self.ClientPreSharedKeys(ServerName,RSA_KeySize,AES_KeySize)
+
+        else:
+            self.ClientExchangeKeys(RSA_KeySize,AES_KeySize)
+            
+
+
+
+        self.Send(("Exit",()))
+        Sucess,Message,Data = self.SplitData(self.Recv())
+        if not Sucess:
+            raise Exception("Server failed to exit"+Message)
+                
+                
+
+    def ClientPreSharedKeys(self,ServerName,RSA_KeySize,AES_KeySize):
+        AESKey,IV = GenerateKeys(AES_KeySize)
+        Certificate = GetCertificates(ServerName)
+
+        if Certificate:
+            publicKey = Certificate["PublicKey"]
+            PKO = PKCS1_OAEP.new(RSA.import_key(publicKey))
+            EncryptedAESKey = PKO.encrypt(AESKey)
+            EncryptedIV = PKO.encrypt(IV)
+            self.SetEncryptionKeys(AESKey,IV)
+            self.Send(("SetKey",(EncryptedAESKey,EncryptedIV)))
+            data = self.Recv()
+            
+
+        else:
+            print("No Valid Certificates found")
+            if AATC_Config.AUTO_GENERATE_FALLBACK:
+                self.ClientExchangeKeys(RSA_KeySize,AES_KeySize)
+            else:
+                raise Exception("No valid certificate found. Exception raised")
+                
+            
+
+    def ClientExchangeKeys(self,RSA_KeySize,AES_KeySize):
         RSAKey = RSA.generate(RSA_KeySize)
 
         privateKey = RSAKey.exportKey("DER")
         publicKey = RSAKey.publickey().exportKey("DER")
 
-        self.Send(("ExchangeKey",(publicKey,AES_KeySize)))   #Format ("ExchangeKey",("a1b2c3.....",))
-        data = self.Recv()
-        Sucess,Message = data[0],data[1]        #Format (Sucess,("a2c3d4..."))
-        if Sucess == False:
-            raise Exception("Error occured while exchanging keys")
-
-        self.Send(("Exit",()))
-        data = self.Recv()
-        if data[0] == False:
-            raise Exception("Server failed to commit to exit")
+        self.Send(("GenerateKey",(publicKey,AES_KeySize)))   
+        Sucess,Message,data = self.SplitData(self.Recv())     
         
         RSAPrivateKey = RSA.import_key(privateKey)
         RSAPrivateObject = PKCS1_OAEP.new(RSAPrivateKey)
         
-        self.AESKey = RSAPrivateObject.decrypt(Message[0])
-        self.IV = RSAPrivateObject.decrypt(Message[1])
+        AESKey = RSAPrivateObject.decrypt(data[0])
+        IV = RSAPrivateObject.decrypt(data[1])
+
+        if Sucess == False:
+            raise Exception("Error occured while exchanging keys")
         
-        self.SetEncryptionKeys(self.AESKey,self.IV)
-                
+        self.SetEncryptionKeys(AESKey,IV)
 
 
-
+    ################################################################
 
     def ServerGenerateKey(self):
 
@@ -79,29 +120,59 @@ class Crypter:
             data = self.Recv()
             Command, Arguments = data[0],data[1]
 
-            if Command == "ExchangeKey":
-                publicKey,AES_KeySize = Arguments[0],Arguments[1]
-                if AES_KeySize not in AATC_Config.ALLOWED_AES_KEYSIZES:
-                    AES_KeySize = AATC_Config.DEFAULT_AES_KEYSIZE    #If key size is not valid set size to default of AATC_Config.DEFAULT_AES_KEYSIZE
-                    
-                self.AESKey = binascii.b2a_hex(os.urandom(AES_KeySize//2))  # Here to allow regeneration of AES key while still in loop if required.
-                self.IV = binascii.b2a_hex(os.urandom(AES_KeySize//2)) 
+            if Command == "GenerateKey":
+                Sucess,Message,Data = self.ServerGenerateKeys(Arguments)
+
+            elif Command == "GetServerName":
+                Sucess,Message,Data = self.GetServerName(Arguments)
+
+            elif Command == "SetKey":
+                Sucess,Message,Data = self.ServerSetKey(Arguments)
                 
-                RSAPrivateKey = RSA.import_key(publicKey)
-                PublicKeyObject = PKCS1_OAEP.new(RSAPrivateKey)
-                
-                EncryptedAESKey = PublicKeyObject.encrypt(self.AESKey)
-                EncryptedIV = PublicKeyObject.encrypt(self.IV)
-                self.Send((True,(EncryptedAESKey,EncryptedIV)))
                 
             elif Command == "Exit":
-                self.Send((True,()))
+                Sucess,Message,Data = True,"Exiting",[]
                 Exit = True
 
             else:
-                self.Send((False,("Command does not exist",)))
+                Sucess,Message,Data = False,"Command does not exist",[]
 
-        self.SetEncryptionKeys(self.AESKey,self.IV)
+            self.Send((Sucess,Message,Data))
+
+
+
+
+    def ServerGenerateKeys(self,Arguments):
+        publicKey,AES_KeySize = Arguments[0],Arguments[1]
+        
+        if AES_KeySize not in AATC_Config.ALLOWED_AES_KEYSIZES:
+            AES_KeySize = AATC_Config.DEFAULT_AES_KEYSIZE    #If key size is not valid set size to default of AATC_Config.DEFAULT_AES_KEYSIZE
+            
+        AESKey,IV = GenerateKeys(AES_KeySize)
+        
+        PublicKeyObject = PKCS1_OAEP.new( RSA.import_key(publicKey))
+        
+        EncryptedAESKey = PublicKeyObject.encrypt(AESKey)
+        EncryptedIV = PublicKeyObject.encrypt(IV)
+
+        self.SetEncryptionKeys(AESKey,IV)
+        return True,"Instated encryption keys",[EncryptedAESKey,EncryptedIV]
+
+    def GetServerName(self,Arguments = None):
+        return True,"Server Name",[AATC_Config.SERVER_NAME]
+
+    def ServerSetKey(self,Arguments):
+        PKO = PKCS1_OAEP.new(RSA.import_key(AATC_Config.SERVER_PRIVATE_KEY))
+        AESKey,IV = Arguments[0],Arguments[1]
+        AESKey,IV = PKO.decrypt(AESKey),PKO.decrypt(IV)
+        self.SetEncryptionKeys(AESKey,IV)
+        return True,"Keys set",[]
+        
+
+
+
+
+    ###############################################
 
 
     def SetEncryptionKeys(self,AESKey,IV):
@@ -116,16 +187,29 @@ class Crypter:
         
 
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
             
     def Encrypt(self,data):
-##        pad_size = 16-len(data)%16
-##        data += b" "*pad_size
         return self.EncryptAES.encrypt(data)
 
     def Decrypt(self,data):
-##        pad_size = 16-len(data)%16      # - should not be nessesary as data will come in 16 size blocks and change in message would thwart decryption.
-##        data += b" "*pad_size
         return self.DecryptAES.decrypt(data)
 
         
@@ -136,6 +220,38 @@ class Crypter:
     def Recv(self):
         data = recvall.recvall(self.con)
         data = ast.literal_eval(codecs.decode(data))
-        #      (Command,Arguments)
         return data
+    def SplitData(self,data):
+        return data[0],data[1],data[2]
 
+
+
+
+    
+def GenerateKeys(AES_KeySize):
+    AESKey = binascii.b2a_hex(os.urandom(AES_KeySize//2))  # Here to allow regeneration of AES key while still in loop if required.
+    IV     = binascii.b2a_hex(os.urandom(AES_KeySize//2))
+    return AESKey,IV
+
+def GetCertificates(ServerName):
+    Certificates = AATC_Config.CERTIFICATES.get(ServerName)
+    if Certificates == None:
+        return False
+
+    found = False
+    for Certificate in Certificates:
+        if Validate(Certificate):
+            found = True
+            break
+        
+    if not found:
+        return False
+
+    return Certificate
+
+
+def Validate(Certificate):
+    if Certificate["NotBefore"] <= time.time() and Certificate["NotAfter"] >= time.time():
+        return True
+    else:
+        return False
