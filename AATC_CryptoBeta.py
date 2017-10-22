@@ -1,5 +1,4 @@
-import codecs,recvall,ast,binascii,os,AATC_Config,time
-from Crypto.Cipher import AES,PKCS1_OAEP
+import time,codecs
 from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_PSS
@@ -21,12 +20,6 @@ def GenerateCertificate(Name,Issuer,NotBefore,NotAfter,PublicKey,IssuerPrivateKe
     Certificate["Signature"] = Signature
     return Certificate
 
-def GetSignatureSource(Certificate):
-    SignatureSource = codecs.encode(str(Certificate["Name"]) + str(Certificate["Issuer"]) + str(Certificate["NotBefore"]) + str(Certificate["NotAfter"]) + str(hashlib.sha256(Certificate["PublicKey"]).hexdigest()))
-    return SignatureSource
-
-
-
 def VerifyCertificates(CertificateChain,RootCertificates, Reverse = False):
     if Reverse:
         CertificateChain = CertificateChain[::-1]
@@ -35,8 +28,9 @@ def VerifyCertificates(CertificateChain,RootCertificates, Reverse = False):
     Valid = False
     for RootCert in RootCertificates:
         if BaseCertificate["Issuer"] == RootCert["Name"]:
-            Valid = True
-            break
+            if ValidateCertificate(RootCert,RootCert["PublicKey"]):  #Checks that root certificate is in time bounds and that is ok.
+                Valid = True
+                break
         
     if Valid and ValidateCertificate(BaseCertificate,RootCert["PublicKey"]):
         CurrentPublicKey = BaseCertificate["PublicKey"]
@@ -47,7 +41,7 @@ def VerifyCertificates(CertificateChain,RootCertificates, Reverse = False):
 
     else:
         return False
-
+    print("Valid Certificate Chain ")
     return CurrentPublicKey
                 
 
@@ -63,7 +57,9 @@ def ValidateCertificate(Certificate,IssuerPublicKey):
 
     return Valid_Signature
     
-    
+def GetSignatureSource(Certificate):
+    SignatureSource = codecs.encode(str(Certificate["Name"]) + str(Certificate["Issuer"]) + str(Certificate["NotBefore"]) + str(Certificate["NotAfter"]) + str(hashlib.sha256(Certificate["PublicKey"]).hexdigest()))
+    return SignatureSource
         
         
 
@@ -94,7 +90,8 @@ def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY):
         cert = GenerateCertificate(x,Issuer,1,10000000000,puk,PRIVATE_KEY)
         Issuer = x
         PRIVATE_KEY = pk
+        print(cert,"\n\n Private Key :",pk,"\n"*2)
         chain.append(cert)
-    return chain
+    return chain,pk
     
 

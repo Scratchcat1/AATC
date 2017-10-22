@@ -1,5 +1,5 @@
 #AATC crypto module
-import codecs,recvall,ast,binascii,os,AATC_Config,time
+import codecs,recvall,ast,binascii,os,AATC_Config,time,AATC_CryptoBeta
 from Crypto.Cipher import AES,PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
@@ -42,23 +42,16 @@ class Crypter:
 
     def ClientGenerateKey(self,RSA_KeySize,AES_KeySize= AATC_Config.DEFAULT_AES_KEYSIZE):
 
-        self.Send(("GetServerName",()))
-        Sucess,Message,Data = self.SplitData(self.Recv())
-        if not Sucess:
-            raise ValueError("Server did not recognise command"+Message)
-        ServerName = Data[0]
 
         if AATC_Config.SET_ENCRYPTION_KEYS_ENABLE:   #Allows preshared encryption keys to be used 
             self.SetEncryptionKeys(AATC_Config.SET_AES_KEY, AATC_Config.SET_IV_KEY)
 
         elif AATC_Config.ENCRYPTION_USE_PRESHARED_KEYS:
-            self.ClientPreSharedKeys(ServerName,RSA_KeySize,AES_KeySize)
+            self.ClientPreSharedKeys(RSA_KeySize,AES_KeySize)
 
         else:
             self.ClientExchangeKeys(RSA_KeySize,AES_KeySize)
             
-
-
 
         self.Send(("Exit",()))
         Sucess,Message,Data = self.SplitData(self.Recv())
@@ -67,13 +60,20 @@ class Crypter:
                 
                 
 
-    def ClientPreSharedKeys(self,ServerName,RSA_KeySize,AES_KeySize):
-        AESKey,IV = GenerateKeys(AES_KeySize)
-        Certificate = GetCertificates(ServerName)
+    def ClientPreSharedKeys(self,RSA_KeySize,AES_KeySize):
+        self.Send(("GetServerCertificateChain",()))
+        Sucess,Message,CertificateChain = self.SplitData(self.Recv())
+        if not Sucess:
+            raise Exception("Server did not respond to command")
 
-        if Certificate:
-            publicKey = Certificate["PublicKey"]
-            PKO = PKCS1_OAEP.new(RSA.import_key(publicKey))
+        
+        
+        AESKey,IV = GenerateKeys(AES_KeySize)
+        PublicKey = AATC_CryptoBeta.VerifyCertificates(CertificateChain,AATC_Config.ROOT_CERTIFICATES)
+
+        if PublicKey:
+            
+            PKO = PKCS1_OAEP.new(RSA.import_key(PublicKey))
             EncryptedAESKey = PKO.encrypt(AESKey)
             EncryptedIV = PKO.encrypt(IV)
             self.SetEncryptionKeys(AESKey,IV)
@@ -82,11 +82,11 @@ class Crypter:
             
 
         else:
-            print("No Valid Certificates found")
+            print("Certificate Chain is not valid")
             if AATC_Config.AUTO_GENERATE_FALLBACK:
                 self.ClientExchangeKeys(RSA_KeySize,AES_KeySize)
             else:
-                raise Exception("No valid certificate found. Exception raised")
+                raise Exception("Certificate Chain is not valid. Exception raised")
                 
             
 
@@ -123,8 +123,8 @@ class Crypter:
             if Command == "GenerateKey":
                 Sucess,Message,Data = self.ServerGenerateKeys(Arguments)
 
-            elif Command == "GetServerName":
-                Sucess,Message,Data = self.GetServerName(Arguments)
+            elif Command == "GetServerCertificateChain":
+                Sucess,Message,Data = self.GetServerCertificateChain(Arguments)
 
             elif Command == "SetKey":
                 Sucess,Message,Data = self.ServerSetKey(Arguments)
@@ -158,8 +158,8 @@ class Crypter:
         self.SetEncryptionKeys(AESKey,IV)
         return True,"Instated encryption keys",[EncryptedAESKey,EncryptedIV]
 
-    def GetServerName(self,Arguments = None):
-        return True,"Server Name",[AATC_Config.SERVER_NAME]
+    def GetServerCertificateChain(self,Arguments = None):
+        return True,"Server Certificate Chain",AATC_Config.SERVER_CERTIFICATE_CHAIN
 
     def ServerSetKey(self,Arguments):
         PKO = PKCS1_OAEP.new(RSA.import_key(AATC_Config.SERVER_PRIVATE_KEY))
@@ -233,25 +233,4 @@ def GenerateKeys(AES_KeySize):
     IV     = binascii.b2a_hex(os.urandom(AES_KeySize//2))
     return AESKey,IV
 
-def GetCertificates(ServerName):
-    Certificates = AATC_Config.CERTIFICATES.get(ServerName)
-    if Certificates == None:
-        return False
 
-    found = False
-    for Certificate in Certificates:
-        if Validate(Certificate):
-            found = True
-            break
-        
-    if not found:
-        return False
-
-    return Certificate
-
-
-def Validate(Certificate):
-    if Certificate["NotBefore"] <= time.time() and Certificate["NotAfter"] >= time.time():
-        return True
-    else:
-        return False
