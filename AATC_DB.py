@@ -183,7 +183,7 @@ class DBConnection:
     def AddFlight(self,UserID,DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset):
         self.cur.execute("SELECT 1 FROM User,Drone WHERE Drone.DroneID = %s AND Drone.UserID = %s",(DroneID,UserID))
         if self.cur.fetchall() !=():
-            self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset,Completed) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)",(DroneID,str(StartCoords),str(EndCoords),StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset))
+            self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset,Completed) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)",(DroneID,str(StartCoords),str(EndCoords),int(StartTime),int(ETA),int(EndTime),Distance,XOffset,YOffset,ZOffset))
             self.db_con.commit()
             return True,"Flight added"
         else:
@@ -200,7 +200,7 @@ class DBConnection:
 
     def CheckForFlight(self,DroneID,MaxLookAheadTime):
         InvalidateDelay = 1800
-        self.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime < (%s+%s) AND StartTime > (%s-%s) ORDER BY StartTime ASC LIMIT 1",(DroneID,GetTime(),MaxLookAheadTime, GetTime(),InvalidateDelay))
+        self.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime < (%s+%s) AND StartTime > (%s-%s) AND Completed = 0 ORDER BY StartTime ASC LIMIT 1",(DroneID,GetTime(),MaxLookAheadTime, GetTime(),InvalidateDelay))
         FlightIDFetch = self.cur.fetchall()
         self.db_con.commit()
         if FlightIDFetch != ():
@@ -227,11 +227,11 @@ class DBConnection:
             return False,"You do not have permission to mark this flight complete"
         
     def GetCompletedFlightIDs(self,EndTimeThreshold):
-        self.cur.execute("SELECT FlightID FROM Flight WHERE Completed > 0 AND (EndTime + %s) > %s",(EndTimeThreshold,GetTime()))
+        self.cur.execute("SELECT FlightID FROM Flight WHERE (Completed > 0 AND (EndTime + %s) < %s) OR (EndTime+ %s) < %s",(EndTimeThreshold,GetTime(),EndTimeThreshold*3,GetTime()))
         return True,"['FlightID']",self.cur.fetchall()
 
-    def CleanCompletedFlights(self,EndTimeThreshold):
-        self.cur.execute("DELETE FROM Flight WHERE Completed > 0 AND (EndTime + %s) > %s",(EndTimeThreshold,GetTime()))
+    def CleanFlights(self,FlightIDList):
+        self.cur.executemany("DELETE FROM Flight WHERE FlightID = %s",FlightIDList)
         self.db_con.commit()
         return True,"Deleted completed flights above threshold"    
 
@@ -251,7 +251,7 @@ class DBConnection:
     def AddWaypoint(self,UserID,FlightID,WaypointNumber,Coords,ETA,BlockTime=0):
         self.cur.execute("SELECT 1 FROM User,Flight,Drone WHERE User.UserID = %s AND User.UserID = Drone.UserID AND Drone.DroneID = Flight.DroneID AND Flight.FlightID = %s",(UserID,FlightID))
         if self.cur.fetchall() !=():
-            self.cur.execute("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(%s,%s,%s,%s,%s)",(FlightID,WaypointNumber,str(Coords),ETA,BlockTime))
+            self.cur.execute("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(%s,%s,%s,%s,%s)",(FlightID,WaypointNumber,str(Coords),int(ETA),BlockTime))
             self.db_con.commit()
             return True,"Added Waypoint"
         else:
@@ -307,11 +307,12 @@ class DBConnection:
 
     def GetMonitorID(self,MonitorName):
         self.cur.execute("SELECT MonitorID FROM Monitor WHERE MonitorName = %s",(MonitorName,))
-        if len(self.cur.fetchall()) != 0:
+        result = self.cur.fetchall()
+        if len(result) != 0:
             Sucess = True
         else:
             Sucess = False
-        return Sucess,"['MonitorID']",self.cur.fetchall()
+        return Sucess,"['MonitorID']",result
     def GetMonitorName(self,MonitorID):
         self.cur.execute("SELECT MonitorName FROM Monitor WHERE MonitorID = %s",(MonitorID,))
         return True,"['MonitorName']",self.cur.fetchall()
