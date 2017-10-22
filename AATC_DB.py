@@ -227,7 +227,6 @@ class DBConnection:
             return False,"You do not have permission to mark this flight complete"
         
     def GetCompletedFlightIDs(self,EndTimeThreshold):
-        print((EndTimeThreshold+GetTime(),EndTimeThreshold*3+GetTime(),GetTime()))
         self.cur.execute("SELECT FlightID FROM Flight WHERE (Completed > 0 AND (EndTime + %s) < %s) OR (EndTime+ %s) < %s",(EndTimeThreshold,GetTime(),EndTimeThreshold*3,GetTime()))
         return True,"['FlightID']",self.cur.fetchall()
 
@@ -308,11 +307,12 @@ class DBConnection:
 
     def GetMonitorID(self,MonitorName):
         self.cur.execute("SELECT MonitorID FROM Monitor WHERE MonitorName = %s",(MonitorName,))
-        if len(self.cur.fetchall()) != 0:
+        result = self.cur.fetchall()
+        if len(result) != 0:
             Sucess = True
         else:
             Sucess = False
-        return Sucess,"['MonitorID']",self.cur.fetchall()
+        return Sucess,"['MonitorID']",result
     def GetMonitorName(self,MonitorID):
         self.cur.execute("SELECT MonitorName FROM Monitor WHERE MonitorID = %s",(MonitorID,))
         return True,"['MonitorName']",self.cur.fetchall()
