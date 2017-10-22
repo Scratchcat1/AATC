@@ -16,6 +16,10 @@ There are 4 components to the system : The **Server, *Drones*, *Users* and *Moni
 ***Monitor* ->** Can be seen as a watcher. A *Monitor* can view all the public flight data and all non public flight data which it has been given permission to view. This could be used to create a visulization of the current flight situation and/or provide customers a real time view on when the *Drone* will arrive at its destination.  
 
 
+Note: Use ```pycryptodome``` not ```pycrypto```. ```Pycrypto``` is outdated and insecure. ```pip install pycryptodome```
+Some required modules. Install using ```pip install pycryptodome prettytable mysqlclient telepot pygame```
+
+
 Cython compiler settings:  
 ```
 cython -a CAStar.pyx  
@@ -26,3 +30,4 @@ cython --cplus CAStar2.pyx
 g++ -shared -pthread -fPIC -fwrapv -O3 -Wall -L /usr/include/python3.4 -lstdc++ -fno-strict-aliasing  -mcpu=cortex-a53 -mfpu=neon-vfpv4  -floop-interchange -floop-strip-mine -floop-block -floop-parallelize-all -ftree-parallelize-loops=2   -std=gnu++11 -I/usr/include/python3.4 -o CAStar2.so CAStar2.cpp
 ```
 recvall credit belongs to: https://stackoverflow.com/questions/17667903/python-socket-receive-large-amount-of-data
+
