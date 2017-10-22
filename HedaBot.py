@@ -167,6 +167,8 @@ class inputSorter:
                 if "/cancel" == messageText:
                     self.DB.flushStack(chat_id)
                     return "Command cancelled"
+                elif "/quote" == messageText:
+                    return self.GetQuote()
                 else:
                     self.DB.flushStack(chat_id)
                     messageText = messageText.replace("/","")
@@ -197,6 +199,18 @@ class inputSorter:
             
         except Exception as e:
             return "Error processing message "+str(e) + "\n" + self.ShowCommandsList
+
+    def GetQuote(self):
+        with open("SkyrimDialogue.txt","r") as f:
+            for i,line in enumerate(f):
+                pass
+
+        lineNum = random.randint(0,i+1)
+        with open("SkyrimDialogue.txt","r") as f:
+            for x in range(lineNum):
+                line = f.readline()
+        response = line.rstrip().split("\t")[-1:][0]
+        return response
 
 
 

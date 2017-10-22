@@ -120,7 +120,6 @@ class Crypter:
             data = self.Recv()
             Command, Arguments = data[0],data[1]
 
-
             if Command == "GenerateKey":
                 Sucess,Message,Data = self.ServerGenerateKeys(Arguments)
 
@@ -129,7 +128,6 @@ class Crypter:
 
             elif Command == "SetKey":
                 Sucess,Message,Data = self.ServerSetKey(Arguments)
-
                 
                 
             elif Command == "Exit":

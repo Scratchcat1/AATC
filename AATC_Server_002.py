@@ -753,7 +753,6 @@ def Cleaner(Thread_Name,Thread_Queue,Interval = 36000,EndTimeThreshold = 72000):
                 DB.CleanMonitorPermissions()
                 
                 Sucess,Message,FlightIDs = DB.GetCompletedFlightIDs(EndTimeThreshold)
-                print(FlightIDs)
                 DB.CleanFlights(FlightIDs)
                 
                 for WrappedID in FlightIDs: #Wrapped as will be in for FlightIDs = [[a,],[b,],[c,]] where letters mean flightIDs
