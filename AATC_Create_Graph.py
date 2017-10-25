@@ -1,47 +1,52 @@
 #Create graph module
-import decimal,AATC_AStar
-from AATC_Coordinate import *
+import decimal,AATC_AStar,AATC_Coordinate 
 
 def drange(start,end,step):
-  step = decimal.Decimal(step)
-  r = decimal.Decimal(start)
-  while r < end:
-    yield float(r)
-    r += decimal.Decimal(step)
-print("2 million nodes ~ 357MB")
-xStart =float(input("Enter start x Coord"))
-yStart = float(input("Enter start y Coord"))
-zStart = float(input("Enter start z Coord"))
+    step = decimal.Decimal(step)
+    r = decimal.Decimal(start)
+    while r < end:
+        yield float(r)
+        r += decimal.Decimal(step)
 
-xEnd = float(input("Enter End x Coord"))
-yEnd = float(input("Enter End y Coord"))
-zEnd = float(input("Enter End z Coord"))
 
-xInterval = float(input("Enter x interval"))
-yInterval = float(input("Enter y interval"))
-zInterval = float(input("Enter z interval"))
 
-print("creating graph")
-graph = AATC_AStar.DynoGraph()
-graph.Size(xInterval,yInterval,zInterval)
-nodeID = 1
-for x in drange(xStart,xEnd,xInterval):
-    for y in drange(yStart,yEnd,yInterval):
-        for z in drange(zStart,zEnd,zInterval):
-            Coord = Coordinate(x,y,z)
-            node = AATC_AStar.Node(nodeID,1,Coord)
-            graph.add_node(node)
-            nodeID +=1
+def CreationDialogue():
+    print("2 million nodes ~ 357MB")
+    xStart =float(input("Enter start x Coord"))
+    yStart = float(input("Enter start y Coord"))
+    zStart = float(input("Enter start z Coord"))
 
-xRange = xEnd - xStart
-yRange = yEnd - yStart
-zRange = zEnd - zStart
-graph.Add_Edges(xRange,yRange,zRange)
-##graph.clean_edges()  #No longer nessesary
-graph.Build_Node_Cache()
-##for node in graph.Nodes.values():
-##    del node.Coords
-graph.SaveGraph()
+    xEnd = float(input("Enter End x Coord"))
+    yEnd = float(input("Enter End y Coord"))
+    zEnd = float(input("Enter End z Coord"))
+
+    xInterval = float(input("Enter x interval"))
+    yInterval = float(input("Enter y interval"))
+    zInterval = float(input("Enter z interval"))
+
+    print("creating graph")
+    graph = AATC_AStar.DynoGraph()
+    graph.Size(xInterval,yInterval,zInterval)
+    nodeID = 1
+    for x in drange(xStart,xEnd,xInterval):
+        for y in drange(yStart,yEnd,yInterval):
+            for z in drange(zStart,zEnd,zInterval):
+                Coord = AATC_Coordinate.Coordinate(x,y,z)
+                node = AATC_AStar.Node(nodeID,1,Coord)
+                graph.add_node(node)
+                nodeID +=1
+
+    xRange = xEnd - xStart
+    yRange = yEnd - yStart
+    zRange = zEnd - zStart
+    graph.Add_Edges(xRange,yRange,zRange)
+    graph.Build_Node_Cache()
+    graph.SaveGraph()
+
+
+
+if __name__ == "__main__":
+    CreationDialogue()    
 
 
 

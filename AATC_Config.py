@@ -18,6 +18,8 @@ DEFAULT_RSA_KEYSIZE = 2048
 # ENCRYPTION_USE_PRESHARED_KEYS switch controls use of certificate authentication. FALLBACK controls if the MiTM vunrable key transfer should be used if certificate fails-Not Recommended!
 ENCRYPTION_USE_PRESHARED_KEYS = True
 AUTO_GENERATE_FALLBACK = False
+ALLOW_FAILED_DOMAIN_LOOKUP = True
+MAX_CERTIFICATE_CHAIN_LENGTH = 20
 
 
 # A list of certificates which the client will trust and accept as a issuer. This can just be the server certificate if desired.
@@ -34,3 +36,5 @@ DRONE_BATTERY_DRAIN_MULT = 1
 
 #Control at which setting the server will raise an error if the cost for entering that node sector exceeds value. To prevent selecting a blocked node as a target node to bypass search algorithm.
 NOFLYZONE_THRESHOLD_COST = 50
+
+

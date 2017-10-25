@@ -91,26 +91,20 @@ class Camera:
             if ((Object.Coords.x < CameraEndX) and ((Object.Coords.x+Object.Coords.xSize) > self.CameraCoord.x)) and \
                ((Object.Coords.y < CameraEndY) and ((Object.Coords.y+Object.Coords.ySize) > self.CameraCoord.y )) :  #If DrawObject intersects with Camera , Render, otherwise ignore
                 
-                PosX = ((Object.Coords.x- self.CameraCoord.x)/self.CameraCoord.xSize)* self.xpixel
-                PosY = ((Object.Coords.y- self.CameraCoord.y)/self.CameraCoord.ySize)* self.ypixel
-##                width,height = Object.Coords.xSize*self.CameraZoom ,Object.Coords.ySize*self.CameraZoom
+
                 width,height = int(Object.Coords.xSize/self.CameraCoord.xSize*self.xpixel) ,int(Object.Coords.ySize/self.CameraCoord.ySize*self.ypixel)
                 if width > 0 and height > 0:
+                    PosX = ((Object.Coords.x- self.CameraCoord.x)/self.CameraCoord.xSize)* self.xpixel
+                    PosY = ((Object.Coords.y- self.CameraCoord.y)/self.CameraCoord.ySize)* self.ypixel
                     width = MaxLimit(width,self.xpixel)
                     height = MaxLimit(height,self.ypixel)
                     font_size = int(100*width/self.xpixel)
-                    Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
-                    self.gameDisplay.blit(Object.image,(PosX,PosY))
+                    image = Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
+                    self.gameDisplay.blit(image,(PosX,PosY))
                     if font_size > 5:
-                        font = (None, font_size) #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
-                        Object.Make_CoordsText(font)     #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
-                        Object.Make_Text(font)          #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
-                        Object.Make_Type(font)         #TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS#TEST THIS
+                        font = (None, font_size)                  
+                        self.gameDisplay.blit(Object.Make_Text(font) ,(PosX+width,PosY))
 
-                        text_height = Object.CoordsText.get_height()
-                        self.gameDisplay.blit(Object.CoordsText,(PosX+width,PosY))
-                        self.gameDisplay.blit(Object.DrawnType,(PosX+width,PosY+text_height))
-                        self.gameDisplay.blit(Object.DrawnText,(PosX+width,PosY+text_height*2))
 
              
                                                     
@@ -126,20 +120,26 @@ class Monitor_Sprite(pygame.sprite.Sprite):
     def Make_Image(self,width,height):
         if self.image.get_size() != (width,height):  #If new image does not match with previous
             self.image = GetImage(width,height,self.Colour)
+
+        return self.image
 ##            self.image = pygame.Surface((width,height)).convert()
 ##            self.image.fill(self.Colour)
-        
-    def Make_CoordsText(self,font):
-        self.CoordsText = GetText(str((self.Coords.x,self.Coords.y,self.Coords.z)),font,False,self.Colour)
-        #self.CoordsText = font.render(str((self.Coords.x,self.Coords.y,self.Coords.z)),False,self.Colour)
 
     def Make_Text(self,font):
-        self.DrawnText = GetText(self.Text,font,False,self.Colour)
-        #self.DrawnText = font.render(self.Text,False,self.Colour)
-
-    def Make_Type(self,font):
-        self.DrawnType = GetText(self.Type,font,False,self.Colour)
-        #self.DrawnType = font.render(self.Type,False,self.Colour)
+        text = str((self.Coords.x,self.Coords.y,self.Coords.z)) +" " +self.Text + " "+ self.Type
+        return GetText(text,font,False,self.Colour)
+##        
+##    def Make_CoordsText(self,font):
+##        self.CoordsText = GetText(str((self.Coords.x,self.Coords.y,self.Coords.z)),font,False,self.Colour)
+##        #self.CoordsText = font.render(str((self.Coords.x,self.Coords.y,self.Coords.z)),False,self.Colour)
+##
+##    def Make_Text(self,font):
+##        self.DrawnText = GetText(self.Text,font,False,self.Colour)
+##        #self.DrawnText = font.render(self.Text,False,self.Colour)
+##
+##    def Make_Type(self,font):
+##        self.DrawnType = GetText(self.Type,font,False,self.Colour)
+##        #self.DrawnType = font.render(self.Type,False,self.Colour)
 
 
 def MakeDroneSprites(Message,RawDroneList):
@@ -273,14 +273,10 @@ while Exit != "Y":
             Sprites = MakeSprites(M)
             #font = (None, 30) 
             for sprite in Sprites:
-                #sprite.Make_CoordsText(font)
-                #sprite.Make_Text(font)
-                #sprite.Make_Type(font)
                 MonCamera.AddDrawObject(sprite,False)
 
             Last_Refresh_Time = time.time()
             refresh = False
-            #MonCamera.SetZoom(1000000)
             while not refresh:
                 MonCamera.CameraWipe()
                 if time.time() >= (Last_Refresh_Time + Refresh_Delay):
@@ -316,6 +312,11 @@ while Exit != "Y":
                     MonCamera.SetZoom(0.99*MonCamera.GetZoom())
                 if pressed()[pygame.K_e]:#Zoom in
                     MonCamera.SetZoom(1.01*MonCamera.GetZoom())
+
+                if pressed()[pygame.K_SPACE]:#Zoom in
+                    refresh = True
+
+                    
                 MonCamera.UpdateCameraSize()
                 MonCamera.Draw()
                 pygame.display.flip()

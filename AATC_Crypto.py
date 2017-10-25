@@ -1,5 +1,5 @@
 #AATC crypto module
-import codecs,recvall,ast,binascii,os,AATC_Config,time,AATC_CryptoBeta
+import codecs,recvall,ast,binascii,os,AATC_Config,time,AATC_CryptoBeta,socket
 from Crypto.Cipher import AES,PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
@@ -66,10 +66,8 @@ class Crypter:
         if not Sucess:
             raise Exception("Server did not respond to command")
 
-        
-        
         AESKey,IV = GenerateKeys(AES_KeySize)
-        PublicKey = AATC_CryptoBeta.VerifyCertificates(CertificateChain,AATC_Config.ROOT_CERTIFICATES)
+        PublicKey = AATC_CryptoBeta.VerifyCertificates(CertificateChain,AATC_Config.ROOT_CERTIFICATES,self.con)
 
         if PublicKey:
             

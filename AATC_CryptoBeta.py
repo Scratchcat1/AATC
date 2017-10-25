@@ -1,8 +1,7 @@
-import time,codecs
+import time,codecs,socket,hashlib,AATC_Config
 from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_PSS
-import hashlib
 
 def GenerateCertificate(Name,Issuer,NotBefore,NotAfter,PublicKey,IssuerPrivateKey):
     Certificate = {}
@@ -20,7 +19,9 @@ def GenerateCertificate(Name,Issuer,NotBefore,NotAfter,PublicKey,IssuerPrivateKe
     Certificate["Signature"] = Signature
     return Certificate
 
-def VerifyCertificates(CertificateChain,RootCertificates, Reverse = False):
+def VerifyCertificates(CertificateChain,RootCertificates,con = False, Reverse = False):
+    if len(CertificateChain) > AATC_Config.MAX_CERTIFICATE_CHAIN_LENGTH:
+        return False
     if Reverse:
         CertificateChain = CertificateChain[::-1]
     BaseCertificate = CertificateChain.pop(0)
@@ -31,6 +32,10 @@ def VerifyCertificates(CertificateChain,RootCertificates, Reverse = False):
             if ValidateCertificate(RootCert,RootCert["PublicKey"]):  #Checks that root certificate is in time bounds and that is ok.
                 Valid = True
                 break
+
+    if Valid and con:
+        Valid = VerifyBaseAddress(BaseCertificate,con)
+    
         
     if Valid and ValidateCertificate(BaseCertificate,RootCert["PublicKey"]):
         CurrentPublicKey = BaseCertificate["PublicKey"]
@@ -93,5 +98,23 @@ def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY):
         print(cert,"\n\n Private Key :",pk,"\n"*2)
         chain.append(cert)
     return chain,pk
-    
+
+
+def VerifyBaseAddress(BaseCertificate,con):
+    address = con.getpeername()[0]
+    try:
+        domain = socket.gethostbyaddr(address)[0]
+    except:
+        domain = None
+
+    if BaseCertificate["Name"] not in [address,domain]:
+        print("[WARNING] The certificate name of the server could not be matched with the looked up domain name or address of the server")
+        if AATC_Config.ALLOW_FAILED_DOMAIN_LOOKUP:
+            print("Continuing anyway. Set ALLOW_FAILED_DOMAIN_LOOKUP to False to disable this behaviour")
+            return True
+        else:
+            return False
+    else:
+        return True
+
 
