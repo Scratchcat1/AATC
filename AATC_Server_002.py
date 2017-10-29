@@ -311,7 +311,7 @@ class UserConnection(ClientConnection):
                 point = ast.literal_eval(rawPoint)
                 HighPoints.append(point)
                 NodeID = graph.Find_NodeID(*point)
-                if graph.GetNode(NodeID).Cost > AATC_Config.NOFLYZONE_THRESHOLD_COST: #If it exceeds Threshold one cannot go through here
+                if graph.GetNode(NodeID).Get_Cost() > AATC_Config.NOFLYZONE_THRESHOLD_COST: #If it exceeds Threshold one cannot go through here
                     return False,"A point in this set is in a restricted area or not in service area. Flight denied.",[]
 
         except Exception as e:
@@ -348,7 +348,7 @@ class UserConnection(ClientConnection):
                 for NodeID in Path:
                     Node = graph.GetNode(NodeID)
                     Coords = Node.Coords
-                    Coords.x, Coords.y, Coords.z = Coords.x+XOffset,  Coords.y+YOffset, Coords.z+ZOffset
+                    Coords.Set_X( Coords.Get_X()+XOffset),  Coords.Set_Y(Coords.Get_Y()+YOffset), Coords.Set_Z(Coords.Get_Z()+ZOffset)
                     CoordList.append({"Coords":Coords})
                     
                 Time = StartTime
@@ -709,8 +709,7 @@ class DroneConnection(ClientConnection):
 
     ########################################################
 
-    def DroneGetDroneInfo(self,Arguments):
-        DroneID = Arguments[0]
+    def DroneGetDroneInfo(self,Arguments = None):
         Sucess,Message,Data = self.DB.DroneGetDroneInfo(self.ClientID)
         return Sucess,Message,Data
     
