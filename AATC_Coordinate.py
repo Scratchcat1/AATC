@@ -2,19 +2,19 @@ import math
 
 class Coordinate:
     def __init__(self,x,y,z=0,xSize=0,ySize=0,zSize=0):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.xSize = xSize
-        self.ySize = ySize
-        self.zSize = zSize
+        self._x = x
+        self._y = y
+        self._z = z
+        self._xSize = xSize
+        self._ySize = ySize
+        self._zSize = zSize
         
     def Get_X(self):
-        return self.x
+        return self._x
     def Get_Y(self):
-        return self.y
+        return self._y
     def Get_Z(self):
-        return self.z
+        return self._z
 
     def Set_X(self,x):
         self._x = x
@@ -24,26 +24,34 @@ class Coordinate:
         self._z = z
 
     def Get_XSize(self):
-        return self.xSize
+        return self._xSize
     def Get_YSize(self):
-        return self.ySize
+        return self._ySize
     def Get_ZSize(self):
-        return self.zSize
+        return self._zSize
+
+    def Set_XSize(self,x):
+        self._xSize = x
+    def Set_YSize(self,y):
+        self._ySize = y
+    def Set_ZSize(self,z):
+        self._zSize = z
+
 
     def Print(self):
         print("Coordinate:")
-        print("X: {:<8}   xSize:{:<8}".format(round(self.x,7),self.xSize))
-        print("Y: {:<8}   ySize:{:<8}".format(round(self.y,7),self.ySize))
-        print("Z: {:<8}   zSize:{:<8}".format(round(self.z,7),self.zSize))
+        print("X: {:<8}   xSize:{:<8}".format(round(self._x,7),self._xSize))
+        print("Y: {:<8}   ySize:{:<8}".format(round(self._y,7),self._ySize))
+        print("Z: {:<8}   zSize:{:<8}".format(round(self._z,7),self._zSize))
 
     def __str__(self):
-        return str((round(self.x,8),round(self.y,8),round(self.z,8)))
+        return str((round(self._x,8),round(self._y,8),round(self._z,8)))
 
     def getTuple(self):
-        return (self.x,self.y,self.z)
+        return (self._x,self._y,self._z)
 
     def copy(self):
-        return Coordinate(self.x,self.y,self.z,self.xSize,self.ySize,self.zSize)
+        return Coordinate(self._x,self._y,self._z,self._xSize,self._ySize,self._zSize)
 
 
 def AddCoords(Coord,VectorCoord):   #Simulates the drone moving

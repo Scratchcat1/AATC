@@ -6,20 +6,46 @@ def printUpdates(Bot):
     for item in Bot.getUpdates():
         print(item)
 
-def TelebotLaunch(Thread_Name,Input_Queue,bot):
-    Heda = Telebot(Thread_Name,Input_Queue,bot)
+def TelebotLaunch(Thread_Name,Input_Queue):
+    Heda = Telebot(Thread_Name,Input_Queue)
     print("Starting Telebot",Thread_Name)
     Heda.mainLoop()
 
 
+def StringBlock(string, block_size):
+    blocks = []
+    for n in range(0,len(string),block_size):
+        blocks.append(string[n:n+block_size])
+    return blocks
+
+class Ticker:
+    def __init__(self,frequency):
+        self.last_call = time.time()
+        self.time_period = 1/frequency
+
+    def wait_ok(self):
+        dtime = (self.last_call+self.time_period)-time.time()
+        print(dtime)
+        print(self.last_call)
+        if dtime > 0:
+            time.sleep(dtime)
+        self.last_call = time.time()
+
+    def reset(self):
+        self.last_call  = 0
+
+        
+
 class Telebot:
-    def __init__(self,Thread_Name,Input_Queue,bot,signature = "\nHeda ∞",start_update_id= 0,inputSorterNumber = 2):
+    def __init__(self,Thread_Name,Input_Queue,signature = "\nHeda ∞",start_update_id= 0,inputSorterNumber = 2):
         self.Thread_Name = Thread_Name
         self.Input_Queue = Input_Queue
-        self.bot = bot
+        self.bot = telepot.Bot(BOT_TOKEN)
         self.signature = signature
         self.update_id = start_update_id
         self.chat_id = 0
+    
+        self.ticker = Ticker(3)    # Used to limit the frequency at which messages are sent
         self.Update_Queue = []
         self.DB = AATC_DB.DBConnection()
         self.OutputQueue = multiprocessing.Queue()
@@ -37,7 +63,10 @@ class Telebot:
     def sendMessage(self,message,chat_id = None):
         if chat_id != None:
             self.chat_id = chat_id
-        self.bot.sendMessage(self.chat_id,message+self.signature)
+        blocks = StringBlock(message+self.signature,4000)
+        for string in blocks:
+            self.ticker.wait_ok()
+            self.bot.sendMessage(self.chat_id,string)
 
     def getUpdate(self):
         if len(self.Update_Queue) ==0:
@@ -82,6 +111,7 @@ class Telebot:
                 time.sleep(0.5)
             except Exception as e:
                 print("Error in Telebot",self.Thread_Name,"Error:",e)
+                self.bot = telepot.Bot(BOT_TOKEN)
             if not self.Input_Queue.empty():
                 data = self.Input_Queue.get()
                 command,arguments = data[0],data[1]
@@ -456,6 +486,6 @@ def CreateCommandDictionary():
 BOT_TOKEN = "YOUR TOKEN HERE"
 if __name__ == "__main__":
     bot = telepot.Bot(BOT_TOKEN)
-    heda = Telebot(bot)
+    heda = Telebot()
     heda.mainLoop()
     print(bot.getMe())

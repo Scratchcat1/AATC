@@ -38,8 +38,7 @@ class DroneInterface:
             #      Sucess, Message , Data
             return data[0],data[1],data[2]
         except Exception as e:
-            print("Socket data recive error")
-            print(str(e))
+            print("Socket data recive error",e)
             return (False,"Conversion/Transfer Error"+str(e),[])
 
 

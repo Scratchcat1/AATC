@@ -222,7 +222,7 @@ def Blink(Thread_Name,pin,frequency,cycles = 1,repeat= False):
             GPIO.output(pin,0)
             time.sleep(pauseTime)
     finally:
-        GPIO.cleanup()
+        GPIO.cleanup(pin)
         
     return repeat
         
@@ -233,6 +233,9 @@ def Blink(Thread_Name,pin,frequency,cycles = 1,repeat= False):
 
 
 def Pattern(Thread_Name, Pattern ,ReferenceTime=1,repeat = True):
+    pins = set()
+    for item in Pattern:
+        pins.add(item[0])
     try:
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(11, GPIO.OUT) #red
@@ -250,7 +253,7 @@ def Pattern(Thread_Name, Pattern ,ReferenceTime=1,repeat = True):
     except Exception as e:
         print("Exception in PatternTest",e)
     finally:
-        GPIO.cleanup()
+        GPIO.cleanup(*pins)
     return repeat
 
 def PatternGenerator(PinSet=[11,13,21],StateSet = [0,1] ,Length = 50 ,MinTime = 0.1 ,MaxTime = 1 , RoundingTime = 2):

@@ -124,7 +124,7 @@ def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):
     
 def DroneHardware(FlightQueue,StatusQueue):
     Battery = AATC_Config.DEFAULT_DRONE_BATTERY_VALUE
-    Coords = AATC_Drone.Coordinate(*AATC_Config.DEFAULT_DRONE_COORDINATE)
+    Coords = AATC_Coordinate.Coordinate(*AATC_Config.DEFAULT_DRONE_COORDINATE)
     xSize,ySize,zSize = AATC_Config.DEFAULT_DRONE_ATWAYPOINT_SIZES
     
     while True:
@@ -140,7 +140,7 @@ def DroneHardware(FlightQueue,StatusQueue):
             for number,point in enumerate(AllWaypoints):
                 while not AATC_Coordinate.AtWaypoint(Coords,point.Get_Coord(),xSize,ySize,zSize):
                     LastCoord = Coords.copy()
-                    VectorCoord = AATC_Coordinate.CalculateVector(Coords,point.Get_Coord(),DroneInfo.DroneSpeed)
+                    VectorCoord = AATC_Coordinate.CalculateVector(Coords,point.Get_Coord(),DroneInfo.Get_DroneSpeed())
                     Coords = SimulateMovement(Coords,VectorCoord)
                     Battery = DecrementBattery(DroneInfo,Coords,LastCoord,Battery)
                     PutStatus(StatusQueue,Coords,Battery)

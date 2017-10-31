@@ -49,7 +49,7 @@ class Camera:
         self.gameDisplay = pygame.display.set_mode((self.xpixel,self.ypixel))
         self.MinCoords = MinCoords
         self.MaxCoords = MaxCoords
-        self.CameraCoord = AATC_Coordinate.Coordinate(self.MinCoords[0],self.MinCoords[1])
+        self.CameraCoord = self.MinCoords.copy()
         self.CameraCoord.xSize = self.MaxCoords.Get_X() - self.MinCoords.Get_X()
         self.CameraCoord.ySize = self.MaxCoords.Get_Y() - self.MinCoords.Get_Y()
         self.CameraZoom = 1
@@ -63,25 +63,28 @@ class Camera:
     def GetCameraCoords(self):
         return self.CameraCoord
     def IncrementCameraCoordX(self,Amount):
-        self.CameraCoord.x += Amount
+        self.CameraCoord.Set_X( Amount+self.CameraCoord.Get_X())
 
     def IncrementCameraCoordY(self,Amount):
-        self.CameraCoord.y += Amount
+        self.CameraCoord.Set_Y( Amount+self.CameraCoord.Get_Y())
         
     def SetCameraCoords(self,CameraX,CameraY):
-        self.CameraCoord.x = CameraX
-        self.CameraCoord.y = CameraY
+        self.CameraCoord.Set_X( CameraX)
+        self.CameraCoord.Set_Y(CameraY)
 
     def UpdateCameraSize(self):  #Gets width of map divided by zoom level eg at zoom 1x it has whole map
-        self.CameraCoord.xSize = (self.MaxCoords.Get_X() - self.MinCoords.Get_X())/self.CameraZoom
-        self.CameraCoord.ySize = (self.MaxCoords.Get_Y() - self.MinCoords.Get_Y())/self.CameraZoom
+        self.CameraCoord.Set_XSize ((self.MaxCoords.Get_X() - self.MinCoords.Get_X())/self.CameraZoom)
+        self.CameraCoord.Set_YSize ((self.MaxCoords.Get_Y() - self.MinCoords.Get_Y())/self.CameraZoom)
 
     def CameraWipe(self,Colour = (0,0,0)):
         self.gameDisplay.fill(Colour)
     def ResetDrawObject(self):
         self.DrawObjects = []
     def AddDrawObject(self,Object,ForceDraw):
-        self.DrawObjects.append({"Object":Object,"ForceDraw":ForceDraw}) 
+        self.DrawObjects.append({"Object":Object,"ForceDraw":ForceDraw})
+
+    def Get_Coord(self):
+        return self.CameraCoord
 
     def Draw(self):
         CameraEndX= self.CameraCoord.Get_X() + self.CameraCoord.Get_XSize()    #Moved to new variablt to reduce recalculation
@@ -89,7 +92,7 @@ class Camera:
         CameraX = self.CameraCoord.Get_X()
         CameraY = self.CameraCoord.Get_Y()
         CameraXSize = self.CameraCoord.Get_XSize()
-        CameraYSize = self.CameraCoord.GEt_YSize()
+        CameraYSize = self.CameraCoord.Get_YSize()
         
         for DrawObject in self.DrawObjects:
             Object = DrawObject["Object"]
@@ -279,7 +282,7 @@ while Exit != "Y":
         M.Login("Zini","")
         #Sucess,Message,Data =  M.GetCoordDetails()
         #MinCoords,MaxCoords,StepCoords = Data[0],Data[1],Data[2]
-        MinCoords,MaxCoords = AATC_Coordinate.Coordinate(0,0,0),AATC_Coordinate.Coordinate(50,50,50)
+        MinCoords,MaxCoords = AATC_Coordinate.Coordinate(0,0,0),AATC_Coordinate.Coordinate(1,1,50)
         MonCamera = Camera(xpixel,ypixel,MinCoords,MaxCoords)
         while True:
             MonCamera.ResetDrawObject()
@@ -303,23 +306,25 @@ while Exit != "Y":
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         print("Camera details")                  #Mainly for debugging
                         print(MonCamera.GetZoom())
-                        print(MonCamera.CameraCoord.x)
-                        print(MonCamera.CameraCoord.y)
-                        print(MonCamera.CameraCoord.xSize)
-                        print(MonCamera.CameraCoord.ySize)
+                        print(MonCamera.CameraCoord.Get_X())
+                        print(MonCamera.CameraCoord.Get_Y())
+                        print(MonCamera.CameraCoord.Get_XSize())
+                        print(MonCamera.CameraCoord.Get_YSize())
                         print(len(MonCamera.DrawObjects))
                         print("FPS:"+str(clock.get_fps()))
                     elif event.type == pygame.KEYDOWN:
                         pass
 
+
+                CameraCoord = MonCamera.Get_Coord()
                 if pressed()[pygame.K_w]:   #Shift camera
-                    MonCamera.IncrementCameraCoordY(-0.1/MonCamera.GetZoom())  #/ as Greater zoom means need more fidelety
+                    MonCamera.IncrementCameraCoordY(-0.01*CameraCoord.Get_XSize())  #/ as Greater zoom means need more fidelety
                 if pressed()[pygame.K_s]:
-                    MonCamera.IncrementCameraCoordY(0.1/MonCamera.GetZoom())
+                    MonCamera.IncrementCameraCoordY(0.01*CameraCoord.Get_XSize())
                 if pressed()[pygame.K_a]:
-                    MonCamera.IncrementCameraCoordX(-0.1/MonCamera.GetZoom())
+                    MonCamera.IncrementCameraCoordX(-0.01*CameraCoord.Get_XSize())
                 if pressed()[pygame.K_d]:
-                    MonCamera.IncrementCameraCoordX(0.1/MonCamera.GetZoom())
+                    MonCamera.IncrementCameraCoordX(0.01*CameraCoord.Get_XSize())
 
                 if pressed()[pygame.K_q]:#Zoom out
                     MonCamera.SetZoom(0.99*MonCamera.GetZoom())

@@ -693,6 +693,7 @@ class DroneConnection(ClientConnection):
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
                 print("Drone tried to use unregistered command")
+                print(Command)
         return Sucess,Message,Data
 
     def Login(self,Arguments):
