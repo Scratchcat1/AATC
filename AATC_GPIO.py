@@ -238,9 +238,11 @@ def Pattern(Thread_Name, Pattern ,ReferenceTime=1,repeat = True):
         pins.add(item[0])
     try:
         GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(11, GPIO.OUT) #red
-        GPIO.setup(13, GPIO.OUT) #amber
-        GPIO.setup(21, GPIO.OUT) #green
+##        GPIO.setup(11, GPIO.OUT) #red
+##        GPIO.setup(13, GPIO.OUT) #amber
+##        GPIO.setup(21, GPIO.OUT) #green
+        for pin in pins:
+            GPIO.setup(pin,GPIO.OUT)
         #Pattern consists of a list with tuples of (Pin,State,WaitTime)
         for Step in Pattern:
             Pin = Step[0]
