@@ -21,7 +21,7 @@ class NoFlyZoneGrapher:
 
         graph = AATC_AStar.DynoGraph()
         graph.ImportGraph()
-        self.xSize,self.ySize,self.zSize = graph.xSize,graph.ySize,graph.zSize
+        self.xSize,self.ySize,self.zSize = graph.Get_Size()
         del graph
 
         self.Main_Loop()
@@ -42,9 +42,11 @@ class NoFlyZoneGrapher:
                 Command,Arguments = data[0],data[1]
                 if Command == "Exit":
                     self.Exit = True
+                    
+        print("NoFlyZoneGrapher exiting...")
         
     def Mod(self,Coords):
-        return int(Coords.x//self.xSize),int(Coords.y//self.ySize),int(Coords.z//self.zSize)
+        return int(Coords.Get_X()//self.xSize),int(Coords.Get_Y()//self.ySize),int(Coords.Get_Z()//self.zSize)
         
     def GetNoFlyZones(self):
         _,Columns,Data = self.DB.GetNoFlyZones()
@@ -69,7 +71,7 @@ class NoFlyZoneGrapher:
         return ProcessedData
 
     def Make_Values(self,NoFlyZoneData):
-        graph = AATC_AStar.DynoGraph()
+        graph = AATC_AStar.DynoGraph(ABSlot = 1)
         graph.ImportGraph()
         Values = {}
         for Zone in NoFlyZoneData:
@@ -98,10 +100,10 @@ class NoFlyZoneGrapher:
         for NodeID in list(Values.keys()):
             node = graph.GetNode(NodeID)
             if node.NodeID in Values:
-                node.Cost = Values[node.NodeID]
+                node.Set_Cost( Values[node.NodeID])
                 Values.pop(node.NodeID)# Reduce memory usage by evicting Node values which have been added already
             else:
-                node.Cost = 1
+                node.Set_Cost(1)
         try:
             graph.SaveNodes()
         except Exception as e:
