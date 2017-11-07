@@ -158,6 +158,11 @@ class UserInterface:
         Sucess,Message,_ = self.Recv()
         return Sucess,Message
 
+    def UserChangePassword(self,OldPassword,NewPassword):
+        self.Send("UserChangePassword",(OldPassword,NewPassword))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+
     ##########################################
 
     def GetFlightsUser(self):

@@ -137,6 +137,8 @@ class UserConnection(ClientConnection):
                 Sucess,Message,Data = self.SetUserPublicVisibleFlights(Arguments)
             elif Command == "SetAccountType":
                 Sucess,Message,Data = self.SetAccountType(Arguments)
+            elif Command == "UserChangePassword":
+                Sucess,Message,Data = self.UserChangePassword(Arguments)
             
             elif Command == "GetFlightsUser":
                 Sucess,Message,Data = self.GetFlightsUser(Arguments)
@@ -280,6 +282,11 @@ class UserConnection(ClientConnection):
     def SetAccountType(self,Arguments):
         Permission,Value = Arguments[0],Arguments[1]
         Sucess,Message = self.DB.SetAccountType(self.ClientID,Permission,Value)
+        return Sucess,Message,[]
+
+    def UserChangePassword(self,Arguments):
+        OldPassword,NewPassword = Arguments[0],Arguments[1]
+        Sucess,Message = self.DB.UserChangePassword(self.ClientID,OldPassword,NewPassword)
         return Sucess,Message,[]
 
     #######################################################
@@ -467,6 +474,7 @@ class BotConnection(UserConnection):
         self.chat_id = chat_id
         self.OutputQueue = OutputQueue
         self.DB = AATC_DB.DBConnection()
+        self.Thread_Name = "[BOT FOR UID "+str(self.ClientID)+"]"
         
         Command, Arguments = packet[0],packet[1]
         self.Main(Command,Arguments)
@@ -527,7 +535,12 @@ class MonitorConnection(ClientConnection):
                 Sucess,Message,Data = False,"Command does not exist",[]
 
         else:
-            if Command == "GetNoFlyZones":
+            if Command == "Login":
+                Sucess,Message,Data = self.Login(Arguments)
+            elif Command == "MonitorChangePassword":
+                Sucess,Message,Data = self.MonitorChangePassword(Arguments)
+
+            elif Command == "GetNoFlyZones":
                 Sucess,Message,Data = self.GetNoFlyZones(Arguments)
                 
             elif Command == "GetDronesAll":
@@ -577,6 +590,16 @@ class MonitorConnection(ClientConnection):
         Sucess,Message,self.ClientID = self.DB.MonitorCheckCredentials(MonitorName,MonitorPassword)
         return Sucess,Message,[]
 
+    def AddMonitor(self,Arguments):
+        MonitorName,MonitorPassword = Arguments[0],Arguments[1]
+        Sucess,Message = self.DB.AddMonitor(MonitorName,MonitorPassword)
+        return Sucess,Message,[]
+
+    def MonitorChangePassword(self,Arguments):
+        OldPassword,NewPassword = Arguments[0],Arguments[1]
+        Sucess,Message = self.DB.MonitorChangePassword(self.ClientID,OldPassword,NewPassword)
+        return Sucess,Message,[]
+
     ######### No Fly Zone  ##################
     def GetNoFlyZones(self,Arguments = None):
         Sucess,Message,Data = self.DB.GetNoFlyZones()
@@ -602,11 +625,6 @@ class MonitorConnection(ClientConnection):
 
 
     ###### Monitor  ################
-
-    def AddMonitor(self,Arguments):
-        MonitorName,MonitorPassword = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.AddMonitor(MonitorName,MonitorPassword)
-        return Sucess,Message,[]
 
     def GetMonitorDrones(self,Arguments = None):
         Sucess,Message,Data = self.DB.GetMonitorDrones(self.ClientID)

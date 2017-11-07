@@ -22,22 +22,23 @@ MenuOptions = {
             17:"AddUser",
             18:"SetFlightVisibility",
             19:"SetAccountType",
+            20:"UserChangePassword",
             
-            20:"GetFlightsUser",
-            21:"GetFlightsAll",
-            22:"AddFlight",
-            23:"RemoveFlight",
+            21:"GetFlightsUser",
+            22:"GetFlightsAll",
+            23:"AddFlight",
+            24:"RemoveFlight",
             
-            24:"GetFlightWaypointsUser",
-            25:"GetFlightWaypointsAll",
+            25:"GetFlightWaypointsUser",
+            26:"GetFlightWaypointsAll",
             
-            26:"GetMonitorID",
-            27:"GetMonitorName",
+            27:"GetMonitorID",
+            28:"GetMonitorName",
             
-            28:"AddMonitorPermission",
-            29:"RemoveMonitorPermission",
-            30:"ModifyMonitorPermissionDate",
-            31:"GetMonitorPermissionUser",
+            29:"AddMonitorPermission",
+            30:"RemoveMonitorPermission",
+            31:"ModifyMonitorPermissionDate",
+            32:"GetMonitorPermissionUser",
 
 
             -1:"Exit"
@@ -119,6 +120,8 @@ class UserTextUI:
             self.SetFlightVisibility()
         elif Command == "SetAccountType":
             self.SetAccountType()
+        elif Command == "UserChangePassword":
+            self.UserChangePassword()
 
         elif Command == "GetFlightsUser":
             self.GetFlightsUser()
@@ -283,6 +286,12 @@ class UserTextUI:
         Sucess,Message = self.UserInterface.SetAccountType(Permission,Type)
         self.DisplayResults(Sucess,Message)
 
+    def UserChangePassword(self):
+        OldPassword = input("Old Password >>")
+        NewPassword = input("New Password >>")
+        Sucess,Message = self.UserInterface.UserChangePassword(OldPassword,NewPassword)
+        self.DisplayResults(Sucess,Message)
+
     ################################################
     
     def GetFlightsUser(self):
@@ -379,7 +388,7 @@ if __name__ == "__main__":
     while not Exit:
         try:
             print("Connecting to server...")
-            U = AATC_Client.CreateUserInterface()
+            U = AATC_Client.CreateUserInterface(IP = "127.0.0.1")
 
             TextUI = UserTextUI(U,MenuOptions)
             TextUI.Main_Loop()

@@ -114,6 +114,9 @@ class Flight:
     def Get_StartTime(self):
         return self._EndCoord
 
+    def Get_ETA(self):
+        return self._ETA
+
     def Get_Distance(self):
         return self._Distance
 
@@ -252,7 +255,7 @@ def Connect(remote_ip,PORT):
         sys.exit()
 
 
-def CreateDroneInterface(IP = "192.168.0.19",Port = 8002):
+def CreateDroneInterface(IP = "127.0.0.1",Port = 8002):
     soc = Connect(IP,Port)
     D = DroneInterface(soc)
     return D

@@ -266,6 +266,7 @@ class DynoGraph:
 
     def ImportGraph(self):
         print("Importing graph")
+        ABSlot = self.ABSlot
         try:
             filename = os.path.join(os.getcwd(),self.FolderName,"A",self.GraphFileName+self.GraphFileSuffix)   #MUST ALWAYS HAVE ATLEAST THE FOLDER "A" in order to load the configuration
             with open(filename,"rb") as file:
@@ -275,7 +276,9 @@ class DynoGraph:
             print("Imported graph sucessfully")
         except Exception as e:
             print("An error occured while importing graph data",e)
+            
         self.cwd = os.getcwd()
+        self.ABSlot = ABSlot
     
     ################
     def Hash(self,Value):
@@ -365,7 +368,8 @@ class Node:
 def EstimateDistance(Node,Target,xSize,ySize,zSize):
     Node_Coords = Node.Get_Coords()
     Target_Coords = Target.Get_Coords()
-    return abs(Node_Coords.Get_X()-Target_Coords.Get_X())/xSize+abs(Node_Coords.Get_Y()-Target_Coords.Get_Y())/ySize+abs(Node_Coords.Get_Z()-Target_Coords.Get_Z())/zSize
+    return (abs(Node_Coords.Get_X()-Target_Coords.Get_X())/xSize+abs(Node_Coords.Get_Y()-Target_Coords.Get_Y())/ySize+abs(Node_Coords.Get_Z()-Target_Coords.Get_Z())/zSize)
+    #return math.sqrt((Node_Coords.Get_X()-Target_Coords.Get_X()/xSize)**2+(Node_Coords.Get_Y()-Target_Coords.Get_Y()/ySize)**2 + (Node_Coords.Get_Z()-Target_Coords.Get_Z()/zSize)**2)*0.9
 
 def AStarPQ(graph,start,target):   # Set all g to node_count + 1
     StartTime = time.time()

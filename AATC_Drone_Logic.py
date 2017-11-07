@@ -15,7 +15,7 @@ class DroneLogicSystem:
         InFlight = False
         while not Exit:
             try:
-                self.D = AATC_Drone.CreateDroneInterface()
+                self.D = AATC_Drone.CreateDroneInterface(IP = "127.0.0.1")
                 LoginSucess,Message = self.D.Login(self.DroneID,self.DronePassword)
                 
                 if LoginSucess:  

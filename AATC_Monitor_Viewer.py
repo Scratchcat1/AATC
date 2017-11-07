@@ -50,8 +50,8 @@ class Camera:
         self.MinCoords = MinCoords
         self.MaxCoords = MaxCoords
         self.CameraCoord = self.MinCoords.copy()
-        self.CameraCoord.xSize = self.MaxCoords.Get_X() - self.MinCoords.Get_X()
-        self.CameraCoord.ySize = self.MaxCoords.Get_Y() - self.MinCoords.Get_Y()
+        self.CameraCoord.Set_XSize( self.MaxCoords.Get_X() - self.MinCoords.Get_X())
+        self.CameraCoord.Set_YSize( self.MaxCoords.Get_Y() - self.MinCoords.Get_Y())
         self.CameraZoom = 1
         self.DrawObjects = []
 
@@ -105,18 +105,20 @@ class Camera:
                ((y < CameraEndY) and ((y+ySize) > CameraY )) :  #If DrawObject intersects with Camera , Render, otherwise ignore
                 
 
-                width,height = int(xSize/CameraXSize*self.xpixel) ,int(ySize/CameraYSize*self.ypixel)
+                width,height = int(xSize/CameraXSize*self.xpixel) ,int(ySize/CameraYSize*self.ypixel)  # Would benifit from being cythonised
                 if width > 0 and height > 0:
-                    PosX = ((x- CameraX)/CameraXSize)* self.xpixel
-                    PosY = ((y- CameraY)/CameraYSize)* self.ypixel
+                    PosX = ((x- CameraX)/CameraXSize)* self.xpixel  # Would benifit from being cythonised
+                    PosY = ((y- CameraY)/CameraYSize)* self.ypixel  
                     width = MaxLimit(width,self.xpixel)
                     height = MaxLimit(height,self.ypixel)
-                    font_size = int(100*width/self.xpixel)
-                    image = Object.Make_Image(width,height) # Object has AATC_Coordinate.Coordinates and size in these AATC_Coordinate.Coordinates
+                    font_size = int(100*width/self.xpixel)          # Would benifit from being cythonised
+                    image = Object.Make_Image(width,height) 
                     self.gameDisplay.blit(image,(PosX,PosY))
                     if font_size > 5:
                         font = (None, font_size)                  
                         self.gameDisplay.blit(Object.Make_Text(font) ,(PosX+width,PosY))
+                        
+                        
 
 
              
@@ -128,7 +130,7 @@ class Monitor_Sprite(pygame.sprite.Sprite):
         self.Text = Text
         self.Colour = Colour
         self.image = pygame.Surface((1,1))
-        self.Make_Image(2,2)
+        #self.Make_Image(2,2)     # No longer needed, is similar to that above.
 
     def Make_Image(self,width,height):
         if self.image.get_size() != (width,height):  #If new image does not match with previous
@@ -278,7 +280,7 @@ pressed = pygame.key.get_pressed
 Exit = "N"
 while Exit != "Y":
     try:
-        M = AATC_Monitor.CreateMonitorInterface(Port = 8001)
+        M = AATC_Monitor.CreateMonitorInterface(IP = "127.0.0.1",Port = 8001)
         M.Login("Zini","")
         #Sucess,Message,Data =  M.GetCoordDetails()
         #MinCoords,MaxCoords,StepCoords = Data[0],Data[1],Data[2]

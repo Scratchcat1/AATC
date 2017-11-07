@@ -42,6 +42,11 @@ class MonitorInterface:
         Sucess,Message,_ = self.Recv()
         return Sucess,Message
 
+    def MonitorChangePassword(self,OldPassword,NewPassword):
+        self.Send("MonitorChangePassword",(OldPassword,NewPassword))
+        Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+
     def GetNoFlyZones(self):
         self.Send("GetNoFlyZones",())
         Sucess,Message,NoFlyZones = self.Recv()
@@ -139,4 +144,4 @@ def CreateMonitorInterface(IP = "192.168.0.19",Port = 8001):
     soc = Connect(IP,Port)
     M = MonitorInterface(soc)
     return M
-        
+

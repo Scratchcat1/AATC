@@ -25,8 +25,6 @@ class Ticker:
 
     def wait_ok(self):
         dtime = (self.last_call+self.time_period)-time.time()
-        print(dtime)
-        print(self.last_call)
         if dtime > 0:
             time.sleep(dtime)
         self.last_call = time.time()
@@ -133,7 +131,6 @@ class Telebot:
         elif "random float" in lowerText:
             response = str(random.random())
 
-        #elif "quote" in lowerText:
         else:   
             with open("SkyrimDialogue.txt","r") as f:
                 for i,line in enumerate(f):
@@ -298,7 +295,7 @@ def convertDBStack(result,CommandDictionary):
     command = result.pop(0)[0]
     arguments = []
     for i,item in enumerate(result):
-        print(item[0])
+        #print(item[0])
         arguments.append(CommandDictionary[command][i+1]["Type"](item[0]))
     packet = (command,arguments)
     return packet
@@ -373,6 +370,9 @@ def CreateCommandDictionary():
 
     Commands["SetAccountType"]= {1: {'Query': 'Enter Permission', 'Type': str},
                                  2: {'Query': 'Enter Account Type', 'Type': int}}
+
+    Commands["UserChangePassword"] = {1:{"Query": "Enter Old Password", "Type":str},
+                                      2:{"Query": "Enter New Password", "Type":str}}
 
 
     #######################################

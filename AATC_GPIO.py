@@ -4,7 +4,7 @@ try:
 except:
     print("No RPi.GPIO module available. Features depending on this will not work/crash")
 
-GPIO.setmode(GPIO.BOARD)
+#GPIO.setmode(GPIO.BOARD)
 
 ##GPIO.setup(11, GPIO.OUT) #red
 ##GPIO.setup(13, GPIO.OUT) #amber

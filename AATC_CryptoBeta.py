@@ -34,7 +34,7 @@ def VerifyCertificates(CertificateChain,RootCertificates,con = False, Reverse = 
                 break
 
     if Valid and con:
-        Valid = VerifyBaseAddress(BaseCertificate,con)
+        Valid = VerifyBaseAddress(CertificateChain[len(CertificateChain)-1],con)
     
         
     if Valid and ValidateCertificate(BaseCertificate,RootCert["PublicKey"]):
@@ -92,6 +92,9 @@ def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY):
         pk = RSAKey.exportKey("DER")
         puk = RSAKey.publickey().exportKey("DER")
 
+        if x == str(length-1):
+            print("HI")
+            x = "localhost"
         cert = GenerateCertificate(x,Issuer,1,10000000000,puk,PRIVATE_KEY)
         Issuer = x
         PRIVATE_KEY = pk
@@ -100,14 +103,14 @@ def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY):
     return chain,pk
 
 
-def VerifyBaseAddress(BaseCertificate,con):
+def VerifyBaseAddress(EndCertificate,con):
     address = con.getpeername()[0]
     try:
         domain = socket.gethostbyaddr(address)[0]
     except:
         domain = None
 
-    if BaseCertificate["Name"] not in [address,domain]:
+    if EndCertificate["Name"] not in [address,domain]:
         print("[WARNING] The certificate name of the server could not be matched with the looked up domain name or address of the server")
         if AATC_Config.ALLOW_FAILED_DOMAIN_LOOKUP:
             print("Continuing anyway. Set ALLOW_FAILED_DOMAIN_LOOKUP to False to disable this behaviour")
