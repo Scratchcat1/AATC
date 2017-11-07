@@ -1,11 +1,11 @@
-import os,pickle,heapq,time,math,hashlib
+import os,pickle,time,math,hashlib
 from AATC_Coordinate import *
 try:
     try:
         import PriorityQueue.PriorityQueueC as PriorityQueue
     except:
         print("PriotityQueueC not available, defaulting to pure python")
-        import PriorityQueue.PriorityQueue
+        import PriorityQueue.PriorityQueue as PriorityQueue
     
 except:
     print("AStarPQ not available")
@@ -232,7 +232,7 @@ class DynoGraph:
         return NodeID
 
     def Obj_Find_NodeID(self,Obj):
-        x,y,z = Obj.Coords.x,Obj.Coords.y,Obj.Coords.z
+        x,y,z = Obj.Coords.Get_X(),Obj.Coords.Get_Y(),Obj.Coords.Get_Z()
         NodeID = self.Find_NodeID(x,y,z)
         return NodeID
 
@@ -340,12 +340,15 @@ class Node:
     def Get_Cost(self):
         return self.Cost
 
+    def Set_Cost(self,cost):
+        self.Cost = cost
+
 def EstimateDistance(Node,Target,xSize,ySize,zSize):
     Node_Coords = Node.Get_Coords()
     Target_Coords = Target.Get_Coords()
     return abs(Node_Coords.Get_X()-Target_Coords.Get_X())/xSize+abs(Node_Coords.Get_Y()-Target_Coords.Get_Y())/ySize+abs(Node_Coords.Get_Z()-Target_Coords.Get_Z())/zSize
 
-def AStarPQ(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_count + 1
+def AStarPQ(graph,start,target):   # Set all g to node_count + 1
     StartTime = time.time()
 
     xSize,ySize,zSize = graph.Get_Size()
@@ -387,9 +390,9 @@ def AStarPQ(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node
             cameFrom[NodeID] = current
             g[NodeID] = tScore
             fp.remove((f[NodeID],NodeID))
-            x = g[NodeID] + EstimateDistance(NewNode,graph.GetNode(target),xSize,ySize,zSize)
-            f[NodeID] = x
-            fp.put((x,NodeID))
+            fTemp = g[NodeID] + EstimateDistance(NewNode,graph.GetNode(target),xSize,ySize,zSize)
+            f[NodeID] = fTemp
+            fp.put((fTemp,NodeID))
 
         f.pop(current) #These values will not be refered to again since the current NodeID has been moved to the closed set . This therefore reduces memory usage very slightly
         g.pop(current)
@@ -404,7 +407,7 @@ def AStarPQ(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node
         print(FindPath(cameFrom,current))
         return None
 
-def AStar2(graph,start,target,xSize=1,ySize=1,zSize = 1):   # Set all g to node_count + 1
+def AStar2(graph,start,target):   # Set all g to node_count + 1
     StartTime = time.time()
 
     xSize,ySize,zSize = graph.Get_Size()

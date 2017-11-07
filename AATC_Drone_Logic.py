@@ -87,7 +87,7 @@ class DroneLogicSystem:
 
 
 def GetAllFlightInfo(D,DRONEID,FlightID):    #Gets all drone flight information and packages the information into objects
-    DSucess,DroneMessage,DroneData = D.DroneGetDroneInfo(DRONEID)
+    DSucess,DroneMessage,DroneData = D.DroneGetDroneInfo()
     FSucess,FlightMessage,FlightData = D.GetFlight(FlightID)
     WSucess,WaypointsMessage,FlightWaypointsData = D.GetFlightWaypoints(FlightID)
     if not (DSucess and FSucess and WSucess):
@@ -101,16 +101,6 @@ def GetAllFlightInfo(D,DRONEID,FlightID):    #Gets all drone flight information 
     return DroneInfo,Flight,Waypoints
 
 
-def AtWaypoint(Coords,WaypointCoords,xSize,ySize,zSize):
-    x,y,z = False,False,False
-    if abs(Coords.x-WaypointCoords.x) <= xSize:
-        x = True
-    if abs(Coords.y-WaypointCoords.y) <= ySize:
-        y = True
-    if abs(Coords.z-WaypointCoords.z) <= zSize:
-        z = True
-    return all([x,y,z])
-
 
 def SimulateMovement(Coord,VectorCoord,Sleep_Time = 0.1):
     Coord = AATC_Coordinate.AddCoords(Coord,VectorCoord)
@@ -120,7 +110,7 @@ def SimulateMovement(Coord,VectorCoord,Sleep_Time = 0.1):
 
 def PutStatus(StatusQueue,Coords,Battery,MarkComplete = None,EmptyOverride = False):
     if StatusQueue.empty() or EmptyOverride:  #Prevents adding a thousands of items into the queue, with the sending delayed by server speed. This method will cause the reported position to lag behind by a constant amount rather than getting progressivly further behind.
-        data = {"Coords":(Coords.x,Coords.y,Coords.z),"Battery":Battery}
+        data = {"Coords":Coords.getTuple(),"Battery":Battery}
         if MarkComplete != None:
             data["MarkComplete"] = MarkComplete
         StatusQueue.put(data)
@@ -128,13 +118,13 @@ def PutStatus(StatusQueue,Coords,Battery,MarkComplete = None,EmptyOverride = Fal
 
 def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):
     distance = AATC_Coordinate.DeltaCoordToMetres(CoordA,CoordB)
-    decAmount = (distance/DroneInfo.DroneRange)*100*(1+random.randint(-1,1)*0.1) * AATC_Config.DRONE_BATTERY_DRAIN_MULT
+    decAmount = (distance/DroneInfo.Get_DroneRange())*100*(1+random.randint(-1,1)*0.1) * AATC_Config.DRONE_BATTERY_DRAIN_MULT
     Battery -= decAmount
     return Battery
     
 def DroneHardware(FlightQueue,StatusQueue):
     Battery = AATC_Config.DEFAULT_DRONE_BATTERY_VALUE
-    Coords = AATC_Drone.Coordinate(*AATC_Config.DEFAULT_DRONE_COORDINATE)
+    Coords = AATC_Coordinate.Coordinate(*AATC_Config.DEFAULT_DRONE_COORDINATE)
     xSize,ySize,zSize = AATC_Config.DEFAULT_DRONE_ATWAYPOINT_SIZES
     
     while True:
@@ -145,12 +135,12 @@ def DroneHardware(FlightQueue,StatusQueue):
             DroneInfo,Flight,Waypoints = data[1][0],data[1][1],data[1][2]
             
 
-            AllWaypoints = [Flight.StartCoord]+Waypoints+[Flight.EndCoord]
+            AllWaypoints = [Flight.Get_StartCoord()]+Waypoints+[Flight.Get_EndCoord()]
             
             for number,point in enumerate(AllWaypoints):
-                while not AtWaypoint(Coords,point.Coord,xSize,ySize,zSize):
+                while not AATC_Coordinate.AtWaypoint(Coords,point.Get_Coord(),xSize,ySize,zSize):
                     LastCoord = Coords.copy()
-                    VectorCoord = AATC_Coordinate.CalculateVector(Coords,point.Coord,DroneInfo.DroneSpeed)
+                    VectorCoord = AATC_Coordinate.CalculateVector(Coords,point.Get_Coord(),DroneInfo.Get_DroneSpeed())
                     Coords = SimulateMovement(Coords,VectorCoord)
                     Battery = DecrementBattery(DroneInfo,Coords,LastCoord,Battery)
                     PutStatus(StatusQueue,Coords,Battery)
@@ -160,7 +150,7 @@ def DroneHardware(FlightQueue,StatusQueue):
                 elif number == len(AllWaypoints)-1:
                     print("Reached End Coordinate")
                 else:
-                    print("Reached Waypoint",point.WaypointNumber)
+                    print("Reached Waypoint",point.Get_WaypointNumber())
 
 
 
@@ -196,7 +186,7 @@ def DroneHardware(FlightQueue,StatusQueue):
 ##            Coords.Print()
 
             
-            PutStatus(StatusQueue,Coords,Battery,Flight.FlightID,EmptyOverride = True)  # Updates Status and marks flight as complete.
+            PutStatus(StatusQueue,Coords,Battery,Flight.Get_FlightID(),EmptyOverride = True)  # Updates Status and marks flight as complete.
             FlightQueue.task_done()
 
 

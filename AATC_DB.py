@@ -218,7 +218,7 @@ class DBConnection:
 
     def MarkFlightComplete(self,DroneID,FlightID,Code):
         self.cur.execute("SELECT 1 FROM Flight WHERE DroneID = %s AND FlightID = %s",(DroneID,FlightID))
-        if self.cur.fetchall != ():
+        if len(self.cur.fetchall) == 0:
             self.cur.execute("UPDATE Flight SET Completed = %s,EndTime = %s WHERE FlightID = %s",(Code,GetTime(),FlightID))
             self.cur.execute("UPDATE Drone SET FlightsFlown = FlightsFlown +1 WHERE DroneID = %s",(DroneID,))
             self.db_con.commit()

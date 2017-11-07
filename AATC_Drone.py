@@ -1,5 +1,4 @@
-import socket,codecs,ast,recvall,sys,heapq,AATC_Crypto
-from AATC_Coordinate import *
+import socket,codecs,ast,recvall,sys,AATC_Crypto, AATC_Coordinate
         
         
 class DroneInterface:
@@ -39,8 +38,7 @@ class DroneInterface:
             #      Sucess, Message , Data
             return data[0],data[1],data[2]
         except Exception as e:
-            print("Socket data recive error")
-            print(str(e))
+            print("Socket data recive error",e)
             return (False,"Conversion/Transfer Error"+str(e),[])
 
 
@@ -62,8 +60,8 @@ class DroneInterface:
 
     ############################
 
-    def DroneGetDroneInfo(self,DroneID):
-        self.Send("DroneGetDroneInfo",(DroneID,))
+    def DroneGetDroneInfo(self):
+        self.Send("DroneGetDroneInfo",())
         Sucess,Message,DroneInfo = self.Recv()
         return Sucess,Message,DroneInfo
 
@@ -93,27 +91,57 @@ class DroneInterface:
 
 class Flight:
     def __init__(self,FlightID,DroneID,StartCoord,EndCoord,StartTime,ETA,Distance):
-        self.FlightID = FlightID
-        self.DroneID = DroneID
-        self.StartCoord = StartCoord
-        self.EndCoord = EndCoord
-        self.StartTime = StartTime
-        self.ETA = ETA
-        self.Distance = Distance
+        self._FlightID = FlightID
+        self._DroneID = DroneID
+        self._StartCoord = StartCoord
+        self._EndCoord = EndCoord
+        self._StartTime = StartTime
+        self._ETA = ETA
+        self._Distance = Distance
+
+    def Get_FlightID(self):
+        return self._FlightID
+
+    def Get_DroneID(self):
+        return self._DroneID
+
+    def Get_StartCoord(self):
+        return self._StartCoord
+
+    def Get_EndCoord(self):
+        return self._EndCoord
+
+    def Get_StartTime(self):
+        return self._EndCoord
+
+    def Get_Distance(self):
+        return self._Distance
 
 class Waypoint:
     def __init__(self,FlightID,WaypointNumber,Coord,ETA):
-        self.FlightID = FlightID
-        self.WaypointNumber = WaypointNumber
-        self.Coord = Coord
-        self.ETA = ETA
+        self._FlightID = FlightID
+        self._WaypointNumber = WaypointNumber
+        self._Coord = Coord
+        self._ETA = ETA
+
+    def Get_FlightID(self):
+        return self._FlightID
+
+    def Get_WaypointNumber(self):
+        return self._WaypointNumber
+
+    def Get_Coord(self):
+        return self._Coord
+
+    def Get_ETA(self):
+        return self._ETA
 
 
 
 
 def ConvertCoordString(CoordString):
     CoordTuple = ast.literal_eval(CoordString)
-    Coord = Coordinate(CoordTuple[0],CoordTuple[1],CoordTuple[2],0,0,0)
+    Coord = AATC_Coordinate.Coordinate(CoordTuple[0],CoordTuple[1],CoordTuple[2],0,0,0)
     return Coord
 
 def GetFlightObject(Message,Data):
@@ -160,14 +188,14 @@ def GetWaypointObjects(Message,Data):
         waypoint = Waypoint(FlightID,WaypointNumber,Coord,ETA)
         WaypointList.append(waypoint)
 
-
-    z = []
-    for item in WaypointList:   #Sorts into waypoint order
-        z.append((item.WaypointNumber,item))
-    heapq.heapify(z)
-    WaypointList = []
-    for item in z:
-        WaypointList.append(item[1])
+    WaypointList = sorted(WaypointList, key = lambda x:x.Get_WaypointNumber())
+##    z = []
+##    for item in WaypointList:   #Sorts into waypoint order
+##        z.append((item.WaypointNumber,item))
+##    heapq.heapify(z)
+##    WaypointList = []
+##    for item in z:
+##        WaypointList.append(item[1])
     return WaypointList
     
 def MakeDroneInfo(DroneMessage,DroneData):
@@ -182,13 +210,28 @@ class DroneInformation:
         for title in Titles:
             ColumnValue[title] = DroneInfo[Message.index(title)]
 
-        self.DroneID = ColumnValue["DroneID"]
-        self.UserID = ColumnValue["UserID"]
-        self.DroneName = ColumnValue["DroneName"]
-        self.DroneType = ColumnValue["DroneType"]
-        self.DroneSpeed = ColumnValue["DroneSpeed"]
-        self.DroneRange = ColumnValue["DroneRange"]
-        self.DroneWeight = ColumnValue["DroneWeight"]
+        self._DroneID = ColumnValue["DroneID"]
+        self._UserID = ColumnValue["UserID"]
+        self._DroneName = ColumnValue["DroneName"]
+        self._DroneType = ColumnValue["DroneType"]
+        self._DroneSpeed = ColumnValue["DroneSpeed"]
+        self._DroneRange = ColumnValue["DroneRange"]
+        self._DroneWeight = ColumnValue["DroneWeight"]
+
+    def Get_DroneID(self):
+        return self._DroneID
+    def Get_UserID(self):
+        return self._UserID
+    def Get_DroneName(self):
+        return self._DroneName
+    def Get_DroneType(self):
+        return self._DroneType
+    def Get_DroneSpeed(self):
+        return self._DroneSpeed
+    def Get_DroneRange(self):
+        return self._DroneRange
+    def Get_DroneWeight(self):
+        return self._DroneWeight
 
 
 

@@ -1,5 +1,5 @@
-import pygame,AATC_Monitor,time,ast,sys,random
-from AATC_Coordinate import *
+import pygame,AATC_Monitor,time,ast,sys,random,AATC_Coordinate
+
 pygame.init()
 
 _images= {}
@@ -49,9 +49,9 @@ class Camera:
         self.gameDisplay = pygame.display.set_mode((self.xpixel,self.ypixel))
         self.MinCoords = MinCoords
         self.MaxCoords = MaxCoords
-        self.CameraCoord = Coordinate(self.MinCoords[0],self.MinCoords[1])
-        self.CameraCoord.xSize = self.MaxCoords[0] - self.MinCoords[0]
-        self.CameraCoord.ySize = self.MaxCoords[1] - self.MinCoords[1]
+        self.CameraCoord = self.MinCoords.copy()
+        self.CameraCoord.xSize = self.MaxCoords.Get_X() - self.MinCoords.Get_X()
+        self.CameraCoord.ySize = self.MaxCoords.Get_Y() - self.MinCoords.Get_Y()
         self.CameraZoom = 1
         self.DrawObjects = []
 
@@ -63,43 +63,56 @@ class Camera:
     def GetCameraCoords(self):
         return self.CameraCoord
     def IncrementCameraCoordX(self,Amount):
-        self.CameraCoord.x += Amount
+        self.CameraCoord.Set_X( Amount+self.CameraCoord.Get_X())
 
     def IncrementCameraCoordY(self,Amount):
-        self.CameraCoord.y += Amount
+        self.CameraCoord.Set_Y( Amount+self.CameraCoord.Get_Y())
         
     def SetCameraCoords(self,CameraX,CameraY):
-        self.CameraCoord.x = CameraX
-        self.CameraCoord.y = CameraY
+        self.CameraCoord.Set_X( CameraX)
+        self.CameraCoord.Set_Y(CameraY)
 
     def UpdateCameraSize(self):  #Gets width of map divided by zoom level eg at zoom 1x it has whole map
-        self.CameraCoord.xSize = (self.MaxCoords[0] - self.MinCoords[0])/self.CameraZoom
-        self.CameraCoord.ySize = (self.MaxCoords[1] - self.MinCoords[1])/self.CameraZoom
+        self.CameraCoord.Set_XSize ((self.MaxCoords.Get_X() - self.MinCoords.Get_X())/self.CameraZoom)
+        self.CameraCoord.Set_YSize ((self.MaxCoords.Get_Y() - self.MinCoords.Get_Y())/self.CameraZoom)
 
     def CameraWipe(self,Colour = (0,0,0)):
         self.gameDisplay.fill(Colour)
     def ResetDrawObject(self):
         self.DrawObjects = []
     def AddDrawObject(self,Object,ForceDraw):
-        self.DrawObjects.append({"Object":Object,"ForceDraw":ForceDraw}) 
+        self.DrawObjects.append({"Object":Object,"ForceDraw":ForceDraw})
+
+    def Get_Coord(self):
+        return self.CameraCoord
 
     def Draw(self):
-        CameraEndX= self.CameraCoord.x + self.CameraCoord.xSize    #Moved to new variablt to reduce recalculation
-        CameraEndY = self.CameraCoord.y + self.CameraCoord.ySize
+        CameraEndX= self.CameraCoord.Get_X() + self.CameraCoord.Get_XSize()    #Moved to new variablt to reduce recalculation
+        CameraEndY = self.CameraCoord.Get_Y() + self.CameraCoord.Get_YSize()
+        CameraX = self.CameraCoord.Get_X()
+        CameraY = self.CameraCoord.Get_Y()
+        CameraXSize = self.CameraCoord.Get_XSize()
+        CameraYSize = self.CameraCoord.Get_YSize()
+        
         for DrawObject in self.DrawObjects:
             Object = DrawObject["Object"]
-            if ((Object.Coords.x < CameraEndX) and ((Object.Coords.x+Object.Coords.xSize) > self.CameraCoord.x)) and \
-               ((Object.Coords.y < CameraEndY) and ((Object.Coords.y+Object.Coords.ySize) > self.CameraCoord.y )) :  #If DrawObject intersects with Camera , Render, otherwise ignore
+            Object_Coords = Object.Get_Coords()
+            x = Object_Coords.Get_X()
+            y = Object_Coords.Get_Y()
+            xSize = Object_Coords.Get_XSize()
+            ySize = Object_Coords.Get_YSize()
+            if ((x < CameraEndX) and ((x+xSize) > CameraX)) and \
+               ((y < CameraEndY) and ((y+ySize) > CameraY )) :  #If DrawObject intersects with Camera , Render, otherwise ignore
                 
 
-                width,height = int(Object.Coords.xSize/self.CameraCoord.xSize*self.xpixel) ,int(Object.Coords.ySize/self.CameraCoord.ySize*self.ypixel)
+                width,height = int(xSize/CameraXSize*self.xpixel) ,int(ySize/CameraYSize*self.ypixel)
                 if width > 0 and height > 0:
-                    PosX = ((Object.Coords.x- self.CameraCoord.x)/self.CameraCoord.xSize)* self.xpixel
-                    PosY = ((Object.Coords.y- self.CameraCoord.y)/self.CameraCoord.ySize)* self.ypixel
+                    PosX = ((x- CameraX)/CameraXSize)* self.xpixel
+                    PosY = ((y- CameraY)/CameraYSize)* self.ypixel
                     width = MaxLimit(width,self.xpixel)
                     height = MaxLimit(height,self.ypixel)
                     font_size = int(100*width/self.xpixel)
-                    image = Object.Make_Image(width,height) # Object has coordinates and size in these coordinates
+                    image = Object.Make_Image(width,height) # Object has AATC_Coordinate.Coordinates and size in these AATC_Coordinate.Coordinates
                     self.gameDisplay.blit(image,(PosX,PosY))
                     if font_size > 5:
                         font = (None, font_size)                  
@@ -126,8 +139,11 @@ class Monitor_Sprite(pygame.sprite.Sprite):
 ##            self.image.fill(self.Colour)
 
     def Make_Text(self,font):
-        text = str((self.Coords.x,self.Coords.y,self.Coords.z)) +" " +self.Text + " "+ self.Type
+        text = str((self.Coords.Get_X(),self.Coords.Get_Y(),self.Coords.Get_Z())) +" " +self.Text + " "+ self.Type
         return GetText(text,font,False,self.Colour)
+
+    def Get_Coords(self):
+        return self.Coords
 ##        
 ##    def Make_CoordsText(self,font):
 ##        self.CoordsText = GetText(str((self.Coords.x,self.Coords.y,self.Coords.z)),font,False,self.Colour)
@@ -152,7 +168,7 @@ def MakeDroneSprites(Message,RawDroneList):
     BatteryIndex = Columns.index("LastBattery")
     for Drone in RawDroneList:
         LastCoords = ast.literal_eval(Drone[CoordIndex])
-        Coord = Coordinate(LastCoords[0],LastCoords[1],LastCoords[2],0.001,0.001,0.00001)
+        Coord = AATC_Coordinate.Coordinate(LastCoords[0],LastCoords[1],LastCoords[2],0.001,0.001,0.00001)
         Text = "D:"+str(Drone[DroneIDIndex]) +" U:"+str(Drone[UserIDIndex]) +" N:"+str(Drone[DroneNameIndex])+" B:"+str(Drone[BatteryIndex])
         Colour = (255,255,255)
         Sprite = Monitor_Sprite(Coord,"Drone",Text,Colour)
@@ -173,14 +189,14 @@ def MakeFlightSprites(Message,RawFlightList):
     for Flight in RawFlightList:
         #Start Sprite
         Coords = ast.literal_eval(Flight[StartCoordsIndex])
-        Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.00001,0.00001,0.00001)
+        Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.0001,0.0001,0.00001)
         Text = "F:"+ str(Flight[FlightIDIndex])+" D:"+ str(Flight[DroneIDIndex])+ "ST:"+str(Flight[StartTimeIndex])
         Colour = (0,0,255)
         FlightList.append(Monitor_Sprite(Coord,"StartPoint",Text,Colour))
 
         #End Sprite
         Coords = ast.literal_eval(Flight[EndCoordsIndex])
-        Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.00001,0.00001,0.00001)
+        Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.0001,0.0001,0.00001)
         Text = "F:"+ str(Flight[FlightIDIndex])+" D:"+ str(Flight[DroneIDIndex])+ "ETA:"+str(Flight[ETAIndex])
         Colour = (255,0,0)
         FlightList.append(Monitor_Sprite(Coord,"EndPoint",Text,Colour))
@@ -195,7 +211,7 @@ def MakeWaypointSprites(Message,RawWaypointList):
     FlightIDIndex = Columns.index("FlightID")
     for Waypoint in RawWaypointList:
         Coords = ast.literal_eval(Waypoint[CoordIndex])
-        Coord = Coordinate(Coords[0],Coords[1],Coords[2],0.001,0.001,0.00001)
+        Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.001,0.001,0.00001)
         Text = "F:"+ str(Waypoint[FlightIDIndex]) +" W:"+ str(Waypoint[WaypointNumberIndex])
         Colour = (0,255,0)
         WaypointList.append(Monitor_Sprite(Coord,"Waypoint",Text,Colour))
@@ -211,7 +227,7 @@ def MakeZoneSprites(Message,RawZoneList):
     for Zone in RawZoneList:
         StartCoords = ast.literal_eval(Zone[StartCoordIndex])
         EndCoords = ast.literal_eval(Zone[EndCoordIndex])
-        Coord = Coordinate(StartCoords[0],StartCoords[1],StartCoords[2],EndCoords[0]-StartCoords[0],EndCoords[1]-StartCoords[1],EndCoords[2]-StartCoords[2])
+        Coord = AATC_Coordinate.Coordinate(StartCoords[0],StartCoords[1],StartCoords[2],EndCoords[0]-StartCoords[0],EndCoords[1]-StartCoords[1],EndCoords[2]-StartCoords[2])
         Text = "Z:"+ str(Zone[ZoneIDIndex]) +" L:"+ str(Zone[LevelIndex])
         Colour = (100,100,100)
         ZoneList.append(Monitor_Sprite(Coord,"NoFlyZone",Text,Colour))
@@ -266,7 +282,7 @@ while Exit != "Y":
         M.Login("Zini","")
         #Sucess,Message,Data =  M.GetCoordDetails()
         #MinCoords,MaxCoords,StepCoords = Data[0],Data[1],Data[2]
-        MinCoords,MaxCoords = (0,0,0),(50,50,50)
+        MinCoords,MaxCoords = AATC_Coordinate.Coordinate(0,0,0),AATC_Coordinate.Coordinate(1,1,50)
         MonCamera = Camera(xpixel,ypixel,MinCoords,MaxCoords)
         while True:
             MonCamera.ResetDrawObject()
@@ -288,25 +304,27 @@ while Exit != "Y":
                         sys.exit()
                         
                     elif event.type == pygame.MOUSEBUTTONDOWN:
-                        print("Camera details")
+                        print("Camera details")                  #Mainly for debugging
                         print(MonCamera.GetZoom())
-                        print(MonCamera.CameraCoord.x)
-                        print(MonCamera.CameraCoord.y)
-                        print(MonCamera.CameraCoord.xSize)
-                        print(MonCamera.CameraCoord.ySize)
+                        print(MonCamera.CameraCoord.Get_X())
+                        print(MonCamera.CameraCoord.Get_Y())
+                        print(MonCamera.CameraCoord.Get_XSize())
+                        print(MonCamera.CameraCoord.Get_YSize())
                         print(len(MonCamera.DrawObjects))
                         print("FPS:"+str(clock.get_fps()))
                     elif event.type == pygame.KEYDOWN:
                         pass
 
+
+                CameraCoord = MonCamera.Get_Coord()
                 if pressed()[pygame.K_w]:   #Shift camera
-                    MonCamera.IncrementCameraCoordY(-0.1/MonCamera.GetZoom())  #/ as Greater zoom means need more fidelety
+                    MonCamera.IncrementCameraCoordY(-0.01*CameraCoord.Get_XSize())  #/ as Greater zoom means need more fidelety
                 if pressed()[pygame.K_s]:
-                    MonCamera.IncrementCameraCoordY(0.1/MonCamera.GetZoom())
+                    MonCamera.IncrementCameraCoordY(0.01*CameraCoord.Get_XSize())
                 if pressed()[pygame.K_a]:
-                    MonCamera.IncrementCameraCoordX(-0.1/MonCamera.GetZoom())
+                    MonCamera.IncrementCameraCoordX(-0.01*CameraCoord.Get_XSize())
                 if pressed()[pygame.K_d]:
-                    MonCamera.IncrementCameraCoordX(0.1/MonCamera.GetZoom())
+                    MonCamera.IncrementCameraCoordX(0.01*CameraCoord.Get_XSize())
 
                 if pressed()[pygame.K_q]:#Zoom out
                     MonCamera.SetZoom(0.99*MonCamera.GetZoom())
