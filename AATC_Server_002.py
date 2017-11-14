@@ -65,6 +65,7 @@ class ClientConnection:
                 
 
         self.DB.Exit()
+        self.con.close()
         print("Process is exiting")
 
     def Send(self,data):
@@ -503,7 +504,7 @@ class BotConnection(UserConnection):
     def Login(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
         Sucess,Message,UserID = self.DB.CheckCredentials(Username,Password)
-        self.DB.SetUserID(self.chat_id,UserID)
+        self.DB.Bot_SetUserID(self.chat_id,UserID)
         return Sucess,Message,[]
 
 

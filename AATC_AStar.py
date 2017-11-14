@@ -4,7 +4,7 @@ try:
     try:
         import PriorityQueue.PriorityQueueC as PriorityQueue
     except:
-        print("PriotityQueueC not available, defaulting to pure python")
+        print("PriorityQueueC not available, defaulting to pure python")
         import PriorityQueue.PriorityQueue as PriorityQueue
     
 except:

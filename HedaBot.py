@@ -44,6 +44,7 @@ class Telebot:
         self.chat_id = 0
     
         self.ticker = Ticker(3)    # Used to limit the frequency at which messages are sent
+        self.Restart_Ticker = Ticker(1/60)
         self.Update_Queue = []
         self.DB = AATC_DB.DBConnection()
         self.OutputQueue = multiprocessing.Queue()
@@ -109,7 +110,13 @@ class Telebot:
                 time.sleep(0.5)
             except Exception as e:
                 print("Error in Telebot",self.Thread_Name,"Error:",e)
-                self.bot = telepot.Bot(BOT_TOKEN)
+                self.Restart_Ticker.wait_ok()
+                try:
+                    self.bot = telepot.Bot(BOT_TOKEN)
+                except Exception as e:
+                    print("Error in Telebot",self.Thread_Name,"Error connecting to telegram servers. Check your internet connection and API Token. Connection may be blocked by administrator.")
+                
+
             if not self.Input_Queue.empty():
                 data = self.Input_Queue.get()
                 command,arguments = data[0],data[1]
@@ -192,27 +199,27 @@ class inputSorter:
         try:
             if "/" in messageText:
                 if "/cancel" == messageText:
-                    self.DB.flushStack(chat_id)
+                    self.DB.Bot_flushStack(chat_id)
                     return "Command cancelled"
                 elif "/quote" == messageText:
                     return self.GetQuote()
                 else:
-                    self.DB.flushStack(chat_id)
+                    self.DB.Bot_flushStack(chat_id)
                     messageText = messageText.replace("/","")
             elif lowerText in ["help","?"]:
                 return self.ShowCommandsList
                 
                     
-            self.DB.addValue(messageText,chat_id)
+            self.DB.Bot_addValue(messageText,chat_id)
             
-            stack_size = self.DB.getStackSize(chat_id)
-            command = self.DB.getCommand(chat_id)
+            stack_size = self.DB.Bot_getStackSize(chat_id)
+            command = self.DB.Bot_getCommand(chat_id)
             command_size = len(self.CommandDictionary[command])
             
             if stack_size == command_size+1:
-                UserID = self.DB.GetUserID(chat_id)
-                stack = self.DB.getStack(chat_id)
-                self.DB.flushStack(chat_id)
+                UserID = self.DB.Bot_GetUserID(chat_id)
+                stack = self.DB.Bot_getStack(chat_id)
+                self.DB.Bot_flushStack(chat_id)
                 
                 packet = convertDBStack(stack,self.CommandDictionary)
 
@@ -483,7 +490,7 @@ def CreateCommandDictionary():
                 
         
 
-BOT_TOKEN = "YOUR TOKEN HERE"
+BOT_TOKEN = "472230564:AAEHTSJ446LE_BO_hQ8B4PeVmUTrB8gRsEA"
 if __name__ == "__main__":
     bot = telepot.Bot(BOT_TOKEN)
     heda = Telebot()

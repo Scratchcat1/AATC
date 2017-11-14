@@ -170,7 +170,7 @@ class DBConnection:
         options = ["ZoneCreatorPermission","ZoneRemoverPermission","ZoneModifierPermission"]
         if Permission not in options:
             return False,"This setting does not exist. Options are :"+str(options)
-        self.cur.execute("UPDATE User SET "+Permission+" =%s WHERE UserID = %s and PermissionAdder > 2",(Value,UserID))  #The string concatation is safe as only strings which are found exactly in options can be inserted and so are safe strings, cannot contain any other commands
+        self.cur.execute("UPDATE User SET "+Permission+" =%s WHERE UserID = %s AND PermissionAdder > 2",(Value,UserID))  #The string concatation is safe as only strings which are found exactly in options can be inserted and so are safe strings, cannot contain any other commands
         self.db_con.commit()
         return True,"Set AccountType Value"
 
@@ -352,6 +352,7 @@ class DBConnection:
 
     def RemoveMonitorPermission(self,UserID,MonitorID):
         self.cur.execute("DELETE FROM MonitorPermission WHERE UserID = %s AND MonitorID = %s",(UserID,MonitorID))
+        self.db_con.commit()
         return True,"Deleted MonitorPermission"
 
     def ModifyMonitorPermissionDate(self,UserID,MonitorID,NewDate):
@@ -425,7 +426,7 @@ class DBConnection:
 ###########################################################################
     ##################  InputStack   #################################
 
-    def addValue(self,value,chat_id):
+    def Bot_addValue(self,value,chat_id):
         self.cur.execute("SELECT MAX(stack_pos) FROM InputStack WHERE chat_id = %s",(chat_id,))
         result = self.cur.fetchall()
         if not result[0][0] == None:
@@ -435,29 +436,29 @@ class DBConnection:
         self.cur.execute("INSERT INTO InputStack VALUES(%s,%s,%s)",(chat_id,stack_pos,value))
         self.db_con.commit()
     
-    def getCommand(self,chat_id):
+    def Bot_getCommand(self,chat_id):
         self.cur.execute("SELECT value FROM InputStack WHERE chat_id = %s AND stack_pos = 0",(chat_id,))
         result = self.cur.fetchall()
         return result[0][0]
     
-    def getStack(self,chat_id):
+    def Bot_getStack(self,chat_id):
         self.cur.execute("SELECT value FROM InputStack WHERE chat_id = %s ORDER BY stack_pos ASC",(chat_id,))
         result = self.cur.fetchall()
         return result
 
-    def getStackSize(self,chat_id):
+    def Bot_getStackSize(self,chat_id):
         self.cur.execute("SELECT COUNT(1) FROM InputStack WHERE chat_id = %s",(chat_id,))
         result = self.cur.fetchall()
         return result[0][0]
     
-    def flushStack(self,chat_id):
+    def Bot_flushStack(self,chat_id):
         self.cur.execute("DELETE FROM InputStack WHERE chat_id = %s",(chat_id,))
         self.db_con.commit()
 
     ##################################################################
     ####################### Sessions ##########################
 
-    def SetUserID(self,chat_id,UserID):
+    def Bot_SetUserID(self,chat_id,UserID):
         self.cur.execute("SELECT 1 FROM Sessions WHERE chat_id = %s",(chat_id,))
         if len(self.cur.fetchall()) == 0:
             self.cur.execute("INSERT INTO Sessions VALUES(%s,%s)",(chat_id,UserID))
@@ -465,7 +466,7 @@ class DBConnection:
             self.cur.execute("UPDATE Sessions SET UserID = %s WHERE chat_id = %s",(UserID,chat_id))
         self.db_con.commit()
 
-    def GetUserID(self,chat_id):
+    def Bot_GetUserID(self,chat_id):
         self.cur.execute("SELECT UserID FROM Sessions WHERE chat_id = %s",(chat_id,))
         result = self.cur.fetchall()
         if len(result) == 0:

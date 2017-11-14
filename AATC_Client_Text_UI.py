@@ -236,7 +236,7 @@ class UserTextUI:
         DroneID = int(input("DroneID >>"))
         DronePassword = input("Drone Password >>")
         Sucess,Message = self.UserInterface.SetDroneCredentials(DroneID,DronePassword)
-        self.DisplayResults(Sucess,Message,Credentials)
+        self.DisplayResults(Sucess,Message)
 
     def CheckDroneOwnership(self):
         UserID = int(input("UserID >>"))
@@ -282,7 +282,7 @@ class UserTextUI:
 
     def SetAccountType(self):
         Permission = input("Account Type >>")
-        Type = int(input("Account Type >>"))
+        Type = int(input("Account Type VAlue >>"))
         Sucess,Message = self.UserInterface.SetAccountType(Permission,Type)
         self.DisplayResults(Sucess,Message)
 

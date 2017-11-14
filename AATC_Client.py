@@ -30,19 +30,17 @@
 #
 #############################################################
 
+         
+import socket,codecs,ast,recvall,AATC_Crypto
+#Create Socket
+#Create Connection
+
 def Connect(remote_ip,PORT):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.connect((remote_ip, PORT))
     print("Connected to > "+ remote_ip+":"+str(PORT))
     return s
-
-
-
-         
-import socket,codecs,ast,recvall,AATC_Crypto
-#Create Socket
-#Create Connection
 
 
 ##def split(tup,num = 3):  # Used to remove the data section for non data
@@ -233,6 +231,7 @@ class UserInterface:
     def Exit(self):
         self.Send("Exit",())
         Sucess,Message,_ = self.Recv()
+        self.con.close()
         return Sucess,Message
         
 

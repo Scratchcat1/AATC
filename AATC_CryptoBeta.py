@@ -1,4 +1,4 @@
-import time,codecs,socket,hashlib,AATC_Config
+import time,codecs,socket,hashlib,AATC_Config,copy
 from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_PSS
@@ -20,6 +20,7 @@ def GenerateCertificate(Name,Issuer,NotBefore,NotAfter,PublicKey,IssuerPrivateKe
     return Certificate
 
 def VerifyCertificates(CertificateChain,RootCertificates,con = False, Reverse = False):
+    CertificateChain = copy.deepcopy(CertificateChain)  #To prevent loss of chain when verifing.
     if len(CertificateChain) > AATC_Config.MAX_CERTIFICATE_CHAIN_LENGTH:
         return False
     if Reverse:
@@ -83,7 +84,7 @@ PRIVATE_KEY = b'0\x82\x02]\x02\x01\x00\x02\x81\x81\x00\xcddI\xe9\xcbV\xc2\x931\n
 
 # CERTIFICATE CHAIN MUST RUN FROM ROOT CERTIFIATE TO SERVER
 
-def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY):
+def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY,hostname="localhost"):
     chain = []
     Issuer = "IssuerA"
     for x in range(length):
@@ -93,12 +94,11 @@ def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY):
         puk = RSAKey.publickey().exportKey("DER")
 
         if x == str(length-1):
-            print("HI")
-            x = "localhost"
+            x = hostname
         cert = GenerateCertificate(x,Issuer,1,10000000000,puk,PRIVATE_KEY)
         Issuer = x
         PRIVATE_KEY = pk
-        print(cert,"\n\n Private Key :",pk,"\n"*2)
+        #print(cert,"\n\n Private Key :",pk,"\n"*2)
         chain.append(cert)
     return chain,pk
 
