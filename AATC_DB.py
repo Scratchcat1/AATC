@@ -302,7 +302,7 @@ class DBConnection:
         if MonitorIDFetch != ():
             return True,"Correct Credentials",MonitorIDFetch[0][0]
         else:
-            return False,"Incorrect Credntials",-1
+            return False,"Incorrect Credentials",-1
 
     def MonitorChangePassword(self,MonitorID,OldPassword,NewPassword):
         self.cur.execute("SELECT 1 FROM Monitor WHERE MonitorID = %s AND MonitorPassword = %s",(MonitorID,Hash(OldPassword)))

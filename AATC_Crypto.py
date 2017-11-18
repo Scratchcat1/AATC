@@ -66,6 +66,9 @@ class Crypter:
         if not Sucess:
             raise Exception("Server did not respond to command")
 
+        if AES_KeySize not in AATC_Config.ALLOWED_AES_KEYSIZES:
+            raise Exception("AES key size not in ALLOWED_AES_KEYSIZES. Change keysize to an allowed value")
+
         AESKey,IV = GenerateKeys(AES_KeySize)
         PublicKey = AATC_CryptoBeta.VerifyCertificates(CertificateChain,AATC_Config.ROOT_CERTIFICATES,self.con)
 
@@ -76,7 +79,9 @@ class Crypter:
             EncryptedIV = PKO.encrypt(IV)
             self.SetEncryptionKeys(AESKey,IV)
             self.Send(("SetKey",(EncryptedAESKey,EncryptedIV)))
-            data = self.Recv()
+            Sucess,Message,Data = self.SplitData(self.Recv())
+            if not Sucess:
+                raise Exception("Server rejected setting AES_Keys"+Message)
             
 
         else:
@@ -112,9 +117,11 @@ class Crypter:
     ################################################################
 
     def ServerGenerateKey(self):
+        if AATC_Config.SET_ENCRYPTION_KEYS_ENABLE:
+            self.SetEncryptionKeys(AATC_Config.SET_AES_KEY, AATC_Config.SET_IV_KEY)            
 
-        Exit = False
-        while not Exit:
+        self.Exit = False
+        while not self.Exit:
             data = self.Recv()
             Command, Arguments = data[0],data[1]
 
@@ -130,12 +137,15 @@ class Crypter:
                 
             elif Command == "Exit":
                 Sucess,Message,Data = True,"Exiting",[]
-                Exit = True
+                self.Exit = True
 
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
 
             self.Send((Sucess,Message,Data))
+
+        if not hasattr(self,"AESKey"):  #Only set if sucessfully setup.
+            raise Exception("Failure during crypter setup")
 
 
 
@@ -163,8 +173,13 @@ class Crypter:
         PKO = PKCS1_OAEP.new(RSA.import_key(AATC_Config.SERVER_PRIVATE_KEY))
         AESKey,IV = Arguments[0],Arguments[1]
         AESKey,IV = PKO.decrypt(AESKey),PKO.decrypt(IV)
-        self.SetEncryptionKeys(AESKey,IV)
-        return True,"Keys set",[]
+        
+        if len(AESKey) in AATC_Config.ALLOWED_AES_KEYSIZES:
+            self.SetEncryptionKeys(AESKey,IV)
+            return True,"Keys set",[]
+        else:
+            #self.Exit = True
+            return False,"AES key size not in ALLOWED_AES_KEYSIZES:"+str(AATC_Config.ALLOWED_AES_KEYSIZES),[]
         
 
 
@@ -178,7 +193,7 @@ class Crypter:
         self.IV = IV
         self.EncryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)    #Two seperate instances to encrypt and decrypt as non ECB AES is a stream cipher
         self.DecryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)    #Errors will occur if encrypt and decrypt are not equal in count.
-                
+            
                 
         
         

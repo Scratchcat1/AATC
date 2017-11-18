@@ -20,15 +20,19 @@ class DroneLogicSystem:
                 
                 if LoginSucess:  
                     if not InFlight:
+                        AATC_GPIO.GPIO_Wait_Switch(26,Indicator_Pin = 13)
                         print("Entering Flight Check Mode")
                         self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.Pattern,( [(21,1,5),(21,0,1)],))))  #Let the Thread for the GREEN LED blink on pin 21 at 0.5 Hz for 1 cycle repeatedly until stopped
                         self.CheckForFlight()
+                        self.D.Exit()
                         InFlight = True
                     else:
                         print("Entering Run Flight Mode")
                         self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.Blink,(21,0.5,1,True))))  #Let the Thread for the GREEN LED blink on pin 21 at 0.5 Hz for 1 cycle repeatedly until stopped
                         self.RunFlight()
                         InFlight = False #Once RunFlight has completed sucessfully go back to checking for flights. Will only complete once finished, if crashes will not pass here.
+                        self.D.Exit()
+                        self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.BlankFunction,())))  # Resets the green LED to be off.
 
                 else:
                     self.GPIO_Queue.put(("RED","Function",(AATC_GPIO.Blink,(11,1,10,False))))  #Let the Thread for RED LED blink on pin 11 at 1Hz 10 times and not repeat.

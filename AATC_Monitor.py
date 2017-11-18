@@ -28,7 +28,7 @@ class MonitorInterface:
             #      Sucess, Message , Data
             return data[0],data[1],data[2]
         except Exception as e:
-            print("Socket data recive error")
+            print("Socket data receive error")
             print(str(e))
             return (False,"Conversion/Transfer Error"+str(e),[])
 
@@ -116,6 +116,12 @@ class MonitorInterface:
         self.Send("GetFlightWaypointsAll",())
         Sucess,Message,WaypointsAll = self.Recv()
         return Sucess,Message,WaypointsAll
+
+    def Exit(self):
+        self.Send("Exit",())
+        Sucess,Message,_ = self.Recv()
+        self.con.close()
+        return Sucess,Message
 
 
 

@@ -1,4 +1,4 @@
-import threading,multiprocessing,queue,time,random
+import threading,multiprocessing,queue,time,random, sys
 try:
     import RPi.GPIO as GPIO
 except:
@@ -10,6 +10,24 @@ except:
 ##GPIO.setup(13, GPIO.OUT) #amber
 ##GPIO.setup(21, GPIO.OUT) #green
 ##GPIO.setup(26, GPIO.IN) #button
+
+def GPIO_Wait_Switch(pin,wait_time = 1, SWITCH_MODE= GPIO.HIGH, Indicator_Pin = False):  # Will wait for pin to switch to the SWITCH_MODE setting. If not will sleep for wait_time seconds.
+    if "GPIO" not in sys.modules:   # If does not have GPIO will automatically pass through.
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(pin,GPIO.IN)
+        
+        if Indicator_Pin:
+            GPIO_Queue = Create_Controller()
+            GPIO_Queue.put(("Controller","Create_Thread",("INDICATOR",)))
+        
+        while GPIO.input(pin) != SWITCH_MODE:
+            if Indicator_Pin:
+                GPIO_Queue.put(("INDICATOR","Function",(Blink,(Indicator_Pin,1/wait_time,1,False))))   # will automatically blink at a rate of 1 blink per wait_time
+            time.sleep(wait_time)
+    
+    else:
+        pass  
+
 
 def GPIO_Thread(Thread_Name,GPIO_Queue):
     Exit = False

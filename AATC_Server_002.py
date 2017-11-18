@@ -615,7 +615,7 @@ class MonitorConnection(ClientConnection):
     ####### User    #################
 
     def GetUserID(self,Arguments):
-        Username = Arguements[0]
+        Username = Arguments[0]
         Sucess,Message,Data = self.DB.GetUserID(Username)
         return Sucess,Message,Data
     

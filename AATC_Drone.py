@@ -38,7 +38,7 @@ class DroneInterface:
             #      Sucess, Message , Data
             return data[0],data[1],data[2]
         except Exception as e:
-            print("Socket data recive error",e)
+            print("Socket data receive error",e)
             return (False,"Conversion/Transfer Error"+str(e),[])
 
 
@@ -85,6 +85,12 @@ class DroneInterface:
     def MarkFlightComplete(self,FlightID,Code):
         self.Send("MarkFlightComplete",(FlightID,Code))
         Sucess,Message,_ = self.Recv()
+        return Sucess,Message
+
+    def Exit(self):
+        self.Send("Exit",())
+        Sucess,Message,_ = self.Recv()
+        self.con.close()
         return Sucess,Message
 
 

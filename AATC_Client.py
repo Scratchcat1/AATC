@@ -248,7 +248,7 @@ class UserInterface:
             #      Sucess, Message , Data
             return data[0],data[1],data[2]
         except Exception as e:
-            print("Socket data recive error")
+            print("Socket data receive error")
             print(str(e))
             return (False,"Conversion/Transfer Error"+str(e),[])
 
