@@ -11,7 +11,7 @@ except:
 ##GPIO.setup(21, GPIO.OUT) #green
 ##GPIO.setup(26, GPIO.IN) #button
 
-def GPIO_Wait_Switch(pin,wait_time = 1, SWITCH_MODE= GPIO.HIGH, Indicator_Pin = False):  # Will wait for pin to switch to the SWITCH_MODE setting. If not will sleep for wait_time seconds.
+def GPIO_Wait_Switch(pin,wait_time = 1, SWITCH_MODE= 1, Indicator_Pin = False):  # Will wait for pin to switch to the SWITCH_MODE setting. If not will sleep for wait_time seconds.
     if "GPIO" not in sys.modules:   # If does not have GPIO will automatically pass through.
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(pin,GPIO.IN)

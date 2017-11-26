@@ -191,14 +191,14 @@ def MakeFlightSprites(Message,RawFlightList):
     for Flight in RawFlightList:
         #Start Sprite
         Coords = ast.literal_eval(Flight[StartCoordsIndex])
-        Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.0001,0.0001,0.00001)
+        Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.001,0.001,0.0001)
         Text = "F:"+ str(Flight[FlightIDIndex])+" D:"+ str(Flight[DroneIDIndex])+ "ST:"+str(Flight[StartTimeIndex])
         Colour = (0,0,255)
         FlightList.append(Monitor_Sprite(Coord,"StartPoint",Text,Colour))
 
         #End Sprite
         Coords = ast.literal_eval(Flight[EndCoordsIndex])
-        Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.0001,0.0001,0.00001)
+        Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.001,0.001,0.0001)
         Text = "F:"+ str(Flight[FlightIDIndex])+" D:"+ str(Flight[DroneIDIndex])+ "ETA:"+str(Flight[ETAIndex])
         Colour = (255,0,0)
         FlightList.append(Monitor_Sprite(Coord,"EndPoint",Text,Colour))
@@ -270,14 +270,33 @@ def MakeSprites(M):
     print("Refreshed data")
     return SpriteList #All sprites which were sucessfully created
 
+class TimeWarper:
+    """
+       This class provides a convinent way to calculate the time warp factor of a variable frame rate game.
+       The time warp will be relative to the target frame rate. If the warp is greater that of the minimum frame rate then the minimum time warp is taken.
+    """
+    def __init__(self,targetFrameRate = 60,minimumFrameRate = 1):
+        self.targetFrameRate = targetFrameRate
+        self.minimumFrameRate = minimumFrameRate
+        self.Time = time.time()
+
+    def GetTimeWarp(self):
+        TimeWarpFactor = (time.time()-self.Time)*self.targetFrameRate
+        self.Time = time.time()
+        return min([self.targetFrameRate/self.minimumFrameRate,TimeWarpFactor])
 
 
-xpixel = 1200
-ypixel = 700
+        
+
+xpixel = 800
+ypixel = 550
 Refresh_Delay = 60
 clock = pygame.time.Clock()
 pressed = pygame.key.get_pressed
 Exit = "N"
+
+
+
 while Exit != "Y":
     try:
         M = AATC_Monitor.CreateMonitorInterface(IP = "127.0.0.1",Port = 8001)
@@ -293,10 +312,14 @@ while Exit != "Y":
             for sprite in Sprites:
                 MonCamera.AddDrawObject(sprite,False)
 
+
+            TimeWarp = TimeWarper()
             Last_Refresh_Time = time.time()
             refresh = False
             while not refresh:
                 MonCamera.CameraWipe()
+                TimeWarpFactor = TimeWarp.GetTimeWarp()
+                
                 if time.time() >= (Last_Refresh_Time + Refresh_Delay):
                     refresh = True
                 for event in pygame.event.get():
@@ -320,18 +343,18 @@ while Exit != "Y":
 
                 CameraCoord = MonCamera.Get_Coord()
                 if pressed()[pygame.K_w]:   #Shift camera
-                    MonCamera.IncrementCameraCoordY(-0.01*CameraCoord.Get_XSize())  #/ as Greater zoom means need more fidelety
+                    MonCamera.IncrementCameraCoordY(-0.01*CameraCoord.Get_XSize()*TimeWarpFactor)  #/ as Greater zoom means need more fidelety
                 if pressed()[pygame.K_s]:
-                    MonCamera.IncrementCameraCoordY(0.01*CameraCoord.Get_XSize())
+                    MonCamera.IncrementCameraCoordY(0.01*CameraCoord.Get_XSize()*TimeWarpFactor)
                 if pressed()[pygame.K_a]:
-                    MonCamera.IncrementCameraCoordX(-0.01*CameraCoord.Get_XSize())
+                    MonCamera.IncrementCameraCoordX(-0.01*CameraCoord.Get_XSize()*TimeWarpFactor)
                 if pressed()[pygame.K_d]:
-                    MonCamera.IncrementCameraCoordX(0.01*CameraCoord.Get_XSize())
+                    MonCamera.IncrementCameraCoordX(0.01*CameraCoord.Get_XSize()*TimeWarpFactor)
 
                 if pressed()[pygame.K_q]:#Zoom out
-                    MonCamera.SetZoom(0.99*MonCamera.GetZoom())
+                    MonCamera.SetZoom(MonCamera.GetZoom()*0.99**TimeWarpFactor)
                 if pressed()[pygame.K_e]:#Zoom in
-                    MonCamera.SetZoom(1.01*MonCamera.GetZoom())
+                    MonCamera.SetZoom(MonCamera.GetZoom()*1.01**TimeWarpFactor)
 
                 if pressed()[pygame.K_SPACE]:#Zoom in
                     refresh = True
@@ -340,7 +363,7 @@ while Exit != "Y":
                 MonCamera.UpdateCameraSize()
                 MonCamera.Draw()
                 pygame.display.flip()
-                clock.tick(60)
+                clock.tick(20)
                 
 
             

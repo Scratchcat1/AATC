@@ -1,5 +1,5 @@
 import codecs,ast,socket,recvall,os,math,random,time,pickle
-import AATC_AStar,AATC_DB, AATC_Crypto,AATC_Config
+import AATC_AStar,AATC_DB, AATC_Crypto,AATC_Config,AATC_Weather
 from AATC_Coordinate import *
 
 def GetTime():
@@ -134,8 +134,8 @@ class UserConnection(ClientConnection):
                 Sucess,Message,Data = self.GetUserID(Arguments)
             elif Command == "GetUsername":
                 Sucess,Message,Data = self.GetUsername(Arguments)
-            elif Command == "SetUserPublicVisibleFlights":
-                Sucess,Message,Data = self.SetUserPublicVisibleFlights(Arguments)
+            elif Command == "SetFlightVisibility":
+                Sucess,Message,Data = self.SetFlightVisibility(Arguments)
             elif Command == "SetAccountType":
                 Sucess,Message,Data = self.SetAccountType(Arguments)
             elif Command == "UserChangePassword":
@@ -274,9 +274,9 @@ class UserConnection(ClientConnection):
         return Sucess,Message,[]
 
 
-    def SetUserPublicVisibleFlights(self,Arguments):
+    def SetFlightVisibility(self,Arguments):
         Value = Arguments[0]
-        Sucess,Message = self.DB.SetUserPublicVisibleFlights(self.ClientID,Value)
+        Sucess,Message = self.DB.SetFlightVisibility(self.ClientID,Value)
         return Sucess,Message,[]
 
         
@@ -365,13 +365,19 @@ class UserConnection(ClientConnection):
                 DroneData = DroneData[0]
                 SpeedIndex,RangeIndex = Columns.index("DroneSpeed"),Columns.index("DroneRange")
                 DroneSpeed,DroneRange = DroneData[SpeedIndex],DroneData[RangeIndex]                
-            
+
+                Weather_Estimator = AATC_Weather.OWM_Control()
+                Estimated_Drone_Speed = Weather_Estimator.Get_Ajusted_Speed(CoordList[0]["Coords"],CoordList[-1]["Coords"],DroneSpeed,Time)
                 TotalDistance = 0
                 for x in range(len(CoordList)):
                     if x != 0: #If not first Coord add the difference in distance to time etc
                         Distance = DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
                         TotalDistance += Distance
-                        DeltaTime = Distance/DroneSpeed
+
+                        if AATC_Config.ENABLE_FINE_SPEED_ESTIMATION:
+                            Estimated_Drone_Speed = Weather_Estimator.Get_Ajusted_Speed(CoordList[x]["Coords"],CoordList[x-1]["Coords"],DroneSpeed,Time)
+                            time.sleep(AATC_Config.OWM_SLEEP_TIME)
+                        DeltaTime = Distance/Estimated_Drone_Speed
                         Time = Time + DeltaTime
                     CoordList[x]["Time"] = Time
 
@@ -388,9 +394,13 @@ class UserConnection(ClientConnection):
                 FlightID = self.DB.cur.fetchall()[0][0]
                 ######################
                 ######################
+
+                Waypoints = []
                 
                 for WaypointNumber in range(len(CoordList)):
-                    self.DB.AddWaypoint(self.ClientID,FlightID,WaypointNumber+1,CoordList[WaypointNumber]["Coords"],CoordList[WaypointNumber]["Time"])
+                    Waypoints.append((FlightID,WaypointNumber+1,str(CoordList[WaypointNumber]["Coords"]),int(CoordList[WaypointNumber]["Time"]),0))
+
+                self.DB.AddWaypoints(self.ClientID,FlightID,Waypoints)
 
                 return True,"['FlightID','NumberOfWaypoints','StartTime','EndTime','Distance']",[(FlightID,len(CoordList),StartTime,EndTime,TotalDistance)] #Returns data about the flight
 
@@ -509,7 +519,31 @@ class BotConnection(UserConnection):
 
 
 
+class WebConnection(UserConnection):
+    def __init__(self,UserID):
+        self.ClientID = UserID
+        self.DB = AATC_DB.DBConnection()
+        self.Thread_Name = "[WEB FOR UID "+str(self.ClientID)+"]"
+        
+        
 
+    def Main(self,packet):
+        Command, Arguments = packet[0],packet[1]
+        try:
+            Sucess,Message,Data = self.ProcessCommand(Command,Arguments)
+                
+        except Exception as e:
+            Sucess,Message,Data = False,"An Error occured"+str(e),[]
+            print("Error occured with UserID:",str(self.ClientID),". Error :",str(e),". Sending failure message")
+
+
+        self.DB.Exit()
+        return Sucess,Message,Data
+        
+    def Login(self,Arguments):
+        Username,Password = Arguments[0],Arguments[1]
+        Sucess,Message,UserID = self.DB.CheckCredentials(Username,Password)
+        return Sucess,Message,UserID
 
 
 

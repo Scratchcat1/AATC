@@ -115,3 +115,15 @@ def DeltaCoordToMetres(aCoord,bCoord):
 
     Distance = math.sqrt(mdx**2 + mdy**2 + dz**2)
     return Distance
+
+
+def GetBearing(Coord1,Coord2):
+    dy = Coord2.Get_Y()-Coord1.Get_Y()
+    dx = math.cos(math.pi/180 * Coord1.Get_Y())*(Coord2.Get_X()-Coord1.Get_X())
+    angle = (360+90-(math.atan2(dy,dx)*180/math.pi))%360
+    return angle
+
+def Reverse_Angle(deg):
+    return (180+deg)%360
+
+    
