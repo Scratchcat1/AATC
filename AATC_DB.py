@@ -159,7 +159,7 @@ class DBConnection:
         else:
             return False,"Incorrect Credentials",-1
 
-    def SetUserPublicVisibleFlights(self,UserID,Value):
+    def SetFlightVisibility(self,UserID,Value):
         if Value in [0,1]:
             self.cur.execute("UPDATE User SET PublicVisibleFlights = %s WHERE UserID = %s",(Value,UserID))
             self.db_con.commit()
@@ -197,7 +197,7 @@ class DBConnection:
     def AddFlight(self,UserID,DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset):
         self.cur.execute("SELECT 1 FROM User,Drone WHERE Drone.DroneID = %s AND Drone.UserID = %s",(DroneID,UserID))
         if self.cur.fetchall() !=():
-            self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset,Completed) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)",(DroneID,str(StartCoords),str(EndCoords),int(StartTime),int(ETA),int(EndTime),Distance,XOffset,YOffset,ZOffset))
+            self.cur.execute("INSERT INTO Flight(DroneID,StartCoords,EndCoords,StartTime,ETA,EndTime,Distance,XOffset,YOffset,ZOffset,Completed) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0)",(DroneID,str(StartCoords),str(EndCoords),int(StartTime),int(ETA),int(EndTime),int(Distance),XOffset,YOffset,ZOffset))
             self.db_con.commit()
             return True,"Flight added"
         else:
@@ -268,6 +268,15 @@ class DBConnection:
             self.cur.execute("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(%s,%s,%s,%s,%s)",(FlightID,WaypointNumber,str(Coords),int(ETA),BlockTime))
             self.db_con.commit()
             return True,"Added Waypoint"
+        else:
+            return False,"You do not have permission to add a waypoint for this flight"
+
+    def AddWaypoints(self,UserID,FlightID,Waypoints):
+        self.cur.execute("SELECT 1 FROM User,Flight,Drone WHERE User.UserID = %s AND User.UserID = Drone.UserID AND Drone.DroneID = Flight.DroneID AND Flight.FlightID = %s",(UserID,FlightID))
+        if self.cur.fetchall() !=():
+            self.cur.executemany("INSERT INTO FlightWaypoints(FlightID,WaypointNumber,Coords,ETA,BlockTime) VALUES(%s,%s,%s,%s,%s)",Waypoints)
+            self.db_con.commit()
+            return True,"Added Waypoints"
         else:
             return False,"You do not have permission to add a waypoint for this flight"
         

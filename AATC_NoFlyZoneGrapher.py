@@ -70,8 +70,8 @@ class NoFlyZoneGrapher:
             
         return ProcessedData
 
-    def Make_Values(self,NoFlyZoneData):
-        graph = AATC_AStar.DynoGraph(ABSlot = 1)
+    def Make_Values(self,NoFlyZoneData,ABSlot = 1):
+        graph = AATC_AStar.DynoGraph(ABSlot = ABSlot)
         graph.ImportGraph()
         Values = {}
         for Zone in NoFlyZoneData:

@@ -147,7 +147,7 @@ class UserInterface:
         return Sucess,Message
     
     def SetFlightVisibility(self,Visibility):
-        self.Send("SetUserPublicVisibleFlights",(Visibility,))
+        self.Send("SetFlightVisibility",(Visibility,))
         Sucess,Message,_ =  self.Recv()
         return Sucess,Message
 

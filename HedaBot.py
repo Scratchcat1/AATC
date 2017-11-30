@@ -1,4 +1,4 @@
-import telepot,time,random,multiprocessing,AATC_DB,AATC_GPIO
+import telepot,time,random,multiprocessing,AATC_DB,AATC_GPIO,SkyrimQuote #Skyrim quote just gets a random quote from skyrim
 import AATC_Server_002 as AATC_Server
 
 
@@ -202,7 +202,7 @@ class inputSorter:
                     self.DB.Bot_flushStack(chat_id)
                     return "Command cancelled"
                 elif "/quote" == messageText:
-                    return self.GetQuote()
+                    return SkyrimQuote.SkyrimQuote()
                 else:
                     self.DB.Bot_flushStack(chat_id)
                     messageText = messageText.replace("/","")
@@ -233,18 +233,6 @@ class inputSorter:
             
         except Exception as e:
             return "Error processing message "+str(e) + "\n" + self.ShowCommandsList
-
-    def GetQuote(self):
-        with open("SkyrimDialogue.txt","r") as f:
-            for i,line in enumerate(f):
-                pass
-
-        lineNum = random.randint(0,i+1)
-        with open("SkyrimDialogue.txt","r") as f:
-            for x in range(lineNum):
-                line = f.readline()
-        response = line.rstrip().split("\t")[-1:][0]
-        return response
 
 
 
@@ -307,8 +295,8 @@ def convertDBStack(result,CommandDictionary):
     packet = (command,arguments)
     return packet
 
-def SplitWaypoints(string):
-    waypoints = string.split("\n")
+def SplitWaypoints(string,MARKER = "\n"):
+    waypoints = string.split(MARKER)
     return waypoints
 
 def ShowCommands():
@@ -329,6 +317,7 @@ def CreateCommandDictionary():
     #####################################################
 
     Commands["GetNoFlyZones"] = {}
+    Commands["RemoveNoFlyZone"] = {1: {'Type': int, 'Query': 'Enter ZoneID'}}
     Commands["AddNoFlyZone"] = {1: {'Type': str, 'Query': 'Enter first coordinate'},
                                 2: {'Type': str, 'Query': 'Enter second coordinate'},
                                 3: {'Type': int, 'Query': 'Enter level of NoFlyZone'}}
