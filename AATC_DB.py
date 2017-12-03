@@ -1,6 +1,6 @@
 import MySQLdb as sql
 import time,codecs
-from Crypto.Hash import SHA256
+from Crypto.Protocol.KDF import PBKDF2
 def GetTime():
     return int(time.time())
 
@@ -16,8 +16,8 @@ def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
     return all(BoolList)
 
 
-def Hash(value):
-    return SHA256.new(codecs.encode(value)).hexdigest()
+def Hash(value,salt):
+    return str(PBKDF2(codecs.encode(value),codecs.encode(salt)))  #str(PBKDF2(codecs.encode(value),codecs.encode(salt),dkLen = 32))
 
 
 
@@ -145,14 +145,14 @@ class DBConnection:
     def AddUser(self,Username,Password):
         self.cur.execute("SELECT 1 FROM User WHERE Username = %s",(Username,))
         if self.cur.fetchall() == ():
-            self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,PermissionAdder,ZoneCreatorPermission,ZoneRemoverPermission,ZoneModifierPermission) VALUES(%s,%s,0,0,0,0,0)",(Username,Hash(Password)))
+            self.cur.execute("INSERT INTO User(Username,Password,PublicVisibleFlights,PermissionAdder,ZoneCreatorPermission,ZoneRemoverPermission,ZoneModifierPermission) VALUES(%s,%s,0,0,0,0,0)",(Username,Hash(Password,Username)))
             self.db_con.commit()
             return True,"Added User"
         else:
             return False,"User already exists"
 
     def CheckCredentials(self,Username,Password):
-        self.cur.execute("SELECT UserID FROM User WHERE Username = %s AND Password = %s",(Username,Hash(Password)))
+        self.cur.execute("SELECT UserID FROM User WHERE Username = %s AND Password = %s",(Username,Hash(Password,Username)))
         UserIDFetch = self.cur.fetchall()
         if UserIDFetch != ():
             return True,"Correct Credentials",UserIDFetch[0][0]
@@ -175,9 +175,11 @@ class DBConnection:
         return True,"Set AccountType Value"
 
     def UserChangePassword(self,UserID,OldPassword,NewPassword):
-        self.cur.execute("SELECT 1 FROM User WHERE UserID = %s and Password = %s",(UserID,Hash(OldPassword)))
+        self.cur.execute("SELECT Username from User WHERE UserID = ?",(UserID,))
+        Username = self.cur.fetchall()[0][0]
+        self.cur.execute("SELECT 1 FROM User WHERE UserID = %s and Password = %s",(UserID,Hash(OldPassword,Username)))
         if self.cur.fetchall() != ():
-            self.cur.execute("UPDATE User SET Password = %s WHERE UserID = %s",(Hash(NewPassword),UserID))
+            self.cur.execute("UPDATE User SET Password = %s WHERE UserID = %s",(Hash(NewPassword,Username),UserID))
             self.db_con.commit()
             return True,"Changed password"
         else:
@@ -299,14 +301,14 @@ class DBConnection:
     def AddMonitor(self,MonitorName,MonitorPassword):
         self.cur.execute("SELECT 1 FROM Monitor WHERE MonitorName = %s",(MonitorName,))
         if self.cur.fetchall() == ():
-            self.cur.execute("INSERT INTO Monitor(MonitorName,MonitorPassword) VALUES(%s,%s)",(MonitorName,Hash(MonitorPassword)))
+            self.cur.execute("INSERT INTO Monitor(MonitorName,MonitorPassword) VALUES(%s,%s)",(MonitorName,Hash(MonitorPassword,MonitorName)))
             self.db_con.commit()
             return True,"Added Monitor"
         else:
             return False,"Monitor already exists"
 
     def MonitorCheckCredentials(self,MonitorName,MonitorPassword):
-        self.cur.execute("SELECT MonitorID FROM Monitor WHERE MonitorName = %s AND MonitorPassword = %s",(MonitorName,Hash(MonitorPassword)))
+        self.cur.execute("SELECT MonitorID FROM Monitor WHERE MonitorName = %s AND MonitorPassword = %s",(MonitorName,Hash(MonitorPassword,MonitorName)))
         MonitorIDFetch = self.cur.fetchall()
         if MonitorIDFetch != ():
             return True,"Correct Credentials",MonitorIDFetch[0][0]
@@ -314,9 +316,11 @@ class DBConnection:
             return False,"Incorrect Credentials",-1
 
     def MonitorChangePassword(self,MonitorID,OldPassword,NewPassword):
-        self.cur.execute("SELECT 1 FROM Monitor WHERE MonitorID = %s AND MonitorPassword = %s",(MonitorID,Hash(OldPassword)))
+        self.cur.execute("SELECT MonitorName FROM Monitor WHERE MonitorID = ?",(MonitorID,))
+        MonitorName = self.cur.fetchall()[0][0]
+        self.cur.execute("SELECT 1 FROM Monitor WHERE MonitorID = %s AND MonitorPassword = %s",(MonitorID,Hash(OldPassword,MonitorName)))
         if self.cur.fetchall() != ():
-            self.cur.execute("UPDATE Monitor SET MonitorPassword = %s WHERE MonitorID = %s",(Hash(NewPassword),MonitorID))
+            self.cur.execute("UPDATE Monitor SET MonitorPassword = %s WHERE MonitorID = %s",(Hash(NewPassword,MonitorName),MonitorID))
             self.db_con.commit()
             return True,"Password updated"
         else:

@@ -44,6 +44,13 @@ class NoFlyZoneGrapher:
                     self.Exit = True
                     
         print("NoFlyZoneGrapher exiting...")
+
+    def Force_Write(self):  #Cycles through all slots and writes current state.
+        graph = AATC_AStar.DynoGraph()
+        graph.ImportGraph()
+        NoFlyZoneData = self.GetNoFlyZones()
+        for Slot in range(len(graph.GetFolderNames())):
+            self.Make_Values(NoFlyZoneData,ABSlot = Slot)
         
     def Mod(self,Coords):
         return int(Coords.Get_X()//self.xSize),int(Coords.Get_Y()//self.ySize),int(Coords.Get_Z()//self.zSize)
@@ -97,9 +104,9 @@ class NoFlyZoneGrapher:
 
         
         print("[NoFlyZoneGrapher] Length of Values:",len(Values))
-        for NodeID in list(Values.keys()):
+        for NodeID in list(Values.keys()):   #CHECK THIS. Only using those involved with a new no fly zone may cause issues if a no fly zone was removed. Maybe should be set to all node IDs.
             node = graph.GetNode(NodeID)
-            if node.NodeID in Values:
+            if node.Get_NodeID() in Values:
                 node.Set_Cost( Values[node.NodeID])
                 Values.pop(node.NodeID)# Reduce memory usage by evicting Node values which have been added already
             else:

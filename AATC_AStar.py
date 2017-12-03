@@ -1,5 +1,5 @@
-import os,pickle,time,math,hashlib
-from AATC_Coordinate import *
+import os,pickle,time,math,hashlib#,AATC_Coordinate
+#from AATC_Coordinate import *
 try:
     try:
         import PriorityQueue.PriorityQueueC as PriorityQueue
@@ -26,7 +26,7 @@ class DynoGraph:
 
 
             """
-    def __init__(self,BlockSize = 500,FolderName = "GraphFolder",GraphFileName = "Graph",GraphFileSuffix = ".graph",BlockFileName = "GraphBlock",BlockFileSuffix = ".blk",Node_Cache_BlockSize = 10000000, ABInterval = 36000, ABSlot = 0, ABSlots = 2):
+    def __init__(self,BlockSize = 500,FolderName = "GraphFolder",GraphFileName = "Graph",GraphFileSuffix = ".graph",BlockFileName = "GraphBlock",BlockFileSuffix = ".blk",Node_Cache_BlockSize = 40, ABInterval = 36000, ABSlot = 0, ABSlots = 2):
         self.Nodes = {}
         self.BlockSize = BlockSize
         self.cwd = os.getcwd()
@@ -166,7 +166,7 @@ class DynoGraph:
         return int(value//div)
 
     def Node_Cache_Hash(self,Key):
-        return int(int(hashlib.md5(str(Key).encode('utf8')).hexdigest()[:8],16)//self.Node_Cache_BlockSize) #Generates integer hash of key then int div by BlockSize
+        return int(int(hashlib.md5(str(Key).encode('utf8')).hexdigest()[:8],16)%self.Node_Cache_BlockSize) #Generates integer hash of key then int div by BlockSize
         
     ##################################
     

@@ -19,6 +19,8 @@ class OWM_Control:
             Vx = Speed*math.sin(AATC_Coordinate.toRadian(bearing))+ wind["speed"]*math.sin(AATC_Coordinate.toRadian(wind_bearing))
             Vy = Speed*math.cos(AATC_Coordinate.toRadian(bearing))+ wind["speed"]*math.cos(AATC_Coordinate.toRadian(wind_bearing))
             V = math.sqrt(Vx**2+Vy**2)
+            if V < 0:  #To prevent estimating negative speeds
+                V = 1
             return V
         except:
             return Speed

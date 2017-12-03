@@ -42,11 +42,12 @@ def CreationDialogue():
     graph.Add_Edges(xRange,yRange,zRange)
     graph.Build_Node_Cache()
     graph.SaveGraph()
+    #return graph
 
 
 
 if __name__ == "__main__":
-    CreationDialogue()    
+    graph = CreationDialogue()    
 
 
 

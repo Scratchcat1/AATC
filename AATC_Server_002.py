@@ -175,7 +175,7 @@ class UserConnection(ClientConnection):
             #Else if command doesnt exist send back Failure
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
-                print("User tried to use unregistered command")
+                print(self.Thread_Name,self.ClientID," tried to use unregistered command")
         return Sucess,Message,Data
             
     def Login(self,Arguments):
@@ -616,7 +616,7 @@ class MonitorConnection(ClientConnection):
             #Else if command doesnt exist send back Failure
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
-                print("Monitor tried to use unregistered command")
+                print(self.Thread_Name,self.ClientID," tried to use unregistered command")
         return Sucess,Message,Data
 
     ################################
@@ -721,6 +721,7 @@ class DroneConnection(ClientConnection):
                 Exit = True
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
+                
 
         else:
             if Command == "UpdateDroneStatus":
@@ -745,8 +746,7 @@ class DroneConnection(ClientConnection):
             #Else if command doesnt exist send back Failure
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
-                print("Drone tried to use unregistered command")
-                print(Command)
+                print(self.Thread_Name,self.ClientID," tried to use unregistered command")
         return Sucess,Message,Data
 
     def Login(self,Arguments):

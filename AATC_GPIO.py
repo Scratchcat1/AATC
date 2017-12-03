@@ -17,7 +17,7 @@ def GPIO_Wait_Switch(pin,wait_time = 1, SWITCH_MODE= 1, Indicator_Pin = False): 
         GPIO.setup(pin,GPIO.IN)
         
         if Indicator_Pin:
-            GPIO_Queue = Create_Controller()
+            GPIO_Queue = Create_Controller(Name = "AMBER_LED")
             GPIO_Queue.put(("Controller","Create_Thread",("INDICATOR",)))
         
         while GPIO.input(pin) != SWITCH_MODE:
@@ -162,13 +162,13 @@ class Thread_Controller:
             
         
         
-def Create_Controller(process = False):
+def Create_Controller(process = False, Name = ""):
     if process:
         q = multiprocessing.Queue()
     else:
         q = queue.Queue()
         
-    TC = Thread_Controller(q)
+    TC = Thread_Controller(q,Name)
 
     if process:
         t = multiprocessing.Process(target = TC.Main)

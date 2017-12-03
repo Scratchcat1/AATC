@@ -41,6 +41,7 @@ class DroneLogicSystem:
                     
             except Exception as e:
                 print("Error occured in DroneLogic Main",e)
+                self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.BlankFunction,())))
                 self.GPIO_Queue.put(("RED","Function",(AATC_GPIO.Blink,(11,3,30,False))))  #Let the Thread for RED LED blink on pin 11 at 3Hz 30 times and not repeat.
                 time.sleep(self.Sleep_Time)  #To prevent spamming server
                 
