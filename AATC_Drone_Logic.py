@@ -3,47 +3,47 @@ import AATC_Coordinate
 
 class DroneLogicSystem:
     def __init__(self,DroneID,DronePassword,FlightQueue,StatusQueue,GPIO_Queue,Sleep_Time = 30):
-        self.DroneID = DroneID
-        self.DronePassword = DronePassword
-        self.FlightQueue = FlightQueue
-        self.StatusQueue = StatusQueue
-        self.GPIO_Queue = GPIO_Queue
-        self.Sleep_Time = Sleep_Time
+        self._DroneID = DroneID
+        self._DronePassword = DronePassword
+        self._FlightQueue = FlightQueue
+        self._StatusQueue = StatusQueue
+        self._GPIO_Queue = GPIO_Queue
+        self._Sleep_Time = Sleep_Time
 
     def Main(self):
         Exit = False
         InFlight = False
         while not Exit:
             try:
-                self.D = AATC_Drone.CreateDroneInterface(IP = "127.0.0.1")
-                LoginSucess,Message = self.D.Login(self.DroneID,self.DronePassword)
+                self._D = AATC_Drone.CreateDroneInterface(IP = "127.0.0.1")
+                LoginSucess,Message = self._D.Login(self._DroneID,self._DronePassword)
                 
                 if LoginSucess:  
                     if not InFlight:
                         AATC_GPIO.GPIO_Wait_Switch(26,Indicator_Pin = 13)
                         print("Entering Flight Check Mode")
-                        self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.Pattern,( [(21,1,5),(21,0,1)],))))  #Let the Thread for the GREEN LED blink on pin 21 at 0.5 Hz for 1 cycle repeatedly until stopped
+                        self._GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.Pattern,( [(21,1,5),(21,0,1)],))))  #Let the Thread for the GREEN LED blink on pin 21 at 0.5 Hz for 1 cycle repeatedly until stopped
                         self.CheckForFlight()
-                        self.D.Exit()
+                        self._D.Exit()
                         InFlight = True
                     else:
                         print("Entering Run Flight Mode")
-                        self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.Blink,(21,0.5,1,True))))  #Let the Thread for the GREEN LED blink on pin 21 at 0.5 Hz for 1 cycle repeatedly until stopped
+                        self._GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.Blink,(21,0.5,1,True))))  #Let the Thread for the GREEN LED blink on pin 21 at 0.5 Hz for 1 cycle repeatedly until stopped
                         self.RunFlight()
                         InFlight = False #Once RunFlight has completed sucessfully go back to checking for flights. Will only complete once finished, if crashes will not pass here.
-                        self.D.Exit()
-                        self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.BlankFunction,())))  # Resets the green LED to be off.
+                        self._D.Exit()
+                        self._GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.BlankFunction,())))  # Resets the green LED to be off.
 
                 else:
-                    self.GPIO_Queue.put(("RED","Function",(AATC_GPIO.Blink,(11,1,10,False))))  #Let the Thread for RED LED blink on pin 11 at 1Hz 10 times and not repeat.
+                    self._GPIO_Queue.put(("RED","Function",(AATC_GPIO.Blink,(11,1,10,False))))  #Let the Thread for RED LED blink on pin 11 at 1Hz 10 times and not repeat.
                     print("Login failure",Message)
-                    time.sleep(self.Sleep_Time)  #To prevent spamming server
+                    time.sleep(self._Sleep_Time)  #To prevent spamming server
                     
             except Exception as e:
                 print("Error occured in DroneLogic Main",e)
-                self.GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.BlankFunction,())))
-                self.GPIO_Queue.put(("RED","Function",(AATC_GPIO.Blink,(11,3,30,False))))  #Let the Thread for RED LED blink on pin 11 at 3Hz 30 times and not repeat.
-                time.sleep(self.Sleep_Time)  #To prevent spamming server
+                self._GPIO_Queue.put(("GREEN","Function",(AATC_GPIO.BlankFunction,())))
+                self._GPIO_Queue.put(("RED","Function",(AATC_GPIO.Blink,(11,3,30,False))))  #Let the Thread for RED LED blink on pin 11 at 3Hz 30 times and not repeat.
+                time.sleep(self._Sleep_Time)  #To prevent spamming server
                 
             
             
@@ -52,39 +52,39 @@ class DroneLogicSystem:
         AvailableFlight = False
         while not AvailableFlight:
             
-            if not self.StatusQueue.empty():   #Updates status
-                Status = self.StatusQueue.get()
-                self.StatusQueue.task_done()
-                self.D.UpdateDroneStatus(Status["Coords"],Status["Battery"])#dfjsafkdsajdfjs
+            if not self._StatusQueue.empty():   #Updates status
+                Status = self._StatusQueue.get()
+                self._StatusQueue.task_done()
+                self._D.UpdateDroneStatus(Status["Coords"],Status["Battery"])#dfjsafkdsajdfjs
                 
-            Sucess,Message,FlightID  = self.D.CheckForFlight()
+            Sucess,Message,FlightID  = self._D.CheckForFlight()
             AvailableFlight = Sucess
             
-            time.sleep(self.Sleep_Time)  #At the end to pause to wait so that if the server is still writing waypoints it can finish.
+            time.sleep(self._Sleep_Time)  #At the end to pause to wait so that if the server is still writing waypoints it can finish.
             
 
         FlightID = FlightID[0][0]   
         print("Obtaining flight and drone information. FlightID :",FlightID)
-        DroneInfo, Flight, Waypoints = GetAllFlightInfo(self.D,self.DroneID,FlightID)
+        DroneInfo, Flight, Waypoints = GetAllFlightInfo(self._D,self._DroneID,FlightID)
         
-        self.FlightQueue.put((False,(DroneInfo,Flight,Waypoints)))
+        self._FlightQueue.put((False,(DroneInfo,Flight,Waypoints)))
 
     def RunFlight(self):
         complete = False
         while not complete:    #While drone not at target location
-            while self.StatusQueue.empty():
-                time.sleep(self.Sleep_Time)
+            while self._StatusQueue.empty():
+                time.sleep(self._Sleep_Time)
                 
-            Status = self.StatusQueue.get()
-            self.StatusQueue.task_done()
+            Status = self._StatusQueue.get()
+            self._StatusQueue.task_done()
             
-            Sucess,Message = self.D.UpdateDroneStatus(Status["Coords"],Status["Battery"])
+            Sucess,Message = self._D.UpdateDroneStatus(Status["Coords"],Status["Battery"])
             if "MarkComplete" in Status:
                 complete = True
                 print("Flight ",Status["MarkComplete"]," complete")
-                Sucess,Message = self.D.MarkFlightComplete(Status["MarkComplete"],1)
+                Sucess,Message = self._D.MarkFlightComplete(Status["MarkComplete"],1)
                 print("Sucess",Sucess,"   Message:",Message)
-            time.sleep(self.Sleep_Time)
+            time.sleep(self._Sleep_Time)
             
         
 

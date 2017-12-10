@@ -44,57 +44,59 @@ def MaxLimit(value,Max):
 
 class Camera:
     def __init__(self,xpixel,ypixel,MinCoords,MaxCoords):  #COORDS (X,Y,Z)
-        self.xpixel = xpixel
-        self.ypixel = ypixel
-        self.gameDisplay = pygame.display.set_mode((self.xpixel,self.ypixel))
-        self.MinCoords = MinCoords
-        self.MaxCoords = MaxCoords
-        self.CameraCoord = self.MinCoords.copy()
-        self.CameraCoord.Set_XSize( self.MaxCoords.Get_X() - self.MinCoords.Get_X())
-        self.CameraCoord.Set_YSize( self.MaxCoords.Get_Y() - self.MinCoords.Get_Y())
-        self.CameraZoom = 1
-        self.DrawObjects = []
+        self._xpixel = xpixel
+        self._ypixel = ypixel
+        self._gameDisplay = pygame.display.set_mode((self._xpixel,self._ypixel))
+        self._MinCoords = MinCoords
+        self._MaxCoords = MaxCoords
+        self._CameraCoord = self._MinCoords.copy()
+        self._CameraCoord.Set_XSize( self._MaxCoords.Get_X() - self._MinCoords.Get_X())
+        self._CameraCoord.Set_YSize( self._MaxCoords.Get_Y() - self._MinCoords.Get_Y())
+        self._CameraZoom = 1
+        self._DrawObjects = []
 
     def GetZoom(self):
-        return self.CameraZoom
+        return self._CameraZoom
     def SetZoom(self,Zoom):
-        self.CameraZoom = Zoom
+        self._CameraZoom = Zoom
 
     def GetCameraCoords(self):
-        return self.CameraCoord
+        return self._CameraCoord
     def IncrementCameraCoordX(self,Amount):
-        self.CameraCoord.Set_X( Amount+self.CameraCoord.Get_X())
+        self._CameraCoord.Set_X( Amount+self._CameraCoord.Get_X())
 
     def IncrementCameraCoordY(self,Amount):
-        self.CameraCoord.Set_Y( Amount+self.CameraCoord.Get_Y())
+        self._CameraCoord.Set_Y( Amount+self._CameraCoord.Get_Y())
         
     def SetCameraCoords(self,CameraX,CameraY):
-        self.CameraCoord.Set_X( CameraX)
-        self.CameraCoord.Set_Y(CameraY)
+        self._CameraCoord.Set_X( CameraX)
+        self._CameraCoord.Set_Y(CameraY)
 
     def UpdateCameraSize(self):  #Gets width of map divided by zoom level eg at zoom 1x it has whole map
-        self.CameraCoord.Set_XSize ((self.MaxCoords.Get_X() - self.MinCoords.Get_X())/self.CameraZoom)
-        self.CameraCoord.Set_YSize ((self.MaxCoords.Get_Y() - self.MinCoords.Get_Y())/self.CameraZoom)
+        self._CameraCoord.Set_XSize ((self._MaxCoords.Get_X() - self._MinCoords.Get_X())/self._CameraZoom)
+        self._CameraCoord.Set_YSize ((self._MaxCoords.Get_Y() - self._MinCoords.Get_Y())/self._CameraZoom)
 
     def CameraWipe(self,Colour = (0,0,0)):
-        self.gameDisplay.fill(Colour)
+        self._gameDisplay.fill(Colour)
     def ResetDrawObject(self):
-        self.DrawObjects = []
+        self._DrawObjects = []
     def AddDrawObject(self,Object,ForceDraw):
-        self.DrawObjects.append({"Object":Object,"ForceDraw":ForceDraw})
+        self._DrawObjects.append({"Object":Object,"ForceDraw":ForceDraw})
+    def Get_DrawObjects(self):
+        return self._DrawObjects
 
     def Get_Coord(self):
-        return self.CameraCoord
+        return self._CameraCoord
 
     def Draw(self):
-        CameraEndX= self.CameraCoord.Get_X() + self.CameraCoord.Get_XSize()    #Moved to new variablt to reduce recalculation
-        CameraEndY = self.CameraCoord.Get_Y() + self.CameraCoord.Get_YSize()
-        CameraX = self.CameraCoord.Get_X()
-        CameraY = self.CameraCoord.Get_Y()
-        CameraXSize = self.CameraCoord.Get_XSize()
-        CameraYSize = self.CameraCoord.Get_YSize()
+        CameraEndX= self._CameraCoord.Get_X() + self._CameraCoord.Get_XSize()    #Moved to new variablt to reduce recalculation
+        CameraEndY = self._CameraCoord.Get_Y() + self._CameraCoord.Get_YSize()
+        CameraX = self._CameraCoord.Get_X()
+        CameraY = self._CameraCoord.Get_Y()
+        CameraXSize = self._CameraCoord.Get_XSize()
+        CameraYSize = self._CameraCoord.Get_YSize()
         
-        for DrawObject in self.DrawObjects:
+        for DrawObject in self._DrawObjects:
             Object = DrawObject["Object"]
             Object_Coords = Object.Get_Coords()
             x = Object_Coords.Get_X()
@@ -105,18 +107,18 @@ class Camera:
                ((y < CameraEndY) and ((y+ySize) > CameraY )) :  #If DrawObject intersects with Camera , Render, otherwise ignore
                 
 
-                width,height = int(xSize/CameraXSize*self.xpixel) ,int(ySize/CameraYSize*self.ypixel)  # Would benifit from being cythonised
+                width,height = int(xSize/CameraXSize*self._xpixel) ,int(ySize/CameraYSize*self._ypixel)  # Would benifit from being cythonised
                 if width > 0 and height > 0:
-                    PosX = ((x- CameraX)/CameraXSize)* self.xpixel  # Would benifit from being cythonised
-                    PosY = ((y- CameraY)/CameraYSize)* self.ypixel  
-                    width = MaxLimit(width,self.xpixel)
-                    height = MaxLimit(height,self.ypixel)
-                    font_size = int(100*width/self.xpixel)          # Would benifit from being cythonised
+                    PosX = ((x- CameraX)/CameraXSize)* self._xpixel  # Would benifit from being cythonised
+                    PosY = ((y- CameraY)/CameraYSize)* self._ypixel  
+                    width = MaxLimit(width,self._xpixel)
+                    height = MaxLimit(height,self._ypixel)
+                    font_size = int(100*width/self._xpixel)          # Would benifit from being cythonised
                     image = Object.Make_Image(width,height) 
-                    self.gameDisplay.blit(image,(PosX,PosY))
+                    self._gameDisplay.blit(image,(PosX,PosY))
                     if font_size > 5:
                         font = (None, font_size)                  
-                        self.gameDisplay.blit(Object.Make_Text(font) ,(PosX+width,PosY))
+                        self._gameDisplay.blit(Object.Make_Text(font) ,(PosX+width,PosY))
                         
                         
 
@@ -125,27 +127,26 @@ class Camera:
                                                     
 class Monitor_Sprite(pygame.sprite.Sprite):
     def __init__(self,CoordObject,Type = "",Text = "",Colour = (255,255,255)):
-        self.Coords = CoordObject
-        self.Type = Type
-        self.Text = Text
-        self.Colour = Colour
-        self.image = pygame.Surface((1,1))
+        self._Coords = CoordObject
+        self._Type = Type
+        self._Text = Text
+        self._Colour = Colour
+        self._image = pygame.Surface((1,1))
         #self.Make_Image(2,2)     # No longer needed, is similar to that above.
 
     def Make_Image(self,width,height):
-        if self.image.get_size() != (width,height):  #If new image does not match with previous
-            self.image = GetImage(width,height,self.Colour)
-
-        return self.image
+        if self._image.get_size() != (width,height):  #If new image does not match with previous
+            self._image = GetImage(width,height,self._Colour)
+        return self._image
 ##            self.image = pygame.Surface((width,height)).convert()
 ##            self.image.fill(self.Colour)
 
     def Make_Text(self,font):
-        text = str((self.Coords.Get_X(),self.Coords.Get_Y(),self.Coords.Get_Z())) +" " +self.Text + " "+ self.Type
-        return GetText(text,font,False,self.Colour)
+        text = str((self._Coords.Get_X(),self._Coords.Get_Y(),self._Coords.Get_Z())) +" " +self._Text + " "+ self._Type
+        return GetText(text,font,False,self._Colour)
 
     def Get_Coords(self):
-        return self.Coords
+        return self._Coords
 ##        
 ##    def Make_CoordsText(self,font):
 ##        self.CoordsText = GetText(str((self.Coords.x,self.Coords.y,self.Coords.z)),font,False,self.Colour)
@@ -267,7 +268,7 @@ def MakeSprites(M):
         SpriteList += MakeZoneSprites(Message,NoFlyZones)
 
     #Sprites are created in this function to simplify code in case of an error(False)
-    print("Refreshed data")
+    print("Refreshed data. Sprites :",len(SpriteList))
     return SpriteList #All sprites which were sucessfully created
 
 class TimeWarper:
@@ -276,14 +277,14 @@ class TimeWarper:
        The time warp will be relative to the target frame rate. If the warp is greater that of the minimum frame rate then the minimum time warp is taken.
     """
     def __init__(self,targetFrameRate = 60,minimumFrameRate = 1):
-        self.targetFrameRate = targetFrameRate
-        self.minimumFrameRate = minimumFrameRate
-        self.Time = time.time()
+        self._targetFrameRate = targetFrameRate
+        self._minimumFrameRate = minimumFrameRate
+        self._Time = time.time()
 
     def GetTimeWarp(self):
-        TimeWarpFactor = (time.time()-self.Time)*self.targetFrameRate
-        self.Time = time.time()
-        return min([self.targetFrameRate/self.minimumFrameRate,TimeWarpFactor])
+        TimeWarpFactor = (time.time()-self._Time)*self._targetFrameRate
+        self._Time = time.time()
+        return min([self._targetFrameRate/self._minimumFrameRate,TimeWarpFactor])
 
 
         
@@ -300,7 +301,7 @@ Exit = "N"
 while Exit != "Y":
     try:
         M = AATC_Monitor.CreateMonitorInterface(IP = "127.0.0.1",Port = 8001)
-        M.Login("Zini","")
+        print(M.Login("Zini",""))
         #Sucess,Message,Data =  M.GetCoordDetails()
         #MinCoords,MaxCoords,StepCoords = Data[0],Data[1],Data[2]
         MinCoords,MaxCoords = AATC_Coordinate.Coordinate(0,0,0),AATC_Coordinate.Coordinate(1,1,50)
@@ -331,11 +332,11 @@ while Exit != "Y":
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         print("Camera details")                  #Mainly for debugging
                         print(MonCamera.GetZoom())
-                        print(MonCamera.CameraCoord.Get_X())
-                        print(MonCamera.CameraCoord.Get_Y())
-                        print(MonCamera.CameraCoord.Get_XSize())
-                        print(MonCamera.CameraCoord.Get_YSize())
-                        print(len(MonCamera.DrawObjects))
+                        print(MonCamera.Get_Coord().Get_X())
+                        print(MonCamera.Get_Coord().Get_Y())
+                        print(MonCamera.Get_Coord().Get_XSize())
+                        print(MonCamera.Get_Coord().Get_YSize())
+                        print(len(MonCamera.Get_DrawObjects()))
                         print("FPS:"+str(clock.get_fps()))
                     elif event.type == pygame.KEYDOWN:
                         pass
@@ -363,7 +364,7 @@ while Exit != "Y":
                 MonCamera.UpdateCameraSize()
                 MonCamera.Draw()
                 pygame.display.flip()
-                clock.tick(20)
+                clock.tick(60)
                 
 
             

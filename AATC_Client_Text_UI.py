@@ -47,12 +47,12 @@ MenuOptions = {
 
 class UserTextUI:
     def __init__(self,UserInterface,MenuOptions):
-        self.UserInterface = UserInterface
-        self.MenuOptions = MenuOptions
+        self._UserInterface = UserInterface
+        self._MenuOptions = MenuOptions
 
     def Main_Loop(self):
-        self.Exit = False
-        while not self.Exit:
+        self._Exit = False
+        while not self._Exit:
             try:
                 self.PrintMainMenu()
                 MenuChoice = self.GetMenuChoice()
@@ -64,12 +64,12 @@ class UserTextUI:
     def PrintMainMenu(self):
         print("\n"*2)
         print("AATC Client Main Menu")
-        for x in self.MenuOptions.items():
+        for x in self._MenuOptions.items():
             print("{0:>3} : {1}".format(str(x[0]),x[1]))
             
     def GetMenuChoice(self):
         MenuChoice = -99
-        while MenuChoice not in self.MenuOptions:  #will exit once valid menu option is chosen
+        while MenuChoice not in self._MenuOptions:  #will exit once valid menu option is chosen
             try:
                  MenuChoice = int(input("Choice >>"))
             except:
@@ -77,7 +77,7 @@ class UserTextUI:
         return MenuChoice
 
     def EvaluateChoice(self,MenuChoice):
-        Command = self.MenuOptions[MenuChoice]  #Gets full, easier to work with string
+        Command = self._MenuOptions[MenuChoice]  #Gets full, easier to work with string
 
         if Command == "Login":
             self.Login()
@@ -177,31 +177,31 @@ class UserTextUI:
     def Login(self):
         Username = input("Username >>")
         Password = input("Password >>")
-        Sucess,Message = self.UserInterface.Login(Username,Password)
+        Sucess,Message = self._UserInterface.Login(Username,Password)
         self.DisplayResults(Sucess,Message)
 
     #######################################
 
     def GetNoFlyZones(self):
-        Sucess,Message,NoFlyZones =self.UserInterface.GetNoFlyZones()
+        Sucess,Message,NoFlyZones =self._UserInterface.GetNoFlyZones()
         self.DisplayResults(Sucess,Message,NoFlyZones)
 
     def AddNoFlyZone(self):
         StartCoords = input("Enter Start Coordinates in form (x,y,z) >>")
         EndCoords = input("Enter End Coordinates in form (x,y,z) >>")
         Level = int(input("Enter Level of No Fly Zone >>"))
-        Sucess,Message = self.UserInterface.AddNoFlyZone(StartCoords,EndCoords,Level)
+        Sucess,Message = self._UserInterface.AddNoFlyZone(StartCoords,EndCoords,Level)
         self.DisplayResults(Sucess,Message)
         
     def RemoveNoFlyZone(self):
         ZoneID = int(input("Enter ZoneID >>"))
-        Sucess,Message = self.UserInterface.RemoveNoFlyZone(ZoneID)
+        Sucess,Message = self._UserInterface.RemoveNoFlyZone(ZoneID)
         self.DisplayResults(Sucess,Message)
 
     def ModifyNoFlyZoneLevel(self):
         ZoneID = int(input("Enter ZoneID >>"))
         Level = int(input("Enter Level >>"))
-        Sucess,Message = self.UserInterface.ModifyNoFlyZoneLevel(ZoneID,Level)
+        Sucess,Message = self._UserInterface.ModifyNoFlyZoneLevel(ZoneID,Level)
         self.DisplayResults(Sucess,Message)
 
 
@@ -214,92 +214,92 @@ class UserTextUI:
         Speed = int(input("Speed (m/s) >>"))
         Range = int(input("Range (m) >>"))
         Weight = float(input("Weight (kg) >>"))
-        Sucess,Message = self.UserInterface.AddDrone(DroneName,DronePassword,Type,Speed,Range,Weight)
+        Sucess,Message = self._UserInterface.AddDrone(DroneName,DronePassword,Type,Speed,Range,Weight)
         self.DisplayResults(Sucess,Message)
 
     def RemoveDrone(self):
         DroneID = int(input("DroneID >>"))
-        Sucess,Message = self.UserInterface.RemoveDrone(DroneID)
+        Sucess,Message = self._UserInterface.RemoveDrone(DroneID)
         self.DisplayResults(Sucess,Message)
 
     def GetDroneID(self):
         DroneName = input("Drone Name >>")
-        Sucess,Message,DroneID = self.UserInterface.GetDroneID(DroneName)
+        Sucess,Message,DroneID = self._UserInterface.GetDroneID(DroneName)
         self.DisplayResults(Sucess,Message,DroneID)
         
     def GetDroneCredentials(self):
         DroneID = int(input("DroneID >>"))
-        Sucess,Message,Credentials = self.UserInterface.GetDroneCredentials(DroneID)
+        Sucess,Message,Credentials = self._UserInterface.GetDroneCredentials(DroneID)
         self.DisplayResults(Sucess,Message,Credentials)
 
     def SetDroneCredentials(self):
         DroneID = int(input("DroneID >>"))
         DronePassword = input("Drone Password >>")
-        Sucess,Message = self.UserInterface.SetDroneCredentials(DroneID,DronePassword)
+        Sucess,Message = self._UserInterface.SetDroneCredentials(DroneID,DronePassword)
         self.DisplayResults(Sucess,Message)
 
     def CheckDroneOwnership(self):
         UserID = int(input("UserID >>"))
         DroneID = int(input("DroneID >>"))
-        Sucess,Message,Ownership = self.UserInterface.CheckDroneOwnership(UserID,DroneID)
+        Sucess,Message,Ownership = self._UserInterface.CheckDroneOwnership(UserID,DroneID)
         self.DisplayResults(Sucess,Message,Ownership)
 
     def GetDroneInfo(self):
         DroneID = int(input("DroneID >>"))
-        Sucess,Message,DroneInfo = self.UserInterface.GetDroneInfo(DroneID)
+        Sucess,Message,DroneInfo = self._UserInterface.GetDroneInfo(DroneID)
         self.DisplayResults(Sucess,Message,DroneInfo)
 
     def GetDronesUser(self):
-        Sucess,Message,DroneInfo = self.UserInterface.GetDronesUser()
+        Sucess,Message,DroneInfo = self._UserInterface.GetDronesUser()
         self.DisplayResults(Sucess,Message,DroneInfo)
 
     def GetDronesAll(self):
-        Sucess,Message,DroneInfo = self.UserInterface.GetDronesAll()
+        Sucess,Message,DroneInfo = self._UserInterface.GetDronesAll()
         self.DisplayResults(Sucess,Message,DroneInfo)
 
     ###############################################
 
     def GetUserID(self):
         Username = input("Username >>")
-        Sucess,Message,UserID = self.UserInterface.GetUserID(Username)
+        Sucess,Message,UserID = self._UserInterface.GetUserID(Username)
         self.DisplayResults(Sucess,Message,UserID)
 
     def GetUsername(self):
         UserID = int(input("UserID >>"))
-        Sucess,Message,Username = self.UserInterface.GetUsername(UserID)
+        Sucess,Message,Username = self._UserInterface.GetUsername(UserID)
         self.DisplayResults(Sucess,Message,Username)
 
     def AddUser(self):
         Username = input("Username >>")
         Password = input("Password >>")
-        Sucess,Message = self.UserInterface.AddUser(Username,Password)
+        Sucess,Message = self._UserInterface.AddUser(Username,Password)
         self.DisplayResults(Sucess,Message)
 
     def SetFlightVisibility(self):
         Visibility = int(input("Visibility >>"))
-        Sucess,Message = self.UserInterface.SetFlightVisibility(Visibility)
+        Sucess,Message = self._UserInterface.SetFlightVisibility(Visibility)
         self.DisplayResults(Sucess,Message)
 
     def SetAccountType(self):
         Permission = input("Account Type >>")
         Type = int(input("Account Type VAlue >>"))
-        Sucess,Message = self.UserInterface.SetAccountType(Permission,Type)
+        Sucess,Message = self._UserInterface.SetAccountType(Permission,Type)
         self.DisplayResults(Sucess,Message)
 
     def UserChangePassword(self):
         OldPassword = input("Old Password >>")
         NewPassword = input("New Password >>")
-        Sucess,Message = self.UserInterface.UserChangePassword(OldPassword,NewPassword)
+        Sucess,Message = self._UserInterface.UserChangePassword(OldPassword,NewPassword)
         self.DisplayResults(Sucess,Message)
 
     ################################################
     
     def GetFlightsUser(self):
-        Sucess,Message,UserFlights = self.UserInterface.GetFlightsUser()
+        Sucess,Message,UserFlights = self._UserInterface.GetFlightsUser()
         self.DisplayResults(Sucess,Message,UserFlights)
 
     def GetFlightsAll(self):
-        Sucess,Message,AllFlights = self.UserInterface.GetFlightsAll()
+        Sucess,Message,AllFlights = self._UserInterface.GetFlightsAll()
         self.DisplayResults(Sucess,Message,AllFlights)
 
     def AddFlight(self):
@@ -313,35 +313,35 @@ class UserTextUI:
             if point != "Done":
                 HighPoints.append(point)
         StartTime = int(input("Enter start time in seconds since UNIX time >>"))
-        Sucess,Message,FlightInfo = self.UserInterface.AddFlight(DroneID,HighPoints,StartTime)
+        Sucess,Message,FlightInfo = self._UserInterface.AddFlight(DroneID,HighPoints,StartTime)
         self.DisplayResults(Sucess,Message,FlightInfo)
     
         
     def RemoveFlight(self):
         FlightID = int(input("FlightID >>"))
-        Sucess,Message = self.UserInterface.RemoveFlight(FlightID)
+        Sucess,Message = self._UserInterface.RemoveFlight(FlightID)
         self.DisplayResults(Sucess,Message)
 
     ###################################################
 
     def GetFlightWaypointsUser(self):
-        Sucess,Message,UserWaypoints = self.UserInterface.GetFlightWaypointsUser()
+        Sucess,Message,UserWaypoints = self._UserInterface.GetFlightWaypointsUser()
         self.DisplayResults(Sucess,Message,UserWaypoints)
 
     def GetFlightWaypointsAll(self):
-        Sucess,Message,AllWaypoints = self.UserInterface.GetFlightWaypointsAll()
+        Sucess,Message,AllWaypoints = self._UserInterface.GetFlightWaypointsAll()
         self.DisplayResults(Sucess,Message,AllWaypoints)
 
     ###################################################
 
     def GetMonitorID(self):
         MonitorName = input("MonitorName >>")
-        Sucess,Message,MonitorID = self.UserInterface.GetMonitorID(MonitorName)
+        Sucess,Message,MonitorID = self._UserInterface.GetMonitorID(MonitorName)
         self.DisplayResults(Sucess,Message,MonitorID)
 
     def GetMonitorName(self):
         MonitorID = int(input("MonitorID >>"))
-        Sucess,Message,MonitorName = self.UserInterface.GetMonitorName(MonitorID)
+        Sucess,Message,MonitorName = self._UserInterface.GetMonitorName(MonitorID)
         self.DisplayResults(Sucess,Message,MonitorName)
 
     ##################################################
@@ -349,22 +349,22 @@ class UserTextUI:
     def AddMonitorPermission(self):
         MonitorID = int(input("MonitorID >>"))
         ExpiryDate = int(input("Expiry Date >>"))
-        Sucess,Message = self.UserInterface.AddMonitorPermission(MonitorID,ExpiryDate)
+        Sucess,Message = self._UserInterface.AddMonitorPermission(MonitorID,ExpiryDate)
         self.DisplayResults(Sucess,Message)
 
     def RemoveMonitorPermission(self):
         MonitorID = int(input("MonitorID >>"))
-        Sucess,Message = self.UserInterface.RemoveMonitorPermission(MonitorID)
+        Sucess,Message = self._UserInterface.RemoveMonitorPermission(MonitorID)
         self.DisplayResults(Sucess,Message)
 
     def ModifyMonitorPermissionDate(self):
         MonitorID = int(input("MonitorID >>"))
         ExpiryDate = int(input("ExpiryDate"))
-        Sucess,Message = self.UserInterface.ModifyMonitorPermissionDate(MonitorID,ExpiryDate)
+        Sucess,Message = self._UserInterface.ModifyMonitorPermissionDate(MonitorID,ExpiryDate)
         self.DisplayResults(Sucess,Message)
 
     def GetMonitorPermissionUser(self):
-        Sucess,Message,MonitorPermissionsUser = self.UserInterface.GetMonitorPermissionUser()
+        Sucess,Message,MonitorPermissionsUser = self._UserInterface.GetMonitorPermissionUser()
         self.DisplayResults(Sucess,Message,MonitorPermissionsUser)
 
     #################################################
@@ -372,11 +372,11 @@ class UserTextUI:
     def Call_Exit(self):
         print("Exiting..")
         try:
-            Sucess,Message = self.UserInterface.Exit()
+            Sucess,Message = self._UserInterface.Exit()
             self.DisplayResults(Sucess,Message)
         except:
             print("Unable to close server connection")
-        self.Exit = True
+        self._Exit = True
 
 
 

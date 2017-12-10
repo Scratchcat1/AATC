@@ -53,13 +53,13 @@ def Connect(remote_ip,PORT):
 
 class UserInterface:
     def __init__(self,Connection):
-        self.con = Connection
-        self.Crypto = AATC_Crypto.Crypter(self.con)
-        self.Username  = ""
+        self._con = Connection
+        self._Crypto = AATC_Crypto.Crypter(self._con)
+        self._Username  = ""
         print("Welcome to the AATC connection interface")
 
     def Login(self,Username,Password):
-        self.Username = Username
+        self._Username = Username
         self.Send("Login",(Username,Password))
         Sucess,Message,_ = self.Recv()
         return Sucess,Message
@@ -231,19 +231,19 @@ class UserInterface:
     def Exit(self):
         self.Send("Exit",())
         Sucess,Message,_ = self.Recv()
-        self.con.close()
+        self._con.close()
         return Sucess,Message
         
 
     ##############################################
     ##############################################
     def Send(self,Code,data):
-        Info = self.Crypto.Encrypt(codecs.encode(str((Code,data))))
-        self.con.sendall(Info)
+        Info = self._Crypto.Encrypt(codecs.encode(str((Code,data))))
+        self._con.sendall(Info)
 
     def Recv(self):   #Returns tuple of Sucess,Message,Data   of which data may just be useless for that function
         try:
-            data = self.Crypto.Decrypt(recvall.recvall(self.con))
+            data = self._Crypto.Decrypt(recvall.recvall(self._con))
             data = ast.literal_eval(codecs.decode(data))
             #      Sucess, Message , Data
             return data[0],data[1],data[2]

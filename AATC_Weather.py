@@ -5,12 +5,12 @@ def Get_OWM():
 
 class OWM_Control:
     def __init__(self):
-        self.owm = pyowm.OWM('5b943c4857a45d75ef7ee9b301666fa8')
+        self._owm = pyowm.OWM('5b943c4857a45d75ef7ee9b301666fa8')
         
     def Get_Ajusted_Speed(self,CoordA,CoordB,Speed,At_Time = time.time()):
         try:
             
-            forecast = self.owm.daily_forecast_at_coords(CoordA.Get_Y(),CoordA.Get_X())
+            forecast = self._owm.daily_forecast_at_coords(CoordA.Get_Y(),CoordA.Get_X())
             wind = forecast.get_weather_at(int(At_Time)).get_wind()
             
             bearing = AATC_Coordinate.GetBearing(CoordA,CoordB)

@@ -20,110 +20,110 @@ def StringBlock(string, block_size):
 
 class Ticker:
     def __init__(self,frequency):
-        self.last_call = time.time()
-        self.time_period = 1/frequency
+        self._last_call = time.time()
+        self._time_period = 1/frequency
 
     def wait_ok(self):
-        dtime = (self.last_call+self.time_period)-time.time()
+        dtime = (self._last_call+self._time_period)-time.time()
         if dtime > 0:
             time.sleep(dtime)
-        self.last_call = time.time()
+        self._last_call = time.time()
 
     def reset(self):
-        self.last_call  = 0
+        self._last_call  = 0
 
         
 
 class Telebot:
     def __init__(self,Thread_Name,Input_Queue,signature = "\nHeda ∞",start_update_id= 0,inputSorterNumber = 2):
-        self.Thread_Name = Thread_Name
-        self.Input_Queue = Input_Queue
-        self.bot = telepot.Bot(BOT_TOKEN)
-        self.signature = signature
-        self.update_id = start_update_id
-        self.chat_id = 0
+        self._Thread_Name = Thread_Name
+        self._Input_Queue = Input_Queue
+        self._bot = telepot.Bot(BOT_TOKEN)
+        self._signature = signature
+        self._update_id = start_update_id
+        self._chat_id = 0
     
-        self.ticker = Ticker(3)    # Used to limit the frequency at which messages are sent
-        self.Restart_Ticker = Ticker(1/60)
-        self.Update_Queue = []
-        self.DB = AATC_DB.DBConnection()
-        self.OutputQueue = multiprocessing.Queue()
+        self._ticker = Ticker(3)    # Used to limit the frequency at which messages are sent
+        self._Restart_Ticker = Ticker(1/60)
+        self._Update_Queue = []
+        self._DB = AATC_DB.DBConnection()
+        self._OutputQueue = multiprocessing.Queue()
         
-        self.inputSorterNumber = inputSorterNumber
-        self.TC_Queue = AATC_GPIO.Create_Controller()
-        for ProcessID in range(self.inputSorterNumber):
-            self.TC_Queue.put(("Controller","Create_Process",(ProcessID,inputSorter,(self.OutputQueue,))))
+        self._inputSorterNumber = inputSorterNumber
+        self._TC_Queue = AATC_GPIO.Create_Controller()
+        for ProcessID in range(self._inputSorterNumber):
+            self._TC_Queue.put(("Controller","Create_Process",(ProcessID,inputSorter,(self._OutputQueue,))))
         
         
 
     def setChatID(self,chat_id):
-        self.chat_id = chat_id
+        self._chat_id = chat_id
 
     def sendMessage(self,message,chat_id = None):
         if chat_id != None:
-            self.chat_id = chat_id
-        blocks = StringBlock(message+self.signature,4000)
+            self._chat_id = chat_id
+        blocks = StringBlock(message+self._signature,4000)
         for string in blocks:
-            self.ticker.wait_ok()
-            self.bot.sendMessage(self.chat_id,string)
+            self._ticker.wait_ok()
+            self._bot.sendMessage(self._chat_id,string)
 
     def getUpdate(self):
-        if len(self.Update_Queue) ==0:
+        if len(self._Update_Queue) ==0:
             updates = []
             while len(updates) == 0:
-                updates = self.bot.getUpdates(self.update_id +1)
+                updates = self._bot.getUpdates(self._update_id +1)
                 if len(updates) != 0:
                     pass
                 else:
                     time.sleep(1)
             for item in updates:
-                self.update_id = max([self.update_id, item["update_id"]])
-                self.Update_Queue.append(item)
+                self._update_id = max([self._update_id, item["update_id"]])
+                self._Update_Queue.append(item)
 
-        return self.Update_Queue.pop(0)
+        return self._Update_Queue.pop(0)
 
     
     def textInput(self,Message=""):  #relays message between user and machine
-        self.sendMessage(Message,self.chat_id)
+        self.sendMessage(Message,self._chat_id)
         return self.getUpdate()["message"]["text"]
 
     def mainLoop(self):
         Exit = False
         while not Exit:
             try:
-                while not self.OutputQueue.empty():  #Sends the messages which have been created.
-                    packet = self.OutputQueue.get()
+                while not self._OutputQueue.empty():  #Sends the messages which have been created.
+                    packet = self._OutputQueue.get()
                     self.sendMessage(*packet)
                     
-                update = self.bot.getUpdates(self.update_id + 1)
+                update = self._bot.getUpdates(self._update_id + 1)
                 for packet in update:
-                    self.update_id = max([self.update_id,packet["update_id"]])
+                    self._update_id = max([self._update_id,packet["update_id"]])
 
                     messageText = packet["message"]["text"]
                     chatID = packet["message"]["chat"]["id"]
                     if ord(messageText[0]) >200:  #Deal with emojis -_-
                         continue
 
-                    Thread_Name = chatID % self.inputSorterNumber
-                    self.TC_Queue.put((Thread_Name,"ProcessMessage",(messageText,chatID)))
+                    Thread_Name = chatID % self._inputSorterNumber
+                    self._TC_Queue.put((Thread_Name,"ProcessMessage",(messageText,chatID)))
                     
                 time.sleep(0.5)
             except Exception as e:
-                print("Error in Telebot",self.Thread_Name,"Error:",e)
-                self.Restart_Ticker.wait_ok()
+                print("Error in Telebot",self._Thread_Name,"Error:",e)
+                self._Restart_Ticker.wait_ok()
                 try:
-                    self.bot = telepot.Bot(BOT_TOKEN)
+                    self._bot = telepot.Bot(BOT_TOKEN)
                 except Exception as e:
-                    print("Error in Telebot",self.Thread_Name,"Error connecting to telegram servers. Check your internet connection and API Token. Connection may be blocked by administrator.")
+                    print("Error in Telebot",self._Thread_Name,"Error connecting to telegram servers. Check your internet connection and API Token. Connection may be blocked by administrator.")
                 
 
-            if not self.Input_Queue.empty():
-                data = self.Input_Queue.get()
+            if not self._Input_Queue.empty():
+                data = self._Input_Queue.get()
                 command,arguments = data[0],data[1]
                 if command == "Exit":
                     Exit = True
-        self.TC_Queue.put(("Controller","Exit",(True,)))
-        print("Telebot", self.Thread_Name," is exiting")
+        self._TC_Queue.put(("Controller","Exit",(True,)))
+        print("Telebot", self._Thread_Name," is exiting")
             
 
     def processMessage(self,messageText,chat_id = 0):
@@ -155,18 +155,18 @@ class Telebot:
 
 class inputSorter:
     def __init__(self,Thread_Name,Input_Queue,OutputQueue,Exec_Processes = 1):
-        self.Thread_Name = Thread_Name
-        self.Input_Queue = Input_Queue
-        self.OutputQueue = OutputQueue
-        self.Exec_Processes = Exec_Processes
+        self._Thread_Name = Thread_Name
+        self._Input_Queue = Input_Queue
+        self._OutputQueue = OutputQueue
+        self._Exec_Processes = Exec_Processes
         
-        self.DB = AATC_DB.DBConnection()
-        self.ShowCommandsList = ShowCommands()
-        self.CommandDictionary = CreateCommandDictionary()
+        self._DB = AATC_DB.DBConnection()
+        self._ShowCommandsList = ShowCommands()
+        self._CommandDictionary = CreateCommandDictionary()
 
-        self.EC_Queue = AATC_GPIO.Create_Controller()
-        for ProcessID in range(self.Exec_Processes):
-            self.EC_Queue.put(("Controller","Create_Process",(ProcessID,CommandExecutor,(self.OutputQueue,))))
+        self._EC_Queue = AATC_GPIO.Create_Controller()
+        for ProcessID in range(self._Exec_Processes):
+            self._EC_Queue.put(("Controller","Create_Process",(ProcessID,CommandExecutor,(self._OutputQueue,))))
 
         self.mainLoop()
 
@@ -174,7 +174,7 @@ class inputSorter:
         Exit = False
         while not Exit:
             try:
-                data = self.Input_Queue.get()
+                data = self._Input_Queue.get()
                 command,arguments = data[0],data[1]
                 if command == "Exit":
                     Exit = True
@@ -187,11 +187,11 @@ class inputSorter:
 ##                    print()
 ##                    print("Message:",messageText)
 ##                    print("Response:",response)
-                    self.OutputQueue.put((response,chat_id))
+                    self._OutputQueue.put((response,chat_id))
             except Exception as e:
-                print("Error in inputSorter",self.Thread_Name,"Error:",e)
-        self.EC_Queue.put(("Controller","Exit",(True,)))
-        print("Closing inputSorter",self.Thread_Name)
+                print("Error in inputSorter",self._Thread_Name,"Error:",e)
+        self._EC_Queue.put(("Controller","Exit",(True,)))
+        print("Closing inputSorter",self._Thread_Name)
 
 
     def processInput(self,messageText,chat_id):
@@ -199,40 +199,40 @@ class inputSorter:
         try:
             if "/" in messageText:
                 if "/cancel" == messageText:
-                    self.DB.Bot_flushStack(chat_id)
+                    self._DB.Bot_flushStack(chat_id)
                     return "Command cancelled"
                 elif "/quote" == messageText:
                     return SkyrimQuote.SkyrimQuote()
                 else:
-                    self.DB.Bot_flushStack(chat_id)
+                    self._DB.Bot_flushStack(chat_id)
                     messageText = messageText.replace("/","")
             elif lowerText in ["help","?"]:
-                return self.ShowCommandsList
+                return self._ShowCommandsList
                 
                     
-            self.DB.Bot_addValue(messageText,chat_id)
+            self._DB.Bot_addValue(messageText,chat_id)
             
-            stack_size = self.DB.Bot_getStackSize(chat_id)
-            command = self.DB.Bot_getCommand(chat_id)
-            command_size = len(self.CommandDictionary[command])
+            stack_size = self._DB.Bot_getStackSize(chat_id)
+            command = self._DB.Bot_getCommand(chat_id)
+            command_size = len(self._CommandDictionary[command])
             
             if stack_size == command_size+1:
-                UserID = self.DB.Bot_GetUserID(chat_id)
-                stack = self.DB.Bot_getStack(chat_id)
-                self.DB.Bot_flushStack(chat_id)
+                UserID = self._DB.Bot_GetUserID(chat_id)
+                stack = self._DB.Bot_getStack(chat_id)
+                self._DB.Bot_flushStack(chat_id)
                 
-                packet = convertDBStack(stack,self.CommandDictionary)
+                packet = convertDBStack(stack,self._CommandDictionary)
 
-##                p = multiprocessing.Process(target = AATC_Server.BotConnection, args = (UserID,chat_id,packet,self.OutputQueue))
+##                p = multiprocessing.Process(target = AATC_Server.BotConnection, args = (UserID,chat_id,packet,self._OutputQueue))
 ##                p.start()
-                Thread_Name = random.randint(0,self.Exec_Processes-1)
-                self.EC_Queue.put((Thread_Name,"RunCommand",(UserID,chat_id,packet)))
+                Thread_Name = random.randint(0,self._Exec_Processes-1)
+                self._EC_Queue.put((Thread_Name,"RunCommand",(UserID,chat_id,packet)))
                 
             else:
-                return self.CommandDictionary[command][stack_size]["Query"]
+                return self._CommandDictionary[command][stack_size]["Query"]
             
         except Exception as e:
-            return "Error processing message "+str(e) + "\n" + self.ShowCommandsList
+            return "Error processing message "+str(e) + "\n" + self._ShowCommandsList
 
 
 
@@ -240,9 +240,9 @@ class inputSorter:
 
 class CommandExecutor:
     def __init__(self,Thread_Name,Input_Queue,OutputQueue):
-        self.Thread_Name = Thread_Name
-        self.Input_Queue = Input_Queue
-        self.OutputQueue = OutputQueue
+        self._Thread_Name = Thread_Name
+        self._Input_Queue = Input_Queue
+        self._OutputQueue = OutputQueue
 
         self.mainLoop()
 
@@ -250,7 +250,7 @@ class CommandExecutor:
         Exit = False
         while not Exit:
             try:
-                data = self.Input_Queue.get()
+                data = self._Input_Queue.get()
                 command,arguments = data[0],data[1]
                 if command == "Exit":
                     Exit = True
@@ -259,13 +259,13 @@ class CommandExecutor:
                 
                 elif command == "RunCommand":
                     UserID,chat_id,packet = arguments[0],arguments[1],arguments[2]
-                    AATC_Server.BotConnection(UserID,chat_id,packet,self.OutputQueue)
+                    AATC_Server.BotConnection(UserID,chat_id,packet,self._OutputQueue)
 
                 else:
-                    print("CommandExecutor",self.Thread_Name," obtained incorrect command",command)
+                    print("CommandExecutor",self._Thread_Name," obtained incorrect command",command)
 
             except Exception as e:
-                print("Exception in CommandExecutor",self.Thread_Name,"Error:",e)
+                print("Exception in CommandExecutor",self._Thread_Name,"Error:",e)
         
 
 
@@ -407,8 +407,8 @@ def CreateCommandDictionary():
 ##import sqlite3 as sql    
 ##class DB_Connection:
 ##    def __init__(self):
-##        self.db_con = sql.connect("db.name")
-##        self.cur = self.db_con.cursor()
+##        self._DB_con = sql.connect("db.name")
+##        self.cur = self._DB_con.cursor()
 ##            
 ##    def addValue(self,value,chat_id):
 ##        self.cur.execute("SELECT MAX(stack_pos) FROM InputStack WHERE chat_id = ?",(chat_id,))
@@ -418,7 +418,7 @@ def CreateCommandDictionary():
 ##        else:
 ##            stack_pos = 0
 ##        self.cur.execute("INSERT INTO InputStack VALUES(?,?,?)",(chat_id,stack_pos,value))
-##        self.db_con.commit()
+##        self._DB_con.commit()
 ##    
 ##    def getCommand(self,chat_id):
 ##        self.cur.execute("SELECT value FROM InputStack WHERE chat_id = ? AND stack_pos = 0",(chat_id,))
@@ -437,7 +437,7 @@ def CreateCommandDictionary():
 ##    
 ##    def flushStack(self,chat_id):
 ##        self.cur.execute("DELETE FROM InputStack WHERE chat_id = ?",(chat_id,))
-##        self.db_con.commit()
+##        self._DB_con.commit()
 ##
 ##
 ##    ##############################################################
@@ -448,7 +448,7 @@ def CreateCommandDictionary():
 ##            self.cur.execute("INSERT INTO Sessions VALUES(?,?)",(chat_id,UserID))
 ##        else:
 ##            self.cur.execute("UPDATE Sessions SET UserID = ? WHERE chat_id = ?",(UserID,chat_id))
-##        self.db_con.commit()
+##        self._DB_con.commit()
 ##
 ##    def GetUserID(self,chat_id):
 ##        self.cur.execute("SELECT UserID FROM Sessions WHERE chat_id = ?",(chat_id,))
@@ -469,7 +469,7 @@ def CreateCommandDictionary():
 ##            self.cur.execute("DROP TABLE IF EXISTS Sessions")
 ##        self.cur.execute("CREATE TABLE IF NOT EXISTS InputStack(chat_id INT , stack_pos INT, value TEXT)")
 ##        self.cur.execute("CREATE TABLE IF NOT EXISTS Sessions(chat_id INT PRIMARY KEY, UserID INT)")
-##        self.db_con.commit()
+##        self._DB_con.commit()
 ##        
     
         

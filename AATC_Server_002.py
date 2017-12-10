@@ -24,12 +24,12 @@ class ClientConnection:
 
     """
     def __init__(self,Thread_Name,Thread_Queue,Connection):
-        self.DB = AATC_DB.DBConnection()
-        self.Thread_Name = Thread_Name
-        self.Thread_Queue = Thread_Queue
-        self.con = Connection
-        self.Crypto = AATC_Crypto.Crypter(self.con, mode = "SERVER" )
-        self.ClientID = -1  #Used to identify if has logged in yet
+        self._DB = AATC_DB.DBConnection()
+        self._Thread_Name = Thread_Name
+        self._Thread_Queue = Thread_Queue
+        self._con = Connection
+        self._Crypto = AATC_Crypto.Crypter(self._con, mode = "SERVER" )
+        self._ClientID = -1  #Used to identify if has logged in yet
 
     def Connection_Loop(self):
         """
@@ -41,8 +41,8 @@ class ClientConnection:
 
             Arguments may be converted from Tuple to Dict in future for clarity
         """
-        self.ExitLoop = False
-        while not self.ExitLoop:
+        self._ExitLoop = False
+        while not self._ExitLoop:
             try:
                 data = self.Recv()
                 Command,Arguments = data[0],data[1]
@@ -50,37 +50,37 @@ class ClientConnection:
 
             except Exception as e:
                 Sucess,Message,Data = False,"An Error occured"+str(e),[]
-                print("Error occured with",self.Thread_Name,":",str(self.ClientID),"Error :",str(e)," Sending failure message")
+                print("Error occured with",self._Thread_Name,":",str(self._ClientID),"Error :",str(e)," Sending failure message")
             try:
                 self.Send((Sucess,Message,Data))
             except Exception as e:
-                print(self.Thread_Name,self.ClientID," disconnected")
-                self.ExitLoop = True
+                print(self._Thread_Name,self._ClientID," disconnected")
+                self._ExitLoop = True
 
-            if not self.Thread_Queue.empty():
+            if not self._Thread_Queue.empty():
                 data = Thread_Queue.get()
                 Command,Arguments = data[0],data[1]
                 if Command == "Exit":
-                    self.ExitLoop = True
+                    self._ExitLoop = True
                 
 
-        self.DB.Exit()
-        self.con.close()
+        self._DB.Exit()
+        self._con.close()
         print("Process is exiting")
 
     def Send(self,data):
-        self.con.sendall(self.Crypto.Encrypt(codecs.encode(str(data))))
+        self._con.sendall(self._Crypto.Encrypt(codecs.encode(str(data))))
     def Recv(self):
         try:
-            data = self.Crypto.Decrypt(recvall.recvall(self.con))
+            data = self._Crypto.Decrypt(recvall.recvall(self._con))
             data = ast.literal_eval(codecs.decode(data))
             return data
         except Exception as e:
             return ("",())#Never references a command
 
     def Exit(self,Arguments = None):
-        #self.DB.db_con.close()
-        print("Process for ",self.Thread_Name,":",self.ClientID," is exiting..")
+        #self._DB.db_con.close()
+        print("Process for ",self._Thread_Name,":",self._ClientID," is exiting..")
         return True,"Server process is exiting. Ok to disconnect",[]
         
     
@@ -88,7 +88,7 @@ class ClientConnection:
 class UserConnection(ClientConnection):
     
     def ProcessCommand(self,Command,Arguments):
-        if self.ClientID == -1:
+        if self._ClientID == -1:
             if Command == "Login":
                 Sucess,Message,Data = self.Login(Arguments)
             elif Command == "AddUser":  # If adding a new user, one must create it first, then log in seperatly
@@ -171,85 +171,85 @@ class UserConnection(ClientConnection):
 
             elif Command == "Exit":
                 Sucess,Message,Data = self.Exit(Arguments)
-                self.ExitLoop = True
+                self._ExitLoop = True
             #Else if command doesnt exist send back Failure
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
-                print(self.Thread_Name,self.ClientID," tried to use unregistered command")
+                print(self._Thread_Name,self._ClientID," tried to use unregistered command")
         return Sucess,Message,Data
             
     def Login(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
-        Sucess,Message,self.ClientID = self.DB.CheckCredentials(Username,Password)
+        Sucess,Message,self._ClientID = self._DB.CheckCredentials(Username,Password)
         return Sucess,Message,[]
 
     ########################################################
     def GetNoFlyZones(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetNoFlyZones()
+        Sucess,Message,Data = self._DB.GetNoFlyZones()
         return Sucess,Message,Data
 
     def AddNoFlyZone(self,Arguments):
         if len(Arguments) == 3:
             Coord1,Coord2,Level = Arguments[0],Arguments[1],Arguments[2]
             Coord1,Coord2 = ast.literal_eval(Coord1),ast.literal_eval(Coord2)
-            Sucess,Message = self.DB.AddNoFlyZone(Coord1,Coord2,Level,self.ClientID)
+            Sucess,Message = self._DB.AddNoFlyZone(Coord1,Coord2,Level,self._ClientID)
         else:
             Sucess,Message = False,"Incorrect Argument format"
         return Sucess,Message,[]
 
     def RemoveNoFlyZone(self,Arguments):
         ZoneID = Arguments[0]
-        Sucess,Message = self.DB.RemoveNoFlyZone(self.ClientID,ZoneID)
+        Sucess,Message = self._DB.RemoveNoFlyZone(self._ClientID,ZoneID)
         return Sucess,Message,[]
     
     def ModifyNoFlyZoneLevel(self,Arguments):
         ZoneID,Level = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.ModifyNoFlyZoneLevel(self.ClientID,ZoneID,Level)
+        Sucess,Message = self._DB.ModifyNoFlyZoneLevel(self._ClientID,ZoneID,Level)
         return Sucess,Message,[]
 
 
     ########################################################
     def AddDrone(self,Arguments):
         DroneName,DronePassword,DroneType,DroneSpeed,DroneRange,DroneWeight = Arguments[0],Arguments[1],Arguments[2],Arguments[3],Arguments[4],Arguments[5]
-        Sucess,Message = self.DB.AddDrone(self.ClientID,DroneName,DronePassword,DroneType,DroneSpeed,DroneRange,DroneWeight)
+        Sucess,Message = self._DB.AddDrone(self._ClientID,DroneName,DronePassword,DroneType,DroneSpeed,DroneRange,DroneWeight)
         return Sucess,Message,[]
     
     def RemoveDrone(self,Arguments):
         DroneID = Arguments[0]
-        Sucess,Message = self.DB.RemoveDrone(self.ClientID,DroneID)
+        Sucess,Message = self._DB.RemoveDrone(self._ClientID,DroneID)
         return Sucess,Message,[]
 
     def GetDroneID(self,Arguments):
         DroneName = Arguments[0]
-        Sucess,Message,Data = self.DB.GetDroneID(self.ClientID,DroneName)
+        Sucess,Message,Data = self._DB.GetDroneID(self._ClientID,DroneName)
         return Sucess,Message,Data
 
     def GetDroneCredentials(self,Arguments):
         DroneID = Arguments[0]
-        Sucess,Message,Data = self.DB.GetDroneCredentials(self.ClientID,DroneID)
+        Sucess,Message,Data = self._DB.GetDroneCredentials(self._ClientID,DroneID)
         return Sucess,Message,Data
     
     def SetDroneCredentials(self,Arguments):
         DroneID,DronePassword = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.SetDroneCredentials(self.ClientID,DroneID,DronePassword)
+        Sucess,Message = self._DB.SetDroneCredentials(self._ClientID,DroneID,DronePassword)
         return Sucess,Message,[]
 
     def CheckDroneOwnership(self,Arguments):
         UserID,DroneID = Arguments[0],Arguments[1]
-        Sucess,Message,Data = self.DB.CheckDroneOwnership(UserID,DroneID)
+        Sucess,Message,Data = self._DB.CheckDroneOwnership(UserID,DroneID)
         return Sucess,Message,Data
     
     def GetDroneInfo(self,Arguments):
         DroneID = Arguments[0]
-        Sucess,Message,Data = self.DB.GetDroneInfo(self.ClientID,DroneID)
+        Sucess,Message,Data = self._DB.GetDroneInfo(self._ClientID,DroneID)
         return Sucess,Message,Data
     
     def GetDronesUser(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetDronesUser(self.ClientID)
+        Sucess,Message,Data = self._DB.GetDronesUser(self._ClientID)
         return Sucess,Message,Data
 
     def GetDronesAll(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetDronesAll()
+        Sucess,Message,Data = self._DB.GetDronesAll()
         return Sucess,Message,Data
 
     ########################################################
@@ -259,46 +259,46 @@ class UserConnection(ClientConnection):
 
     def GetUserID(self,Arguments):
         Username = Arguments[0]
-        Sucess,Message,Data = self.DB.GetUserID(Username)
+        Sucess,Message,Data = self._DB.GetUserID(Username)
         return Sucess,Message,Data
     
     def GetUsername(self,Arguments):
         UserID = Arguments[0]
-        Sucess,Message,Data = self.DB.GetUsername(UserID)
+        Sucess,Message,Data = self._DB.GetUsername(UserID)
         return Sucess,Message,Data
 
         
     def AddUser(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.AddUser(Username,Password)
+        Sucess,Message = self._DB.AddUser(Username,Password)
         return Sucess,Message,[]
 
 
     def SetFlightVisibility(self,Arguments):
         Value = Arguments[0]
-        Sucess,Message = self.DB.SetFlightVisibility(self.ClientID,Value)
+        Sucess,Message = self._DB.SetFlightVisibility(self._ClientID,Value)
         return Sucess,Message,[]
 
         
     def SetAccountType(self,Arguments):
         Permission,Value = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.SetAccountType(self.ClientID,Permission,Value)
+        Sucess,Message = self._DB.SetAccountType(self._ClientID,Permission,Value)
         return Sucess,Message,[]
 
     def UserChangePassword(self,Arguments):
         OldPassword,NewPassword = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.UserChangePassword(self.ClientID,OldPassword,NewPassword)
+        Sucess,Message = self._DB.UserChangePassword(self._ClientID,OldPassword,NewPassword)
         return Sucess,Message,[]
 
     #######################################################
     
     
     def GetFlightsUser(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetFlightsUser(self.ClientID)
+        Sucess,Message,Data = self._DB.GetFlightsUser(self._ClientID)
         return Sucess,Message,Data
 
     def GetFlightsAll(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetFlightsAll()
+        Sucess,Message,Data = self._DB.GetFlightsAll()
         return Sucess,Message,Data
     
     def AddFlight(self,Arguments):
@@ -323,12 +323,12 @@ class UserConnection(ClientConnection):
                     return False,"A point in this set is in a restricted area or not in service area. Flight denied.",[]
 
         except Exception as e:
-            print(self.Thread_Name,":",self.ClientID,"Error in AddFlight HighPointOK assesment",e)
+            print(self._Thread_Name,":",self._ClientID,"Error in AddFlight HighPointOK assesment",e)
             return False,"A point in this set is in a restricted area or not in service area. Flight denied.",[]
             
               
         
-        S_,M_,Result = self.DB.CheckDroneOwnership(self.ClientID,DroneID)
+        S_,M_,Result = self._DB.CheckDroneOwnership(self._ClientID,DroneID)
         if len(Result) !=0:
             Start = 0
             Next = 1
@@ -351,16 +351,17 @@ class UserConnection(ClientConnection):
                 return False,"Pathfinding was not able to find a path between the two nodes "+str([HighPoints[Start],HighPoints[Next]]),[]
             
             else:
-                XOffset,YOffset,ZOffset = round(random.random()*0.5*graph.xSize,8),round(random.random()*0.5*graph.ySize,8),round(random.random()*0.5*graph.zSize,8)
+                xSize,ySize,zSize = graph.Get_Size()
+                XOffset,YOffset,ZOffset = round(random.random()*0.5*xSize,8),round(random.random()*0.5*ySize,8),round(random.random()*0.5*zSize,8)
                 CoordList = []
                 for NodeID in Path:
                     Node = graph.GetNode(NodeID)
-                    Coords = Node.Coords
+                    Coords = Node.Get_Coords()
                     Coords.Set_X( Coords.Get_X()+XOffset),  Coords.Set_Y(Coords.Get_Y()+YOffset), Coords.Set_Z(Coords.Get_Z()+ZOffset)
                     CoordList.append({"Coords":Coords})
                     
                 Time = StartTime
-                _,Columns,DroneData = self.DB.GetDroneInfo(self.ClientID,DroneID)
+                _,Columns,DroneData = self._DB.GetDroneInfo(self._ClientID,DroneID)
                 Columns = ast.literal_eval(Columns)
                 DroneData = DroneData[0]
                 SpeedIndex,RangeIndex = Columns.index("DroneSpeed"),Columns.index("DroneRange")
@@ -386,21 +387,22 @@ class UserConnection(ClientConnection):
 
 
                 #Adding Flight to Database
-                self.DB.AddFlight(self.ClientID,DroneID,HighPoints[0],HighPoints[len(HighPoints)-1],StartTime,EndTime,EndTime,TotalDistance,XOffset,YOffset,ZOffset)
+                _,_,FlightID = self._DB.AddFlight(self._ClientID,DroneID,HighPoints[0],HighPoints[len(HighPoints)-1],StartTime,EndTime,EndTime,TotalDistance,XOffset,YOffset,ZOffset)
 
                 ######################
                 ###################### TEMP WORKAROUND ##########
-                self.DB.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime = %s",(DroneID,StartTime))
-                FlightID = self.DB.cur.fetchall()[0][0]
+##                self._DB.cur.execute("SELECT FlightID FROM Flight WHERE DroneID = %s AND StartTime = %s",(DroneID,StartTime))
+##                FlightID = self._DB.cur.fetchall()[0][0]
                 ######################
                 ######################
+                
 
                 Waypoints = []
                 
                 for WaypointNumber in range(len(CoordList)):
                     Waypoints.append((FlightID,WaypointNumber+1,str(CoordList[WaypointNumber]["Coords"]),int(CoordList[WaypointNumber]["Time"]),0))
 
-                self.DB.AddWaypoints(self.ClientID,FlightID,Waypoints)
+                self._DB.AddWaypoints(self._ClientID,FlightID,Waypoints)
 
                 return True,"['FlightID','NumberOfWaypoints','StartTime','EndTime','Distance']",[(FlightID,len(CoordList),StartTime,EndTime,TotalDistance)] #Returns data about the flight
 
@@ -417,31 +419,31 @@ class UserConnection(ClientConnection):
 
     def RemoveFlight(self,Arguments):
         FlightID = Arguments[0]
-        Sucess,Message = self.DB.RemoveFlight(self.ClientID,FlightID)
+        Sucess,Message = self._DB.RemoveFlight(self._ClientID,FlightID)
         return Sucess,Message,[]
 
     #######################################################
 
     def GetFlightWaypointsUser(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetFlightWaypointsUser(self.ClientID)
+        Sucess,Message,Data = self._DB.GetFlightWaypointsUser(self._ClientID)
         return Sucess,Message,Data
 
 
     def GetFlightWaypointsAll(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetFlightWaypointsAll()
+        Sucess,Message,Data = self._DB.GetFlightWaypointsAll()
         return Sucess,Message,Data
 
     #######################################################
 
     def GetMonitorID(self,Arguments):
         MonitorName = Arguments[0]
-        Sucess,Message,Data = self.DB.GetMonitorID(MonitorName)
+        Sucess,Message,Data = self._DB.GetMonitorID(MonitorName)
         return Sucess,Message,Data
 
 
     def GetMonitorName(self,Arguments):
         MonitorID = Arguments[0]
-        Sucess,Message,Data = self.DB.GetMonitorName(MonitorID)
+        Sucess,Message,Data = self._DB.GetMonitorName(MonitorID)
         return Sucess,Message,Data
 
 
@@ -449,24 +451,24 @@ class UserConnection(ClientConnection):
 
     def AddMonitorPermission(self,Arguments):
         MonitorID,ExpiryDate = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.AddMonitorPermission(self.ClientID,MonitorID,ExpiryDate)
+        Sucess,Message = self._DB.AddMonitorPermission(self._ClientID,MonitorID,ExpiryDate)
         return Sucess,Message,[]
 
         
     def RemoveMonitorPermission(self,Arguments):
         MonitorID = Arguments[0]
-        Sucess,Message = self.DB.RemoveMonitorPermission(self.ClientID,MonitorID)
+        Sucess,Message = self._DB.RemoveMonitorPermission(self._ClientID,MonitorID)
         return Sucess,Message,[]
 
         
     def ModifyMonitorPermissionDate(self,Arguments):
         MonitorID,NewDate = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.ModifyMonitorPermissionDate(self.ClientID,MonitorID,NewDate)
+        Sucess,Message = self._DB.ModifyMonitorPermissionDate(self._ClientID,MonitorID,NewDate)
         return Sucess,Message,[]
 
         
     def GetMonitorPermissionUser(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetMonitorPermissionUser(self.ClientID)
+        Sucess,Message,Data = self._DB.GetMonitorPermissionUser(self._ClientID)
         return Sucess,Message,Data
 
 
@@ -481,11 +483,11 @@ class UserConnection(ClientConnection):
 
 class BotConnection(UserConnection):
     def __init__(self,UserID,chat_id,packet,OutputQueue):
-        self.ClientID = UserID
+        self._ClientID = UserID
         self.chat_id = chat_id
         self.OutputQueue = OutputQueue
-        self.DB = AATC_DB.DBConnection()
-        self.Thread_Name = "[BOT FOR UID "+str(self.ClientID)+"]"
+        self._DB = AATC_DB.DBConnection()
+        self._Thread_Name = "[BOT FOR UID "+str(self._ClientID)+"]"
         
         Command, Arguments = packet[0],packet[1]
         self.Main(Command,Arguments)
@@ -496,13 +498,13 @@ class BotConnection(UserConnection):
                 
         except Exception as e:
             Sucess,Message,Data = False,"An Error occured"+str(e),[]
-            print("Error occured with UserID:",str(self.ClientID),". Error :",str(e),". Sending failure message")
+            print("Error occured with UserID:",str(self._ClientID),". Error :",str(e),". Sending failure message")
             
         try:
             self.Send((Sucess,Message,Data))
         except Exception as e:
             print("Error sending message back to chat",e)
-        self.DB.Exit()
+        self._DB.Exit()
             
         
 
@@ -513,17 +515,17 @@ class BotConnection(UserConnection):
 
     def Login(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
-        Sucess,Message,UserID = self.DB.CheckCredentials(Username,Password)
-        self.DB.Bot_SetUserID(self.chat_id,UserID)
+        Sucess,Message,UserID = self._DB.CheckCredentials(Username,Password)
+        self._DB.Bot_SetUserID(self.chat_id,UserID)
         return Sucess,Message,[]
 
 
 
 class WebConnection(UserConnection):
     def __init__(self,UserID):
-        self.ClientID = UserID
-        self.DB = AATC_DB.DBConnection()
-        self.Thread_Name = "[WEB FOR UID "+str(self.ClientID)+"]"
+        self._ClientID = UserID
+        self._DB = AATC_DB.DBConnection()
+        self._Thread_Name = "[WEB FOR UID "+str(self._ClientID)+"]"
         
         
 
@@ -534,15 +536,15 @@ class WebConnection(UserConnection):
                 
         except Exception as e:
             Sucess,Message,Data = False,"An Error occured"+str(e),[]
-            print("Error occured with UserID:",str(self.ClientID),". Error :",str(e),". Sending failure message")
+            print("Error occured with UserID:",str(self._ClientID),". Error :",str(e),". Sending failure message")
 
 
-        self.DB.Exit()
+        self._DB.Exit()
         return Sucess,Message,Data
         
     def Login(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
-        Sucess,Message,UserID = self.DB.CheckCredentials(Username,Password)
+        Sucess,Message,UserID = self._DB.CheckCredentials(Username,Password)
         return Sucess,Message,UserID
 
 
@@ -558,7 +560,7 @@ class WebConnection(UserConnection):
 
 class MonitorConnection(ClientConnection):
     def ProcessCommand(self,Command,Arguments):
-        if self.ClientID == -1:
+        if self._ClientID == -1:
             if Command == "Login":
                 Sucess,Message,Data = self.Login(Arguments)
             elif Command == "AddMonitor":  # If adding a new Monitor, one must create it first, then log in seperatly
@@ -611,96 +613,96 @@ class MonitorConnection(ClientConnection):
 
             elif Command == "Exit":
                 Sucess,Message,Data = self.Exit(Arguments)
-                self.ExitLoop = True
+                self._ExitLoop = True
 
             #Else if command doesnt exist send back Failure
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
-                print(self.Thread_Name,self.ClientID," tried to use unregistered command")
+                print(self._Thread_Name,self._ClientID," tried to use unregistered command")
         return Sucess,Message,Data
 
     ################################
     def Login(self,Arguments):
         MonitorName,MonitorPassword = Arguments[0],Arguments[1]
-        Sucess,Message,self.ClientID = self.DB.MonitorCheckCredentials(MonitorName,MonitorPassword)
+        Sucess,Message,self._ClientID = self._DB.MonitorCheckCredentials(MonitorName,MonitorPassword)
         return Sucess,Message,[]
 
     def AddMonitor(self,Arguments):
         MonitorName,MonitorPassword = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.AddMonitor(MonitorName,MonitorPassword)
+        Sucess,Message = self._DB.AddMonitor(MonitorName,MonitorPassword)
         return Sucess,Message,[]
 
     def MonitorChangePassword(self,Arguments):
         OldPassword,NewPassword = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.MonitorChangePassword(self.ClientID,OldPassword,NewPassword)
+        Sucess,Message = self._DB.MonitorChangePassword(self._ClientID,OldPassword,NewPassword)
         return Sucess,Message,[]
 
     ######### No Fly Zone  ##################
     def GetNoFlyZones(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetNoFlyZones()
+        Sucess,Message,Data = self._DB.GetNoFlyZones()
         return Sucess,Message,Data
     
     ####### Drones   ################
 
     def GetDronesAll(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetDronesAll()
+        Sucess,Message,Data = self._DB.GetDronesAll()
         return Sucess,Message,Data
 
     ####### User    #################
 
     def GetUserID(self,Arguments):
         Username = Arguments[0]
-        Sucess,Message,Data = self.DB.GetUserID(Username)
+        Sucess,Message,Data = self._DB.GetUserID(Username)
         return Sucess,Message,Data
     
     def GetUsername(self,Arguments):
         UserID = Arguments[0]
-        Sucess,Message,Data = self.DB.GetUsername(UserID)
+        Sucess,Message,Data = self._DB.GetUsername(UserID)
         return Sucess,Message,Data
 
 
     ###### Monitor  ################
 
     def GetMonitorDrones(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetMonitorDrones(self.ClientID)
+        Sucess,Message,Data = self._DB.GetMonitorDrones(self._ClientID)
         return Sucess,Message,Data
 
     def GetMonitorFlights(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetMonitorFlights(self.ClientID)
+        Sucess,Message,Data = self._DB.GetMonitorFlights(self._ClientID)
         return Sucess,Message,Data
 
     def GetMonitorFlightWaypoints(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetMonitorFlightWaypoints(self.ClientID)
+        Sucess,Message,Data = self._DB.GetMonitorFlightWaypoints(self._ClientID)
         return Sucess,Message,Data
         
     def GetMonitorID(self,Arguments):
         MonitorName = Arguments[0]
-        Sucess,Message,Data = self.DB.GetMonitorID(MonitorName)
+        Sucess,Message,Data = self._DB.GetMonitorID(MonitorName)
         return Sucess,Message,Data
 
     def GetMonitorName(self,Arguments):
         MonitorID = Arguments[0]
-        Sucess,Message,Data = self.DB.GetMonitorName(MonitorID)
+        Sucess,Message,Data = self._DB.GetMonitorName(MonitorID)
         return Sucess,Message,Data
 
     ######## Monitor Permisssion ############
 
     def RemoveMonitorPermission(self,Arguments):
         UserID = Arguments[0]
-        Sucess,Message = self.DB.RemoveMonitorPermission(UserID,self.ClientID)
+        Sucess,Message = self._DB.RemoveMonitorPermission(UserID,self._ClientID)
         return Sucess,Message,[]
 
     def GetMonitorPermissionMonitor(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetMonitorPermissionMonitor(self.ClientID)
+        Sucess,Message,Data = self._DB.GetMonitorPermissionMonitor(self._ClientID)
         return Sucess,Message,Data
 
     ###################################################
     def GetFlightsAll(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetFlightsAll()
+        Sucess,Message,Data = self._DB.GetFlightsAll()
         return Sucess,Message,Data
     
     def GetFlightWaypointsAll(self,Arguments = None):
-        Sucess,Message,Data = self.DB.GetFlightWaypointsAll()
+        Sucess,Message,Data = self._DB.GetFlightWaypointsAll()
         return Sucess,Message,Data
 
     #############################################
@@ -713,7 +715,7 @@ class MonitorConnection(ClientConnection):
 class DroneConnection(ClientConnection):
 
     def ProcessCommand(self,Command,Arguments):
-        if self.ClientID == -1:
+        if self._ClientID == -1:
             if Command == "Login":
                 Sucess,Message,Data = self.Login(Arguments)
             elif Command == "Exit":
@@ -741,52 +743,52 @@ class DroneConnection(ClientConnection):
 
             elif Command == "Exit":
                 Sucess,Message,Data = self.Exit(Arguments)
-                self.ExitLoop = True
+                self._ExitLoop = True
 
             #Else if command doesnt exist send back Failure
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
-                print(self.Thread_Name,self.ClientID," tried to use unregistered command")
+                print(self._Thread_Name,self._ClientID," tried to use unregistered command")
         return Sucess,Message,Data
 
     def Login(self,Arguments):
         DroneID,DronePassword = Arguments[0],Arguments[1]
-        Sucess,Message,self.ClientID = self.DB.DroneCheckCredentials(DroneID,DronePassword)
+        Sucess,Message,self._ClientID = self._DB.DroneCheckCredentials(DroneID,DronePassword)
         return Sucess,Message,[]
 
     ########################################################
 
     def UpdateDroneStatus(self,Arguments):
         LastCoords,LastBattery = Coordinate(*Arguments[0]),Arguments[1]
-        Sucess,Message = self.DB.UpdateDroneStatus(self.ClientID,LastCoords,LastBattery)
+        Sucess,Message = self._DB.UpdateDroneStatus(self._ClientID,LastCoords,LastBattery)
         return Sucess,Message,[]
 
     ########################################################
 
     def DroneGetDroneInfo(self,Arguments = None):
-        Sucess,Message,Data = self.DB.DroneGetDroneInfo(self.ClientID)
+        Sucess,Message,Data = self._DB.DroneGetDroneInfo(self._ClientID)
         return Sucess,Message,Data
     
     ##########################################################
 
     def CheckForFlight(self,Arguments):
         MaxLookAheadTime = Arguments[0] # How many seconds until flight start should the search allow. Would lead to the drone being locked into that flight most likely.
-        Sucess,Message,Data = self.DB.CheckForFlight(self.ClientID,MaxLookAheadTime)
+        Sucess,Message,Data = self._DB.CheckForFlight(self._ClientID,MaxLookAheadTime)
         return Sucess,Message,Data 
 
     def GetFlight(self,Arguments):
         FlightID = Arguments[0]
-        Sucess,Message,Data = self.DB.GetFlight(self.ClientID,FlightID)
+        Sucess,Message,Data = self._DB.GetFlight(self._ClientID,FlightID)
         return Sucess,Message,Data
 
     def GetFlightWaypoints(self,Arguments):
         FlightID = Arguments[0]
-        Sucess,Message,Data = self.DB.GetFlightWaypoints(self.ClientID,FlightID)
+        Sucess,Message,Data = self._DB.GetFlightWaypoints(self._ClientID,FlightID)
         return Sucess,Message,Data
 
     def MarkFlightComplete(self,Arguments):
         FlightID,Code = Arguments[0],Arguments[1]
-        Sucess,Message = self.DB.MarkFlightComplete(self.ClientID,FlightID,Code)
+        Sucess,Message = self._DB.MarkFlightComplete(self._ClientID,FlightID,Code)
         return Sucess,Message,[]
 
     ######################################################
