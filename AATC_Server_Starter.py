@@ -1,6 +1,7 @@
 import multiprocessing,socket,AATC_NoFlyZoneGrapher,sys,time,AATC_GPIO,HedaBot
 import AATC_Server_002 as AATC_Server
-from AATC_Coordinate import *
+#from AATC_Coordinate import *
+from flask_app import Flask_Test_App
 
 
 def UserProcessSpawner():
@@ -114,6 +115,12 @@ def MakeDroneConnection(Thread_Name,Thread_Queue,conn):
 
 
 ##########################################################
+#####################This section is part of the flask webserver component of the AATC program, not part of the main project.
+
+def StartFlaskServer(Thread_Name,Thread_Queue):
+    Flask_Test_App.main_app(Flask_Test_App.app) # Starts the flask webserver
+    
+
 ##########################################################
 
 
@@ -157,6 +164,7 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
 
                         
         except Exception as e:
+            time.sleep(10) # If a serious error occurs then this will prevent large amounts of errors making it easier to find a solution.
             print("Error in",Type,"Process Spawner",str(e))
             
     Spawner_Control_Queue.put(("Controller","Exit",(True,)))
