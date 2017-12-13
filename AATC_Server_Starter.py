@@ -157,6 +157,7 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
 
                         
         except Exception as e:
+            time.sleep(10) # If a serious error occurs then this will prevent large amounts of errors making it easier to find a solution.
             print("Error in",Type,"Process Spawner",str(e))
             
     Spawner_Control_Queue.put(("Controller","Exit",(True,)))
