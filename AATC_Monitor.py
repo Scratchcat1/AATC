@@ -13,17 +13,17 @@ class MonitorInterface:
        These two sets are accessed seperatly. 
 """
     def __init__(self,Connection):
-        self.con = Connection
-        self.Crypto = AATC_Crypto.Crypter(self.con)
-        self.MonitorName = ""
+        self._con = Connection
+        self._Crypto = AATC_Crypto.Crypter(self._con)
+        self._MonitorName = ""
         print("Welcome to the AATC Connection interface")
         
     def Send(self,Code,data):
-        Info = self.Crypto.Encrypt(codecs.encode(str((Code,data))))
-        self.con.sendall(Info)
+        Info = self._Crypto.Encrypt(codecs.encode(str((Code,data))))
+        self._con.sendall(Info)
     def Recv(self):   #Returns tuple of Sucess,Message,Data   of which data may just be useless for that function
         try:
-            data = self.Crypto.Decrypt(recvall.recvall(self.con))
+            data = self._Crypto.Decrypt(recvall.recvall(self._con))
             data = ast.literal_eval(codecs.decode(data))
             #      Sucess, Message , Data
             return data[0],data[1],data[2]
@@ -37,7 +37,7 @@ class MonitorInterface:
     ##############################
 
     def Login(self,MonitorName,MonitorPassword):
-        self.MonitorName = MonitorName
+        self._MonitorName = MonitorName
         self.Send("Login",(MonitorName,MonitorPassword))
         Sucess,Message,_ = self.Recv()
         return Sucess,Message
@@ -120,7 +120,7 @@ class MonitorInterface:
     def Exit(self):
         self.Send("Exit",())
         Sucess,Message,_ = self.Recv()
-        self.con.close()
+        self._con.close()
         return Sucess,Message
 
 

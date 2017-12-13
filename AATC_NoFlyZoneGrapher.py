@@ -14,34 +14,34 @@ class NoFlyZoneGrapher:
 
     """
     def __init__(self,Thread_Name,Thread_Queue,Interval = 36000):
-        self.DB = AATC_DB.DBConnection()
-        self.Interval = Interval
-        self.Thread_Name = Thread_Name
-        self.Thread_Queue = Thread_Queue
+        self._DB = AATC_DB.DBConnection()
+        self._Interval = Interval
+        self._Thread_Name = Thread_Name
+        self._Thread_Queue = Thread_Queue
 
         graph = AATC_AStar.DynoGraph()
         graph.ImportGraph()
-        self.xSize,self.ySize,self.zSize = graph.Get_Size()
+        self._xSize,self._ySize,self._zSize = graph.Get_Size()
         del graph
 
         self.Main_Loop()
         
     def Main_Loop(self):
-        self.Exit = False
-        while not self.Exit:
+        self._Exit = False
+        while not self._Exit:
             try:
                 NoFlyZoneData = self.GetNoFlyZones()
                 self.Make_Values(NoFlyZoneData)
             except Exception as e:
                 print("Error occured in NoFlyZoneGrapher",e)
             print("NoFlyZoneGrapher completed. Sleeping...")
-            time.sleep(self.Interval)
+            time.sleep(self._Interval)
 
-            if not self.Thread_Queue.empty():
-                data = self.Thread_Queue.get()
+            if not self._Thread_Queue.empty():
+                data = self._Thread_Queue.get()
                 Command,Arguments = data[0],data[1]
                 if Command == "Exit":
-                    self.Exit = True
+                    self._Exit = True
                     
         print("NoFlyZoneGrapher exiting...")
 
@@ -53,10 +53,10 @@ class NoFlyZoneGrapher:
             self.Make_Values(NoFlyZoneData,ABSlot = Slot)
         
     def Mod(self,Coords):
-        return int(Coords.Get_X()//self.xSize),int(Coords.Get_Y()//self.ySize),int(Coords.Get_Z()//self.zSize)
+        return int(Coords.Get_X()//self._xSize),int(Coords.Get_Y()//self._ySize),int(Coords.Get_Z()//self._zSize)
         
     def GetNoFlyZones(self):
-        _,Columns,Data = self.DB.GetNoFlyZones()
+        _,Columns,Data = self._DB.GetNoFlyZones()
         Columns = ast.literal_eval(Columns)
         
         ZoneIDIndex = Columns.index("ZoneID")#Gets indexes for the columns
@@ -107,12 +107,12 @@ class NoFlyZoneGrapher:
         for NodeID in list(Values.keys()):   #CHECK THIS. Only using those involved with a new no fly zone may cause issues if a no fly zone was removed. Maybe should be set to all node IDs.
             node = graph.GetNode(NodeID)
             if node.Get_NodeID() in Values:
-                node.Set_Cost( Values[node.NodeID])
-                Values.pop(node.NodeID)# Reduce memory usage by evicting Node values which have been added already
+                node.Set_Cost( Values[node.Get_NodeID()])
+                Values.pop(node.Get_NodeID())# Reduce memory usage by evicting Node values which have been added already
             else:
                 node.Set_Cost(1)
         try:
-            graph.SaveNodes()
+            graph.SaveNodes([graph.CurrentFolderName()])
         except Exception as e:
             print("Error saving nodes",e," Most likely no NoFlyZoneData yet")
 

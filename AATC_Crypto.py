@@ -1,5 +1,5 @@
 #AATC crypto module
-import codecs,recvall,ast,binascii,os,AATC_Config,time,AATC_CryptoBeta,socket
+import codecs,recvall,ast,binascii,os,AATC_Config,AATC_CryptoBeta
 from Crypto.Cipher import AES,PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
@@ -20,23 +20,23 @@ class Crypter:
 
     """
     def __init__(self, con, mode = "CLIENT",AutoGenerate = True):
-        self.con = con
+        self._con = con
         self.SetMode(mode)                
         if AutoGenerate:
             self.GenerateKey()
 
     def SetMode(self,mode):
-        self.mode = mode
+        self._mode = mode
 
     def GenerateKey(self,key_size = AATC_Config.DEFAULT_RSA_KEYSIZE):
         print("Generating encryption keys. Please stand by...")  #Generating keys takes a long time and have found no way to shorted key length
-        if self.mode == "SERVER":
+        if self._mode == "SERVER":
             self.ServerGenerateKey()
-        elif self.mode == "CLIENT":
+        elif self._mode == "CLIENT":
             self.ClientGenerateKey(key_size)
         else:
             raise ValueError("Crypter: Incorrect mode set")
-        print("Encryption keys generated",self.AESKey)
+        print("Encryption keys generated",self._AESKey)
 
 
 
@@ -70,7 +70,7 @@ class Crypter:
             raise Exception("AES key size not in ALLOWED_AES_KEYSIZES. Change keysize to an allowed value")
 
         AESKey,IV = GenerateKeys(AES_KeySize)
-        PublicKey = AATC_CryptoBeta.VerifyCertificates(CertificateChain,AATC_Config.ROOT_CERTIFICATES,self.con)
+        PublicKey = AATC_CryptoBeta.VerifyCertificates(CertificateChain,AATC_Config.ROOT_CERTIFICATES,self._con)
 
         if PublicKey:
             
@@ -120,8 +120,8 @@ class Crypter:
         if AATC_Config.SET_ENCRYPTION_KEYS_ENABLE:
             self.SetEncryptionKeys(AATC_Config.SET_AES_KEY, AATC_Config.SET_IV_KEY)            
 
-        self.Exit = False
-        while not self.Exit:
+        self._Exit = False
+        while not self._Exit:
             data = self.Recv()
             Command, Arguments = data[0],data[1]
 
@@ -137,14 +137,14 @@ class Crypter:
                 
             elif Command == "Exit":
                 Sucess,Message,Data = True,"Exiting",[]
-                self.Exit = True
+                self._Exit = True
 
             else:
                 Sucess,Message,Data = False,"Command does not exist",[]
 
             self.Send((Sucess,Message,Data))
 
-        if not hasattr(self,"AESKey"):  #Only set if sucessfully setup.
+        if not hasattr(self,"_AESKey"):  #Only set if sucessfully setup.
             raise Exception("Failure during crypter setup")
 
 
@@ -178,7 +178,7 @@ class Crypter:
             self.SetEncryptionKeys(AESKey,IV)
             return True,"Keys set",[]
         else:
-            #self.Exit = True
+            #self._Exit = True
             return False,"AES key size not in ALLOWED_AES_KEYSIZES:"+str(AATC_Config.ALLOWED_AES_KEYSIZES),[]
         
 
@@ -189,10 +189,10 @@ class Crypter:
 
 
     def SetEncryptionKeys(self,AESKey,IV):
-        self.AESKey = AESKey
-        self.IV = IV
-        self.EncryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)    #Two seperate instances to encrypt and decrypt as non ECB AES is a stream cipher
-        self.DecryptAES = AES.new(self.AESKey,AES.MODE_GCM,self.IV)    #Errors will occur if encrypt and decrypt are not equal in count.
+        self._AESKey = AESKey
+        self._IV = IV
+        self._EncryptAES = AES.new(self._AESKey,AES.MODE_GCM,self._IV)    #Two seperate instances to encrypt and decrypt as non ECB AES is a stream cipher
+        self._DecryptAES = AES.new(self._AESKey,AES.MODE_GCM,self._IV)    #Errors will occur if encrypt and decrypt are not equal in count.
             
                 
         
@@ -220,18 +220,18 @@ class Crypter:
         
             
     def Encrypt(self,data):
-        return self.EncryptAES.encrypt(data)
+        return self._EncryptAES.encrypt(data)
 
     def Decrypt(self,data):
-        return self.DecryptAES.decrypt(data)
+        return self._DecryptAES.decrypt(data)
 
         
         
         
     def Send(self,data):
-        self.con.sendall(codecs.encode(str(data)))
+        self._con.sendall(codecs.encode(str(data)))
     def Recv(self):
-        data = recvall.recvall(self.con)
+        data = recvall.recvall(self._con)
         data = ast.literal_eval(codecs.decode(data))
         return data
     def SplitData(self,data):

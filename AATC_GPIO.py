@@ -1,9 +1,10 @@
 import threading,multiprocessing,queue,time,random, sys
 try:
     import RPi.GPIO as GPIO
+    ENABLE_GPIO = True
 except:
     print("No RPi.GPIO module available. Features depending on this will not work/crash")
-
+    ENABLE_GPIO = False
 #GPIO.setmode(GPIO.BOARD)
 
 ##GPIO.setup(11, GPIO.OUT) #red
@@ -12,7 +13,8 @@ except:
 ##GPIO.setup(26, GPIO.IN) #button
 
 def GPIO_Wait_Switch(pin,wait_time = 1, SWITCH_MODE= 1, Indicator_Pin = False):  # Will wait for pin to switch to the SWITCH_MODE setting. If not will sleep for wait_time seconds.
-    if "GPIO" not in sys.modules:   # If does not have GPIO will automatically pass through.
+    #if "GPIO" in sys.modules:   # If does not have GPIO will automatically pass through.
+    if ENABLE_GPIO:
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(pin,GPIO.IN)
         
@@ -60,18 +62,18 @@ def GPIO_Thread(Thread_Name,GPIO_Queue):
 
 class Thread_Handle:
     def __init__(self,Thread_Name,ThreadPointer,Queue):
-        self.Thread_Name = Thread_Name
-        self.ThreadPointer = ThreadPointer
-        self.Queue = Queue
+        self._Thread_Name = Thread_Name
+        self._ThreadPointer = ThreadPointer
+        self._Queue = Queue
 
     def Get_Thread_Name(self):
-        return self.Thread_Name
+        return self._Thread_Name
 
     def Get_ThreadPointer(self):
-        return self.ThreadPointer
+        return self._ThreadPointer
 
     def Get_Queue(self):
-        return self.Queue
+        return self._Queue
 
 
 
@@ -80,12 +82,12 @@ class Thread_Handle:
 class Thread_Controller:
     def __init__(self,Command_Queue,Name = ""):
         print("Creating Thread Controller",Name)
-        self.Name ="TC"+ Name + " >"
-        self.Command_Queue = Command_Queue
-        self.Threads = {}
+        self._Name ="TC"+ Name + " >"
+        self._Command_Queue = Command_Queue
+        self._Threads = {}
 
     def Create_Thread(self,Thread_Name,TargetCommand = GPIO_Thread,TargetArgs = (),Process = False):     #If Process is True, will use a Process rather than a thread.
-        if Thread_Name in self.Threads: #Close thread if already exists
+        if Thread_Name in self._Threads: #Close thread if already exists
             self.Close_Thread(Thread_Name)
             
         if Process:
@@ -94,27 +96,27 @@ class Thread_Controller:
         else:
             Thread_Queue = queue.Queue()
             threadPointer = threading.Thread(target = TargetCommand,args = (Thread_Name,Thread_Queue)+TargetArgs)
-        self.Threads[Thread_Name] = Thread_Handle(Thread_Name,threadPointer,Thread_Queue)
+        self._Threads[Thread_Name] = Thread_Handle(Thread_Name,threadPointer,Thread_Queue)
         threadPointer.start()
         
     def Close_Thread(self,Thread_Name):
-        ClosingThreadHandle = self.Threads.pop(Thread_Name)
+        ClosingThreadHandle = self._Threads.pop(Thread_Name)
         Queue = ClosingThreadHandle.Get_Queue()
         Queue.put(("Exit",()))
-        print(self.Name,"GPIO Controller closed Thread",Thread_Name)
+        print(self._Name,"GPIO Controller closed Thread",Thread_Name)
         return ClosingThreadHandle  #Returns Thread_Handle of thread
    
 
     def PassData(self,Thread_Name,Data):
-        Queue = self.Threads[Thread_Name].Get_Queue()
+        Queue = self._Threads[Thread_Name].Get_Queue()
         Queue.put(Data)
 
     def Main(self):
         Exit = False
         while not Exit:
             try:
-                Request = self.Command_Queue.get()   #(Thread_Name/Controller command,"Command",Args)
-                self.Command_Queue.task_done()
+                Request = self._Command_Queue.get()   #(Thread_Name/Controller command,"Command",Args)
+                self._Command_Queue.task_done()
                 
                 if Request[0] == "Controller":
                     Command,Args = Request[1],Request[2]
@@ -126,7 +128,7 @@ class Thread_Controller:
                         self.Close_Thread(*Args)
                     elif Command == "Exit":  #Shutdown  everything
                         self.Reset(*Args)
-                        self.Exit = True
+                        self._Exit = True
                     elif Command == "Reset":  #Shutdown all threads, not controller
                         self.Reset(*Args)
                         
@@ -135,13 +137,13 @@ class Thread_Controller:
                         
 
             except Exception as e:
-                print(self.Name,"Error in GPIO_Thread_Controller",e)
-        print(self.Name,"Shutting down")
+                print(self._Name,"Error in GPIO_Thread_Controller",e)
+        print(self._Name,"Shutting down")
 
 
     def Reset(self,Wait_Join = False):
-        print(self.Name,"Reseting GPIO Threading Controller...")
-        Thread_Names = list(self.Threads.keys())
+        print(self._Name,"Reseting GPIO Threading Controller...")
+        Thread_Names = list(self._Threads.keys())
         ThreadHandles = []
         for Thread_Name in Thread_Names:
             ClosingThreadHandle = self.Close_Thread(Thread_Name)
@@ -152,7 +154,7 @@ class Thread_Controller:
                 ThreadPointer = ThreadHandle.Get_ThreadPointer()
                 ThreadPointer.join()
                 
-        print(self.Name,"Reset GPIO Threading Controller")
+        print(self._Name,"Reset GPIO Threading Controller")
                 
         
         
