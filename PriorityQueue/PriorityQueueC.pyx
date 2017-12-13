@@ -3,25 +3,25 @@
 
 class PriorityQueue:
     def __init__(self):
-        self.Queue = []
+        self._Queue = []
 
     def put(self,item):
         cdef int index
 ##        print(self.Queue,  "<--" , item)
-        found,index = BinarySearch(self.Queue,item)
-        if self.Queue != [] and self.Queue[index] < item:
+        found,index = BinarySearch(self._Queue,item)
+        if self._Queue != [] and self._Queue[index] < item:
             index +=1
-        self.Queue.insert(index,item)
+        self._Queue.insert(index,item)
 ##        print(self.Queue,index)
 
     def pop(self):
-        return self.Queue.pop(0)
+        return self._Queue.pop(0)
 
     def remove(self,item):
         cdef int index
-        found,index = BinarySearch(self.Queue,item)
+        found,index = BinarySearch(self._Queue,item)
         if found:
-            self.Queue.pop(index)
+            self._Queue.pop(index)
         else:
             raise ValueError("Item not in priority queue")
 

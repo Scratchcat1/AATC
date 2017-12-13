@@ -2,14 +2,14 @@
 #cython: boundscheck=False, wraparound=False, infer_types=True,cdivision = True
 
 
-import os,pickle,heapq,time,math,hashlib
+import time,math,hashlib
 from AATC_Coordinate import *
 try:
     try:
         import PriorityQueue.PriorityQueueC as PriorityQueue
     except:
         print("PriotityQueueC not available, defaulting to pure python")
-        import PriorityQueue.PriorityQueue
+        import PriorityQueue.PriorityQueue as PriorityQueue
 except:
     print("AStarPQ not available")
     
@@ -86,7 +86,7 @@ def AStarPQ(graph, int start, int target):   # Set all g to node_count + 1
         OpenSet.pop(current)
         ClosedSet[current] = 1
 
-        FriendList = graph.GetNode(current).Friends
+        FriendList = graph.GetNode(current).Get_Friends()
         for NodeID in FriendList:
             if NodeID in ClosedSet:
                 continue
@@ -184,7 +184,7 @@ cdef FindPath(dict cameFrom, int current):
     while current in cameFrom:
         current = cameFrom[current]
         path.append(current)
-    return path
+    return path[::-1]
 
 
         
