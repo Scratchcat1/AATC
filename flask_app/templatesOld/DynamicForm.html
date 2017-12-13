@@ -1,0 +1,15 @@
+<!-- extend from base layout -->
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Sign In</h1>
+  <form action="" method="post" name="login">
+      {{ form.hidden_tag() }}
+      {% for field in fields %}
+          {{ field["name"]}} <br>
+          {{ form[field["name"]](size = 80) }} <br>
+      {% endfor %}
+
+      <p><input type="submit" value="Sign In"></p>
+  </form>
+{% endblock %}

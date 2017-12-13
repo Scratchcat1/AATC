@@ -6,7 +6,7 @@
   <meta name="description" content="website description" />
   <meta name="keywords" content="website keywords, website keywords" />
   <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-  <link rel="stylesheet" type="text/css" href={{url_for('static',filename = "style/style.css")}} title="style" />
+  <link rel="stylesheet" type="text/css" href="style/style.css" title="style" />
 </head>
 
 <body>
@@ -20,25 +20,14 @@
         </div>
       </div>
       <div id="menubar">
-	</div>
 
-      
-
-
-      
-    </div>
-    <div id="site_content">
-      
-      <div id="content">
-        <!-- insert the page content here -->
       <div>AATC: <a href="/">Home</a></div>
       <div>
-      
       {% for command in Commands %}
            <a href="/command/{{command}}">{{command}}</a>
       {% endfor %}
       </div>
-	<div>
+
       {% if user %}
       <h2>Welcome, {{ user.Username }} UserID: {{user.UserID}}</h2>
       {% else %}
@@ -46,10 +35,15 @@
       {% endif %}
 
       <hr>
+      
+
+
       </div>
-
-
-
+    </div>
+    <div id="site_content">
+      
+      <div id="content">
+        <!-- insert the page content here -->
 	  {% block content %}{% endblock %}
 
       </div>
