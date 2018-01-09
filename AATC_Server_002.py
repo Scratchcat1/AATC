@@ -5,16 +5,16 @@ from AATC_Coordinate import *
 def GetTime():
     return int(time.time())
 
-def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
-    List1 = list(Coord1)
-    List2 = list(Coord2)
-    BoolList = []
-    for x in range(len(List1)):  #Goes through each item in the lists
-        if List1[x] <= List2[x]:   #If The Coord1[x] <= Coord2[x]
-            BoolList.append(True)
-        else:
-            BoolList.append(False)
-    return all(BoolList)
+##def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
+##    List1 = list(Coord1)
+##    List2 = list(Coord2)
+##    BoolList = []
+##    for x in range(len(List1)):  #Goes through each item in the lists
+##        if List1[x] <= List2[x]:   #If The Coord1[x] <= Coord2[x]
+##            BoolList.append(True)
+##        else:
+##            BoolList.append(False)
+##    return all(BoolList)
 
            
 

@@ -1,4 +1,4 @@
-import AATC_Drone,threading,queue,math,time,AATC_GPIO,random, AATC_Config
+import AATC_Drone,threading,queue,time,AATC_GPIO,random, AATC_Config
 import AATC_Coordinate
 
 class DroneLogicSystem:
@@ -97,7 +97,7 @@ def GetAllFlightInfo(D,DRONEID,FlightID):    #Gets all drone flight information 
     WSucess,WaypointsMessage,FlightWaypointsData = D.GetFlightWaypoints(FlightID)
     if not (DSucess and FSucess and WSucess):
         print(DroneMessage,FlightMessage,WaypointsMessage)
-        raise Exception("FlightData or FlightWaypointData was not sucessfully obtained")
+        raise Exception("FlightData or FlightWaypointData or DroneData was not sucessfully obtained")
 
     DroneInfo = AATC_Drone.MakeDroneInfo(DroneMessage, DroneData)
     Flight = AATC_Drone.GetFlightObject(FlightMessage,FlightData)

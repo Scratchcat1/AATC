@@ -179,17 +179,16 @@ def StartProcesses(Control_Queue):
     Control_Queue.put(("Controller","Create_Process",("Cleaner",AATC_Server.Cleaner)))
 
     Control_Queue.put(("Controller","Create_Process",("Hedabot",HedaBot.TelebotLaunch,())))
+    ###Control_Queue.put(("Controller","Create_Process",("Flask_Server",StartFlaskServer,())))
     print("[StartProcesses] All processes started")
     
 
 if __name__ == "__main__":
     print("Server is starting")
-
-
+    
 
     Control_Queue = AATC_GPIO.Create_Controller()
     StartProcesses(Control_Queue)
-
     
     Main_Command = ""
     while Main_Command != "EXIT":

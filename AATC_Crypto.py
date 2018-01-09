@@ -1,5 +1,5 @@
 #AATC crypto module
-import codecs,recvall,ast,binascii,os,AATC_Config,AATC_CryptoBeta
+import codecs,recvall,ast,os,AATC_Config,AATC_CryptoBeta
 from Crypto.Cipher import AES,PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
@@ -196,26 +196,7 @@ class Crypter:
             
                 
         
-        
-        
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ##############################################
 
         
             
@@ -242,8 +223,8 @@ class Crypter:
 
     
 def GenerateKeys(AES_KeySize):
-    AESKey = binascii.b2a_hex(os.urandom(AES_KeySize//2))  # Here to allow regeneration of AES key while still in loop if required.
-    IV     = binascii.b2a_hex(os.urandom(AES_KeySize//2))
+    AESKey = os.urandom(AES_KeySize)  # Here to allow regeneration of AES key while still in loop if required.
+    IV     = os.urandom(AES_KeySize)
     return AESKey,IV
 
 
