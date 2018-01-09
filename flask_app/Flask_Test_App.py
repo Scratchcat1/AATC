@@ -9,7 +9,7 @@ COMMANDS["AddFlight"][2]["Type"] = lambda x: HedaBot.SplitWaypoints(x,":")
 COMMANDS["AddFlight"][2]["Query"] = COMMANDS["AddFlight"][2]["Query"].replace("returns","colons")
 
 app = Flask(__name__)
-app.config.from_object('config')
+app.config.from_object('flask_app.config')
 
 
 
