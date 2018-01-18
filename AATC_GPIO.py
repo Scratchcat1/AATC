@@ -42,7 +42,7 @@ def GPIO_Thread(Thread_Name,GPIO_Queue):
             if not Repeat:
                 Function,FuncArgs = BlankFunction,()  #Resets commands. Allows function to exit itself.
                 
-            if not GPIO_Queue.empty():
+            while not GPIO_Queue.empty():  #While loop implemented so that if many commands are send per loop they will all be processed.
                 Data = GPIO_Queue.get()
                 #GPIO_Queue.task_done()
                 Command,Arguments = Data[0],Data[1]
@@ -133,7 +133,7 @@ class Thread_Controller:
                         self.Reset(*Args)
                         
                 else:
-                    self.PassData(Request[0],(Request[1],Request[2]))
+                    self.PassData(Request[0],Request[1:])
                         
 
             except Exception as e:

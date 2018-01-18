@@ -39,6 +39,10 @@ DRONE_BATTERY_DRAIN_MULT = 1
 #Control at which setting the server will raise an error if the cost for entering that node sector exceeds value. To prevent selecting a blocked node as a target node to bypass search algorithm.
 NOFLYZONE_THRESHOLD_COST = 50
 
+#NoFlyZoneGrapher
+NOFLYZONEGRAPHER_FLUSH_GRAPH_NUMBER = 50000 # This controls how frequently while generating the new node costs the no fly zone grapher should flush the graph to reduce memoryu usage.
+
 #OWM Controls
 ENABLE_FINE_SPEED_ESTIMATION = False   #Allows fine grained estimation of drone speed due to wind. Noticable slowdown when creating flight due to many requests which may be limited by OWM depending on contract
 OWM_SLEEP_TIME = 1/60*60*4 # How long the add flight program should sleep between requests to reduce the chance of overusing requests. 1/REQUESTS_PER_MINUTE*60*NUMBER_OF_CONCURRENT_SEARCHES should ensure that the program never hits the limit of OWM.
+OWM_API_KEY = '5b943c4857a45d75ef7ee9b301666fa8'  #Contains the API key for the OWM 

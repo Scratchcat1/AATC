@@ -50,6 +50,9 @@ class DynoGraph:
 
     def Get_Size(self):
         return self._xSize, self._ySize, self._zSize
+
+    def Get_Count(self):
+        return self._xCount, self._yCount, self._zCount
     
     def add_node(self,node):
         self._Nodes[node.Get_NodeID()] = node

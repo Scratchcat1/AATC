@@ -50,7 +50,7 @@ class DBConnection:
     def Exit(self):
         self._db_con.close()
     def Table_Headers(self,TableName):
-        self._cur_header.execute("SHOW COLUMNS FROM %s",( TableName))
+        self._cur_header.execute("SHOW COLUMNS FROM "+ TableName)  # Cannot use placeholders when referencing the table name , syntax error
         result = self._cur_header.fetchall()
         Headers = []
         for item in result:

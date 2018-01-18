@@ -65,7 +65,7 @@ class DroneLogicSystem:
 
         FlightID = FlightID[0][0]   
         print("Obtaining flight and drone information. FlightID :",FlightID)
-        DroneInfo, Flight, Waypoints = GetAllFlightInfo(self._D,self._DroneID,FlightID)
+        DroneInfo, Flight, Waypoints = GetAllFlightInfo(self._D,FlightID)
         
         self._FlightQueue.put((False,(DroneInfo,Flight,Waypoints)))
 
@@ -91,7 +91,7 @@ class DroneLogicSystem:
 
 
 
-def GetAllFlightInfo(D,DRONEID,FlightID):    #Gets all drone flight information and packages the information into objects
+def GetAllFlightInfo(D,FlightID):    #Gets all drone flight information and packages the information into objects
     DSucess,DroneMessage,DroneData = D.DroneGetDroneInfo()
     FSucess,FlightMessage,FlightData = D.GetFlight(FlightID)
     WSucess,WaypointsMessage,FlightWaypointsData = D.GetFlightWaypoints(FlightID)
