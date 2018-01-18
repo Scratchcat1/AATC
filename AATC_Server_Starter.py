@@ -1,6 +1,7 @@
 import multiprocessing,socket,AATC_NoFlyZoneGrapher,sys,time,AATC_GPIO,HedaBot
 import AATC_Server_002 as AATC_Server
-from AATC_Coordinate import *
+#from AATC_Coordinate import *
+from flask_app import Flask_Test_App
 
 
 def UserProcessSpawner():
@@ -114,6 +115,12 @@ def MakeDroneConnection(Thread_Name,Thread_Queue,conn):
 
 
 ##########################################################
+#####################This section is part of the flask webserver component of the AATC program, not part of the main project.
+
+def StartFlaskServer(Thread_Name,Thread_Queue):
+    Flask_Test_App.main_app(Flask_Test_App.app) # Starts the flask webserver
+    
+
 ##########################################################
 
 
@@ -168,21 +175,20 @@ def StartProcesses(Control_Queue):
     Control_Queue.put(("Controller","Create_Process",("DSpawner",ProcessSpawner,(8002,"Drone",MakeDroneConnection))))
 
 
-    Control_Queue.put(("Controller","Create_Process",("Grapher",AATC_NoFlyZoneGrapher.NoFlyZoneGrapher)))
+    Control_Queue.put(("Controller","Create_Process",("Grapher",AATC_NoFlyZoneGrapher.NoFlyZoneGrapher_Launch)))
     Control_Queue.put(("Controller","Create_Process",("Cleaner",AATC_Server.Cleaner)))
 
     Control_Queue.put(("Controller","Create_Process",("Hedabot",HedaBot.TelebotLaunch,())))
+    ###Control_Queue.put(("Controller","Create_Process",("Flask_Server",StartFlaskServer,())))
     print("[StartProcesses] All processes started")
     
 
 if __name__ == "__main__":
     print("Server is starting")
-
-
+    
 
     Control_Queue = AATC_GPIO.Create_Controller()
     StartProcesses(Control_Queue)
-
     
     Main_Command = ""
     while Main_Command != "EXIT":

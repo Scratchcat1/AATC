@@ -61,8 +61,8 @@ def AStarPQ(graph, int start, int target):   # Set all g to node_count + 1
 
 
     TargetNode = graph.GetNode(target)
-    xSize,ySize,zSize = graph.xSize,graph.ySize,graph.zSize
-    xCount,yCount,zCount = graph.xCount,graph.yCount,graph.zCount
+    xSize,ySize,zSize = graph.Get_Size()
+    xCount,yCount,zCount = graph.Get_Count()
     
     ClosedSet = {}  #Dict to hash find closed nodes
     OpenSet = {start:1}
@@ -128,8 +128,8 @@ def AStar2(graph, int start, int target):   # Set all g to node_count + 1
 
 
     TargetNode = graph.GetNode(target)
-    xSize,ySize,zSize = graph.xSize,graph.ySize,graph.zSize
-    xCount,yCount,zCount = graph.xCount,graph.yCount,graph.zCount
+    xSize,ySize,zSize = graph.Get_Size()
+    xCount,yCount,zCount = graph.Get_Count()
     
     ClosedSet = {}  #Dict to hash find closed nodes
     OpenSet = {start:1}

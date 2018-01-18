@@ -5,16 +5,16 @@ from AATC_Coordinate import *
 def GetTime():
     return int(time.time())
 
-def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
-    List1 = list(Coord1)
-    List2 = list(Coord2)
-    BoolList = []
-    for x in range(len(List1)):  #Goes through each item in the lists
-        if List1[x] <= List2[x]:   #If The Coord1[x] <= Coord2[x]
-            BoolList.append(True)
-        else:
-            BoolList.append(False)
-    return all(BoolList)
+##def CoordLessThanOrEqual(Coord1,Coord2):# True if Coord1 <= Coord2
+##    List1 = list(Coord1)
+##    List2 = list(Coord2)
+##    BoolList = []
+##    for x in range(len(List1)):  #Goes through each item in the lists
+##        if List1[x] <= List2[x]:   #If The Coord1[x] <= Coord2[x]
+##            BoolList.append(True)
+##        else:
+##            BoolList.append(False)
+##    return all(BoolList)
 
            
 
@@ -368,7 +368,7 @@ class UserConnection(ClientConnection):
                 DroneSpeed,DroneRange = DroneData[SpeedIndex],DroneData[RangeIndex]                
 
                 Weather_Estimator = AATC_Weather.OWM_Control()
-                Estimated_Drone_Speed = Weather_Estimator.Get_Ajusted_Speed(CoordList[0]["Coords"],CoordList[-1]["Coords"],DroneSpeed,Time)
+                Estimated_Drone_Speed = Weather_Estimator.Get_Adjusted_Speed(CoordList[0]["Coords"],CoordList[-1]["Coords"],DroneSpeed,Time)
                 TotalDistance = 0
                 for x in range(len(CoordList)):
                     if x != 0: #If not first Coord add the difference in distance to time etc
@@ -376,7 +376,7 @@ class UserConnection(ClientConnection):
                         TotalDistance += Distance
 
                         if AATC_Config.ENABLE_FINE_SPEED_ESTIMATION:
-                            Estimated_Drone_Speed = Weather_Estimator.Get_Ajusted_Speed(CoordList[x]["Coords"],CoordList[x-1]["Coords"],DroneSpeed,Time)
+                            Estimated_Drone_Speed = Weather_Estimator.Get_Adjusted_Speed(CoordList[x]["Coords"],CoordList[x-1]["Coords"],DroneSpeed,Time)
                             time.sleep(AATC_Config.OWM_SLEEP_TIME)
                         DeltaTime = Distance/Estimated_Drone_Speed
                         Time = Time + DeltaTime
@@ -498,12 +498,12 @@ class BotConnection(UserConnection):
                 
         except Exception as e:
             Sucess,Message,Data = False,"An Error occured"+str(e),[]
-            print("Error occured with UserID:",str(self._ClientID),". Error :",str(e),". Sending failure message")
+            print("Error occured with ",self._Thread_Name,". Error :",str(e),". Sending failure message")
             
         try:
             self.Send((Sucess,Message,Data))
         except Exception as e:
-            print("Error sending message back to chat",e)
+            print(self._Thread_Name,"Error sending message back to chat",e)
         self._DB.Exit()
             
         

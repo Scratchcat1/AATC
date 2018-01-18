@@ -41,8 +41,8 @@ class DBConnection:
     """
 
     
-    def __init__(self,DatabaseName = "Main.db"):
-        print("Initializing database connection '",DatabaseName,"'")
+    def __init__(self):
+        print("Initializing database connection ")
         self._db_con = sql.connect("localhost","AATC_Server","password","AATC_Database")
         self._cur = self._db_con.cursor()
         self._cur_header = self._db_con.cursor()
@@ -50,7 +50,7 @@ class DBConnection:
     def Exit(self):
         self._db_con.close()
     def Table_Headers(self,TableName):
-        self._cur_header.execute("SHOW COLUMNS FROM "+ TableName)
+        self._cur_header.execute("SHOW COLUMNS FROM "+ TableName)  # Cannot use placeholders when referencing the table name , syntax error
         result = self._cur_header.fetchall()
         Headers = []
         for item in result:
@@ -328,7 +328,7 @@ class DBConnection:
             return False, "Incorrect old password"
 
     def GetMonitorDrones(self,MonitorID):
-        self._cur.execute("SELECT Drone.* FROM Drone,MonitorPermission WHERE Drone.UserID = MonitorPermission.UserID and MonitorPermission.MonitorID = %s",(MonitorID,))
+        self._cur.execute("SELECT Drone.* FROM Drone,MonitorPermission WHERE Drone.UserID = MonitorPermission.UserID AND MonitorPermission.MonitorID = %s",(MonitorID,))
         self._db_con.commit()
         return True,str(self.Table_Headers("Drone")),self._cur.fetchall()
     
@@ -345,11 +345,8 @@ class DBConnection:
     def GetMonitorID(self,MonitorName):
         self._cur.execute("SELECT MonitorID FROM Monitor WHERE MonitorName = %s",(MonitorName,))
         result = self._cur.fetchall()
-        if len(result) != 0:
-            Sucess = True
-        else:
-            Sucess = False
-        return Sucess,"['MonitorID']",result
+        return True,"['MonitorID']",result
+    
     def GetMonitorName(self,MonitorID):
         self._cur.execute("SELECT MonitorName FROM Monitor WHERE MonitorID = %s",(MonitorID,))
         return True,"['MonitorName']",self._cur.fetchall()
@@ -491,9 +488,9 @@ class DBConnection:
 ##########################################################################    
         
     def ResetDatabase(self):
-        self._cur.execute("SET FOREIGN_KEY_CHECKS = 0")
+        self._cur.execute("SET FOREIGN_KEY_CHECKS = 0")  #Otherwise dropping tables will raise errors.
         TABLES = ["User","Drone","Monitor","MonitorPermission","Flight","FlightWaypoints","NoFlyZone","DroneCredentials","InputStack","Sessions"]
-        for item in TABLES:
+        for item in TABLES:  # Drops all tables
             self._cur.execute("DROP TABLE IF EXISTS {0}".format(item))
         
         self._cur.execute("CREATE TABLE User(UserID INTEGER PRIMARY KEY AUTO_INCREMENT, Username TEXT,Password TEXT, PublicVisibleFlights INT, PermissionAdder INT , ZoneCreatorPermission INT, ZoneRemoverPermission INT,ZoneModifierPermission INT)")
@@ -501,18 +498,30 @@ class DBConnection:
         self._cur.execute("CREATE TABLE Monitor(MonitorID INTEGER PRIMARY KEY AUTO_INCREMENT, MonitorName TEXT, MonitorPassword TEXT)")
         self._cur.execute("CREATE TABLE MonitorPermission(MonitorID INT ,UserID INT, LastAccessed TEXT, ExpiryDate TEXT,PRIMARY KEY(MonitorID,UserID),FOREIGN KEY(MonitorID) REFERENCES Monitor(MonitorID))")
         self._cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY AUTO_INCREMENT, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime REAL, ETA REAL, EndTime REAL, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,Completed INT)")
-        self._cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA REAL, BlockTime INT)")
+        self._cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA REAL, BlockTime INT ,PRIMARY KEY(FlightID,WaypointNumber))")
         self._cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY AUTO_INCREMENT, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT)")
         self._cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT ,DronePassword TEXT)")
 
-        self._cur.execute("CREATE TABLE InputStack(chat_id INT , stack_pos INT, value TEXT)")
+        self._cur.execute("CREATE TABLE InputStack(chat_id INT , stack_pos INT, value TEXT, PRIMARY KEY(chat_id,stack_pos))")
         self._cur.execute("CREATE TABLE Sessions(chat_id INT PRIMARY KEY, UserID INT)")
         
-        self._cur.execute("SET FOREIGN_KEY_CHECKS = 1")
+        self._cur.execute("SET FOREIGN_KEY_CHECKS = 1")  # Reenables checks
         self._db_con.commit()
     
 
 
+#Pre Primary/Forigen key thing
+##self._cur.execute("CREATE TABLE User(UserID INTEGER PRIMARY KEY AUTO_INCREMENT, Username TEXT,Password TEXT, PublicVisibleFlights INT, PermissionAdder INT , ZoneCreatorPermission INT, ZoneRemoverPermission INT,ZoneModifierPermission INT)")
+##self._cur.execute("CREATE TABLE Drone(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT, UserID INT, DroneName TEXT, DroneType TEXT, DroneSpeed INT, DroneRange INT, DroneWeight REAL, FlightsFlown INT, LastCoords TEXT, LastBattery REAL)")
+##self._cur.execute("CREATE TABLE Monitor(MonitorID INTEGER PRIMARY KEY AUTO_INCREMENT, MonitorName TEXT, MonitorPassword TEXT)")
+##self._cur.execute("CREATE TABLE MonitorPermission(MonitorID INT ,UserID INT, LastAccessed TEXT, ExpiryDate TEXT,PRIMARY KEY(MonitorID,UserID),FOREIGN KEY(MonitorID) REFERENCES Monitor(MonitorID))")
+##self._cur.execute("CREATE TABLE Flight(FlightID INTEGER PRIMARY KEY AUTO_INCREMENT, DroneID INT, StartCoords TEXT, EndCoords TEXT, StartTime REAL, ETA REAL, EndTime REAL, Distance  REAL,XOffset REAL , YOffset REAL , ZOffset REAL,Completed INT)")
+##self._cur.execute("CREATE TABLE FlightWaypoints(FlightID INT, WaypointNumber INT, Coords TEXT, ETA REAL, BlockTime INT)")
+##self._cur.execute("CREATE TABLE NoFlyZone(ZoneID INTEGER PRIMARY KEY AUTO_INCREMENT, StartCoord TEXT, EndCoord TEXT, Level INT, OwnerUserID INT)")
+##self._cur.execute("CREATE TABLE DroneCredentials(DroneID INTEGER PRIMARY KEY AUTO_INCREMENT ,DronePassword TEXT)")
+##
+##self._cur.execute("CREATE TABLE InputStack(chat_id INT , stack_pos INT, value TEXT)")
+##self._cur.execute("CREATE TABLE Sessions(chat_id INT PRIMARY KEY, UserID INT)")
 
 
 

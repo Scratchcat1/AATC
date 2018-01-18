@@ -31,3 +31,5 @@ g++ -shared -pthread -fPIC -fwrapv -O3 -Wall -L /usr/include/python3.4 -lstdc++ 
 ```
 recvall credit belongs to: https://stackoverflow.com/questions/17667903/python-socket-receive-large-amount-of-data
 
+HTML5 template from here : https://www.html5webtemplates.co.uk/
+The Flask website design is poor, however it functions. The menu options should be moved into their own block and sorted alphabetically however how to do this is not known.

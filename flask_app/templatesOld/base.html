@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Welcome to AATC</title>
+    
+
+
+  </head>
+  <body>
+      <div>AATC: <a href="/">Home</a></div>
+      <div>
+      {% for command in Commands %}
+           <a href="/command/{{command}}">{{command}}</a>
+      {% endfor %}
+      </div>
+
+      {% if user %}
+      <h2>Welcome, {{ user.Username }} UserID: {{user.UserID}}</h2>
+      {% else %}
+      <h1>Hello, unregistered user!</h1>
+      {% endif %}
+
+      <hr>
+      {% block content %}{% endblock %}
+  </body>
+</html>

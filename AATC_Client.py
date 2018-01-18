@@ -139,7 +139,7 @@ class UserInterface:
     def GetUsername(self,UserID):
         self.Send("GetUsername",(UserID,))
         Sucess,Message,Username = self.Recv()
-        return Sucess,Message,Username   #Username will be ["asfgg"] as it is how database returns it
+        return Sucess,Message,Username   
 
     def AddUser(self,Username,Password):
         self.Send("AddUser",(Username,Password))

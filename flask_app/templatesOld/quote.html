@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<html>
+  <head>
+    <title>{{ title }}</title>
+  </head>
+  <body>
+
+      {% for quote in quotes %}
+      <div><p>{{quote}}</p></div>
+      {% endfor %}
+  </body>
+</html>
+
+{% endblock %}
