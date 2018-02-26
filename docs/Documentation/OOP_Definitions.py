@@ -13,6 +13,7 @@ ClientConnection = Class
         Crypto          #Crypto object to encrypt communications
         ClientID        #Current clientID
         ExitLoop        #Bool if should exit
+EndClass
 
 
 UserConection = Class(ClientConnection)   #For explanations see AATC_Server_002 UserConnection documentation
@@ -54,6 +55,7 @@ UserConection = Class(ClientConnection)   #For explanations see AATC_Server_002 
     Protected:
         Non_Authenticated_Commands
         Authenticated_Commands
+EndClass
 
 BotConnection = Class(UserConnection)
     __init__(Override)          #Overrides __init__ of grandparent. Uses private __ but is inheritable
@@ -67,6 +69,7 @@ BotConnection = Class(UserConnection)
         Output_Queue            #Note: This is now protected. Some screenshots may include an outdated version
         DB
         Thread_Name
+EndClass
         
 MonitorConnection = Class(ClientConnection)
     Public:
@@ -91,6 +94,7 @@ MonitorConnection = Class(ClientConnection)
     Protected:
         Non_Authenticated_Commands
         Authenticated_Commands
+EndClass
 
 
 DroneConnection = Class(ClientConnection)
@@ -107,7 +111,8 @@ DroneConnection = Class(ClientConnection)
     Protected:
         Non_Authenticated_Commands
         Authenticated_Commands
-
+EndClass
+        
 #####################################################################
 
 
@@ -157,6 +162,7 @@ DynoGraph = Class
         xCount
         yCount
         zCount
+EndClass
 
 
 Node = Class
@@ -172,6 +178,7 @@ Node = Class
         Friends
         Cost
         Coords
+EndClass
 
 
 #####################################################################################
@@ -217,6 +224,7 @@ UserInterface = Class
         Username
         Crypto
         con
+EndClass
 
 ###########################################################################
 
@@ -264,6 +272,7 @@ UserTextUI = Class
         UserInterface
         MenuOptions
         Exit
+EndClass
 
 
 #############################################################################
@@ -294,6 +303,7 @@ Coordinate = Class
         zSize
     Private:
         __str__         #Overridden String method of class
+EndClass
 
 ###########################################################################
 
@@ -322,6 +332,7 @@ Crypter = Class
         IV
         EncryptAES
         DecryptAES
+EndClass
 
 ###########################################################################
 
@@ -395,6 +406,7 @@ DBConnection = Class
         db_con
         cur
         cur_header
+EndClass
 
 ##############################################################################
 
@@ -414,6 +426,7 @@ DroneInterface = Class
         con
         Crypto
         DroneName
+EndClass
 
 Flight = Class
     Public:
@@ -432,6 +445,7 @@ Flight = Class
         StartTime
         ETA
         Distance
+EndClass
 
 Waypoint = Class
     Public:
@@ -444,6 +458,7 @@ Waypoint = Class
         WaypointNumber
         Coord
         ETA
+EndClass
 
 DroneInformation = Class
     Public:
@@ -454,7 +469,7 @@ DroneInformation = Class
         Get_DroneSpeed
         Get_DroneRane
         Get_DroneWeight
-    Private:
+    Protected:
         DroneID
         UserID
         DroneName
@@ -462,10 +477,158 @@ DroneInformation = Class
         DroneSpeed
         DroneRange
         DroneWeight
+EndClass
 
 
 ############################################################################
         
 
+DroneLogicSystem = Class
+    Public:
+        Main
+        CheckForFlight
+        RunFlight
+    Protected:
+        DroneID
+        DronePassword
+        FlightQueue
+        StatusQueue
+        GPIO_Queue
+        Sleep_Time
+        D
+EndClass
+
+############################################################################
+
+Thread_Handle = Class
+    Public:
+        Get_Thread_Name
+        Get_ThreadPointer
+        Get_Queue
+    Protected:
+        Thread_Name
+        Thread_Pointer
+        Queue
+EndClass
+
+Thread_Controller = Class
+    Public:
+        Create_Thread
+        Close_Thread
+        PassData
+        Main
+        Reset
+    Protected:
+        Name
+        Command_Queue
+        Threads
+        Exit
+EndClass
         
 
+##########################################################################
+
+MonitorInterface = Class
+    Public:
+        Send
+        Recv
+        Login
+        AddMonitor
+        MonitorChangePassword
+        GetNoFlyZones
+        GetDronesAll
+        GetUserID
+        GetUsername
+        GetMonitorDrones
+        GetMonitorFlights
+        GetMonitorFlightWaypoints
+        GetMonitorID
+        GetMonitorName
+        RemoveMonitorPermission
+        GetMonitorPermissionMonitor
+        GetFlightsAll
+        GetFlightWaypointsAll
+        Exit
+    Protected:
+        con
+        Crypto
+        MonitorName
+EndClass
+
+########################################################################
+
+Camera = Class
+    Public:
+        GetZoom
+        SetZoom
+        IncrementCameraCoordX
+        IncrementCameraCoordY
+        SetCameraCoords
+        UpdateCameraSize
+        CameraWipe
+        ResetDrawObject
+        AddDrawObject
+        Get_DrawObjects
+        Get_Coord
+        Draw
+    Protected:
+        xpixel
+        ypixel
+        gameDisplay
+        MinCoords
+        MaxCoords
+        CameraCoord
+        CameraZoom
+        DrawObjects
+EndClass
+
+Monitor_Sprite = Class
+    Public:
+        Make_Image
+        Make_Text
+        Get_Coords
+    Protected:
+        Coords
+        Type
+        Text
+        Colour
+        image
+EndClass
+
+TimeWarper
+    Public:
+        GetTimeWarp
+    Protected:
+        targetFrameRate
+        minimumFrameRate
+        Time
+EndClass
+
+##########################################################################
+
+NoFlyZoneGrapher = Class
+    Public:
+        Main_Loop
+        Force_Write
+        Mod
+        GetNoFlyZones
+        Make_Values
+    Protected:
+        DB
+        Interval
+        Thread_Name
+        Thread_Queue
+        xSize
+        ySize
+        zSize
+        Exit
+EndClass
+        
+###########################################################################
+
+OWM_Control = Class
+    Public:
+        Get_Adjusted_Speed
+    Protected:
+        owm
+EndClass
