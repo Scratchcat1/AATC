@@ -1,7 +1,7 @@
 import AATC_Drone,threading,queue,time,AATC_GPIO,random, AATC_Config
 import AATC_Coordinate
 
-class DroneLogicSystem:
+class DroneLogicSystem:     #deals with the communication with the server
     def __init__(self,DroneID,DronePassword,FlightQueue,StatusQueue,GPIO_Queue,Sleep_Time = 30):
         self._DroneID = DroneID
         self._DronePassword = DronePassword
@@ -15,7 +15,7 @@ class DroneLogicSystem:
         InFlight = False
         while not Exit:
             try:
-                self._D = AATC_Drone.CreateDroneInterface(IP = "127.0.0.1")
+                self._D = AATC_Drone.CreateDroneInterface(IP = "127.0.0.1")     #Connect and log in
                 LoginSucess,Message = self._D.Login(self._DroneID,self._DronePassword)
                 
                 if LoginSucess:  
@@ -107,7 +107,7 @@ def GetAllFlightInfo(D,FlightID):    #Gets all drone flight information and pack
 
 
 
-def SimulateMovement(Coord,VectorCoord,Sleep_Time = 0.1):
+def SimulateMovement(Coord,VectorCoord,Sleep_Time = 0.1):   #Simulates movement by waiting. 1/Sleep_Time = Speedup factor
     Coord = AATC_Coordinate.AddCoords(Coord,VectorCoord)
     time.sleep(Sleep_Time)
     return Coord
@@ -121,7 +121,7 @@ def PutStatus(StatusQueue,Coords,Battery,MarkComplete = None,EmptyOverride = Fal
         StatusQueue.put(data)
 
 
-def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):
+def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):      #Decrease battery based on range and distance travelled
     distance = AATC_Coordinate.DeltaCoordToMetres(CoordA,CoordB)
     decAmount = (distance/DroneInfo.Get_DroneRange())*100*(1+random.randint(-1,1)*0.1) * AATC_Config.DRONE_BATTERY_DRAIN_MULT
     Battery -= decAmount
@@ -130,25 +130,25 @@ def DecrementBattery(DroneInfo,CoordA,CoordB,Battery):
 def DroneHardware(FlightQueue,StatusQueue):
     Battery = AATC_Config.DEFAULT_DRONE_BATTERY_VALUE
     Coords = AATC_Coordinate.Coordinate(*AATC_Config.DEFAULT_DRONE_COORDINATE)
-    xSize,ySize,zSize = AATC_Config.DEFAULT_DRONE_ATWAYPOINT_SIZES
+    xSize,ySize,zSize = AATC_Config.DEFAULT_DRONE_ATWAYPOINT_SIZES              #Set default settings for simulation
     
     while True:
         time.sleep(1)
-        PutStatus(StatusQueue,Coords,Battery)
+        PutStatus(StatusQueue,Coords,Battery)       #Updates status
         if not FlightQueue.empty():
             data = FlightQueue.get()
-            DroneInfo,Flight,Waypoints = data[1][0],data[1][1],data[1][2]
+            DroneInfo,Flight,Waypoints = data[1][0],data[1][1],data[1][2]   #Obtain flight information
             
 
             AllWaypoints = [Flight.Get_StartCoord()]+Waypoints+[Flight.Get_EndCoord()]
             
-            for number,point in enumerate(AllWaypoints):
-                while not AATC_Coordinate.AtWaypoint(Coords,point.Get_Coord(),xSize,ySize,zSize):
+            for number,point in enumerate(AllWaypoints):    #loop through eachwaypoint
+                while not AATC_Coordinate.AtWaypoint(Coords,point.Get_Coord(),xSize,ySize,zSize):   #Repeat until reached waypoint
                     LastCoord = Coords.copy()
                     VectorCoord = AATC_Coordinate.CalculateVector(Coords,point.Get_Coord(),DroneInfo.Get_DroneSpeed())
-                    Coords = SimulateMovement(Coords,VectorCoord)
+                    Coords = SimulateMovement(Coords,VectorCoord)       #Move drone
                     Battery = DecrementBattery(DroneInfo,Coords,LastCoord,Battery)
-                    PutStatus(StatusQueue,Coords,Battery)
+                    PutStatus(StatusQueue,Coords,Battery)   #Update status 
 
                 if number == 0:
                     print("Reached Start Coordinate")
@@ -209,7 +209,7 @@ def DroneHardware(FlightQueue,StatusQueue):
 
 
             
-def Startup(DroneID,DronePassword):
+def Startup(DroneID,DronePassword):     ##Starts the program
     FlightQueue = queue.Queue()
     StatusQueue = queue.Queue()
     
@@ -223,4 +223,4 @@ def Startup(DroneID,DronePassword):
     LogicThread = threading.Thread(target = droneLogicObject.Main)
 
     HardwareThread.start()
-    LogicThread.start()
+    LogicThread.start()     #Starts the threads.

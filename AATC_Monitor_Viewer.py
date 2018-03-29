@@ -60,8 +60,6 @@ class Camera:
     def SetZoom(self,Zoom):
         self._CameraZoom = Zoom
 
-    def GetCameraCoords(self):
-        return self._CameraCoord
     def IncrementCameraCoordX(self,Amount):
         self._CameraCoord.Set_X( Amount+self._CameraCoord.Get_X())
 
@@ -89,7 +87,7 @@ class Camera:
         return self._CameraCoord
 
     def Draw(self):
-        CameraEndX= self._CameraCoord.Get_X() + self._CameraCoord.Get_XSize()    #Moved to new variablt to reduce recalculation
+        CameraEndX= self._CameraCoord.Get_X() + self._CameraCoord.Get_XSize()    #Moved to new variablt to reduce recalculation/ function call overhead
         CameraEndY = self._CameraCoord.Get_Y() + self._CameraCoord.Get_YSize()
         CameraX = self._CameraCoord.Get_X()
         CameraY = self._CameraCoord.Get_Y()
@@ -100,7 +98,7 @@ class Camera:
             Object = DrawObject["Object"]
             Object_Coords = Object.Get_Coords()
             x = Object_Coords.Get_X()
-            y = Object_Coords.Get_Y()
+            y = Object_Coords.Get_Y()               #Extract variables first to reduce overhead of function calls later
             xSize = Object_Coords.Get_XSize()
             ySize = Object_Coords.Get_YSize()
             if ((x < CameraEndX) and ((x+xSize) > CameraX)) and \
@@ -115,8 +113,8 @@ class Camera:
                     height = MaxLimit(height,self._ypixel)
                     font_size = int(100*width/self._xpixel)          # Would benifit from being cythonised
                     image = Object.Make_Image(width,height) 
-                    self._gameDisplay.blit(image,(PosX,PosY))
-                    if font_size > 5:
+                    self._gameDisplay.blit(image,(PosX,PosY))        #Draw object to screen
+                    if font_size > 5:                       #If fond it large enoguht to be useful then display
                         font = (None, font_size)                  
                         self._gameDisplay.blit(Object.Make_Text(font) ,(PosX+width,PosY))
                         
@@ -125,43 +123,30 @@ class Camera:
 
              
                                                     
-class Monitor_Sprite(pygame.sprite.Sprite):
+class Monitor_Sprite(pygame.sprite.Sprite):     #Stores details about a sprite
     def __init__(self,CoordObject,Type = "",Text = "",Colour = (255,255,255)):
         self._Coords = CoordObject
         self._Type = Type
         self._Text = Text
         self._Colour = Colour
         self._image = pygame.Surface((1,1))
-        #self.Make_Image(2,2)     # No longer needed, is similar to that above.
 
     def Make_Image(self,width,height):
         if self._image.get_size() != (width,height):  #If new image does not match with previous
             self._image = GetImage(width,height,self._Colour)
         return self._image
-##            self.image = pygame.Surface((width,height)).convert()
-##            self.image.fill(self.Colour)
 
-    def Make_Text(self,font):
-        text = str((self._Coords.Get_X(),self._Coords.Get_Y(),self._Coords.Get_Z())) +" " +self._Text + " "+ self._Type
+
+    def Make_Text(self,font):   #Generate image with text in
+        text = str(self._Coords) +" " +self._Text + " "+ self._Type
         return GetText(text,font,False,self._Colour)
 
     def Get_Coords(self):
         return self._Coords
-##        
-##    def Make_CoordsText(self,font):
-##        self.CoordsText = GetText(str((self.Coords.x,self.Coords.y,self.Coords.z)),font,False,self.Colour)
-##        #self.CoordsText = font.render(str((self.Coords.x,self.Coords.y,self.Coords.z)),False,self.Colour)
-##
-##    def Make_Text(self,font):
-##        self.DrawnText = GetText(self.Text,font,False,self.Colour)
-##        #self.DrawnText = font.render(self.Text,False,self.Colour)
-##
-##    def Make_Type(self,font):
-##        self.DrawnType = GetText(self.Type,font,False,self.Colour)
-##        #self.DrawnType = font.render(self.Type,False,self.Colour)
 
 
-def MakeDroneSprites(Message,RawDroneList):
+
+def MakeDroneSprites(Message,RawDroneList):     #Generate drone sprite objects
     DroneList = []
     Columns = ast.literal_eval(Message)
     CoordIndex = Columns.index("LastCoords")
@@ -169,7 +154,7 @@ def MakeDroneSprites(Message,RawDroneList):
     UserIDIndex = Columns.index("UserID")
     DroneNameIndex = Columns.index("DroneName")
     BatteryIndex = Columns.index("LastBattery")
-    for Drone in RawDroneList:
+    for Drone in RawDroneList:      #For each message extract information and add to sprite 
         LastCoords = ast.literal_eval(Drone[CoordIndex])
         Coord = AATC_Coordinate.Coordinate(LastCoords[0],LastCoords[1],LastCoords[2],0.001,0.001,0.00001)
         Text = "D:"+str(Drone[DroneIDIndex]) +" U:"+str(Drone[UserIDIndex]) +" N:"+str(Drone[DroneNameIndex])+" B:"+str(Drone[BatteryIndex])
@@ -178,7 +163,7 @@ def MakeDroneSprites(Message,RawDroneList):
         DroneList.append(Sprite)
     return DroneList
 
-def MakeFlightSprites(Message,RawFlightList):
+def MakeFlightSprites(Message,RawFlightList):#Generate flight sprite objects
     FlightList = []
     Columns = ast.literal_eval(Message)
     FlightIDIndex = Columns.index("FlightID")
@@ -189,7 +174,7 @@ def MakeFlightSprites(Message,RawFlightList):
     ETAIndex = Columns.index("ETA")
     EndTimeIndex = Columns.index("EndTime")
     DistanceIndex = Columns.index("Distance")
-    for Flight in RawFlightList:
+    for Flight in RawFlightList:     #For each message extract information and add to sprite. Start and end coordinates as different sprites
         #Start Sprite
         Coords = ast.literal_eval(Flight[StartCoordsIndex])
         Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.001,0.001,0.0001)
@@ -206,13 +191,13 @@ def MakeFlightSprites(Message,RawFlightList):
     return FlightList
 
 
-def MakeWaypointSprites(Message,RawWaypointList):
+def MakeWaypointSprites(Message,RawWaypointList): #Generate flight sprite objects
     WaypointList = []
     Columns = ast.literal_eval(Message)
     CoordIndex = Columns.index("Coords")
     WaypointNumberIndex = Columns.index("WaypointNumber")
     FlightIDIndex = Columns.index("FlightID")
-    for Waypoint in RawWaypointList:
+    for Waypoint in RawWaypointList:     #For each message extract information and add to sprite 
         Coords = ast.literal_eval(Waypoint[CoordIndex])
         Coord = AATC_Coordinate.Coordinate(Coords[0],Coords[1],Coords[2],0.001,0.001,0.00001)
         Text = "F:"+ str(Waypoint[FlightIDIndex]) +" W:"+ str(Waypoint[WaypointNumberIndex])
@@ -220,14 +205,14 @@ def MakeWaypointSprites(Message,RawWaypointList):
         WaypointList.append(Monitor_Sprite(Coord,"Waypoint",Text,Colour))
     return WaypointList
 
-def MakeZoneSprites(Message,RawZoneList):
+def MakeZoneSprites(Message,RawZoneList):   #Generate zone sprite objects
     ZoneList = []
     Columns = ast.literal_eval(Message)
     StartCoordIndex = Columns.index("StartCoord")
     EndCoordIndex = Columns.index("EndCoord")
     LevelIndex = Columns.index("Level")
     ZoneIDIndex = Columns.index("ZoneID")
-    for Zone in RawZoneList:
+    for Zone in RawZoneList:         #For each message extract information and add to sprite 
         StartCoords = ast.literal_eval(Zone[StartCoordIndex])
         EndCoords = ast.literal_eval(Zone[EndCoordIndex])
         Coord = AATC_Coordinate.Coordinate(StartCoords[0],StartCoords[1],StartCoords[2],EndCoords[0]-StartCoords[0],EndCoords[1]-StartCoords[1],EndCoords[2]-StartCoords[2])
@@ -236,9 +221,13 @@ def MakeZoneSprites(Message,RawZoneList):
         ZoneList.append(Monitor_Sprite(Coord,"NoFlyZone",Text,Colour))
     return ZoneList
 
-def MakeSprites(M):
-    print("Refreshing data")
+def MakeSprites(M):     #Obtain information about each entity and form sprites
+    print("Refreshing data")  
     SpriteList = []
+    Sucess,Message,NoFlyZones = M.GetNoFlyZones() #Lowest priority object
+    if Sucess:      #If request did not fail
+        SpriteList += MakeZoneSprites(Message,NoFlyZones)
+        
     Sucess,Message,DronesAll = M.GetDronesAll()
     if Sucess:
         SpriteList += MakeDroneSprites(Message,DronesAll)
@@ -259,13 +248,9 @@ def MakeSprites(M):
     if Sucess:
         SpriteList += MakeWaypointSprites(Message,WaypointsAll)
 
-    Sucess,Message,WaypointsMonitor = M.GetMonitorFlightWaypoints()
+    Sucess,Message,WaypointsMonitor = M.GetMonitorFlightWaypoints()  #Highest priority object
     if Sucess:
         SpriteList += MakeWaypointSprites(Message,WaypointsMonitor)
-
-    Sucess,Message,NoFlyZones = M.GetNoFlyZones()
-    if Sucess:
-        SpriteList += MakeZoneSprites(Message,NoFlyZones)
 
     #Sprites are created in this function to simplify code in case of an error(False)
     print("Refreshed data. Sprites :",len(SpriteList))
@@ -288,90 +273,90 @@ class TimeWarper:
 
 
         
-
-xpixel = 800
-ypixel = 550
-Refresh_Delay = 60
-clock = pygame.time.Clock()
-pressed = pygame.key.get_pressed
-Exit = "N"
-
-
-
-while Exit != "Y":
-    try:
-        M = AATC_Monitor.CreateMonitorInterface(IP = "127.0.0.1",Port = 8001)
-        print(M.Login("Zini",""))
-        #Sucess,Message,Data =  M.GetCoordDetails()
-        #MinCoords,MaxCoords,StepCoords = Data[0],Data[1],Data[2]
-        MinCoords,MaxCoords = AATC_Coordinate.Coordinate(0,0,0),AATC_Coordinate.Coordinate(1,1,50)
-        MonCamera = Camera(xpixel,ypixel,MinCoords,MaxCoords)
-        while True:
-            MonCamera.ResetDrawObject()
-            Sprites = MakeSprites(M)
-            #font = (None, 30) 
-            for sprite in Sprites:
-                MonCamera.AddDrawObject(sprite,False)
+if __name__ == "__main__":
+    xpixel = 800
+    ypixel = 550
+    Refresh_Delay = 60
+    clock = pygame.time.Clock()
+    pressed = pygame.key.get_pressed
+    Exit = "N"
 
 
-            TimeWarp = TimeWarper()
-            Last_Refresh_Time = time.time()
-            refresh = False
-            while not refresh:
-                MonCamera.CameraWipe()
-                TimeWarpFactor = TimeWarp.GetTimeWarp()
-                
-                if time.time() >= (Last_Refresh_Time + Refresh_Delay):
-                    refresh = True
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        print("Monitor exit was called")
-                        pygame.quit()
-                        sys.exit()
-                        
-                    elif event.type == pygame.MOUSEBUTTONDOWN:
-                        print("Camera details")                  #Mainly for debugging
-                        print(MonCamera.GetZoom())
-                        print(MonCamera.Get_Coord().Get_X())
-                        print(MonCamera.Get_Coord().Get_Y())
-                        print(MonCamera.Get_Coord().Get_XSize())
-                        print(MonCamera.Get_Coord().Get_YSize())
-                        print(len(MonCamera.Get_DrawObjects()))
-                        print("FPS:"+str(clock.get_fps()))
-                    elif event.type == pygame.KEYDOWN:
-                        pass
+
+    while Exit != "Y":
+        try:
+            M = AATC_Monitor.CreateMonitorInterface(IP = "127.0.0.1",Port = 8001)
+            print(M.Login("Zini",""))
+            #Sucess,Message,Data =  M.GetCoordDetails()
+            #MinCoords,MaxCoords,StepCoords = Data[0],Data[1],Data[2]
+            MinCoords,MaxCoords = AATC_Coordinate.Coordinate(0,0,0),AATC_Coordinate.Coordinate(1,1,50)
+            MonCamera = Camera(xpixel,ypixel,MinCoords,MaxCoords)
+            while True:
+                MonCamera.ResetDrawObject()
+                Sprites = MakeSprites(M)
+                #font = (None, 30) 
+                for sprite in Sprites:
+                    MonCamera.AddDrawObject(sprite,False)
 
 
-                CameraCoord = MonCamera.Get_Coord()
-                if pressed()[pygame.K_w]:   #Shift camera
-                    MonCamera.IncrementCameraCoordY(-0.01*CameraCoord.Get_XSize()*TimeWarpFactor)  #/ as Greater zoom means need more fidelety
-                if pressed()[pygame.K_s]:
-                    MonCamera.IncrementCameraCoordY(0.01*CameraCoord.Get_XSize()*TimeWarpFactor)
-                if pressed()[pygame.K_a]:
-                    MonCamera.IncrementCameraCoordX(-0.01*CameraCoord.Get_XSize()*TimeWarpFactor)
-                if pressed()[pygame.K_d]:
-                    MonCamera.IncrementCameraCoordX(0.01*CameraCoord.Get_XSize()*TimeWarpFactor)
-
-                if pressed()[pygame.K_q]:#Zoom out
-                    MonCamera.SetZoom(MonCamera.GetZoom()*0.99**TimeWarpFactor)
-                if pressed()[pygame.K_e]:#Zoom in
-                    MonCamera.SetZoom(MonCamera.GetZoom()*1.01**TimeWarpFactor)
-
-                if pressed()[pygame.K_SPACE]:#Zoom in
-                    refresh = True
-
+                TimeWarp = TimeWarper()
+                Last_Refresh_Time = time.time()
+                refresh = False
+                while not refresh:
+                    MonCamera.CameraWipe()
+                    TimeWarpFactor = TimeWarp.GetTimeWarp()     #Time warp to ensure constant movement speed
                     
-                MonCamera.UpdateCameraSize()
-                MonCamera.Draw()
-                pygame.display.flip()
-                clock.tick(60)
-                
+                    if time.time() >= (Last_Refresh_Time + Refresh_Delay):  #Check if time to refresh
+                        refresh = True
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:       #Quit
+                            print("Monitor exit was called")
+                            pygame.quit()
+                            sys.exit()
+                            
+                        elif event.type == pygame.MOUSEBUTTONDOWN:
+                            print("Camera details")                  #Mainly for debugging
+                            print(MonCamera.GetZoom())
+                            print(MonCamera.Get_Coord().Get_X())
+                            print(MonCamera.Get_Coord().Get_Y())
+                            print(MonCamera.Get_Coord().Get_XSize())
+                            print(MonCamera.Get_Coord().Get_YSize())
+                            print(len(MonCamera.Get_DrawObjects()))
+                            print("FPS:"+str(clock.get_fps()))
+##                        elif event.type == pygame.KEYDOWN:
+##                            pass
 
-            
-    except Exception as e:
-        print(e)
-        print("An error occured, restarting main loop")
-        Exit = input("Exit? Y/N").upper()
+
+                    CameraCoord = MonCamera.Get_Coord()     
+                    if pressed()[pygame.K_w]:   #Shift camera
+                        MonCamera.IncrementCameraCoordY(-0.01*CameraCoord.Get_YSize()*TimeWarpFactor)  #Move ? axis by 1/100 of the axis size by time warp factor
+                    if pressed()[pygame.K_s]:
+                        MonCamera.IncrementCameraCoordY(0.01*CameraCoord.Get_YSize()*TimeWarpFactor)
+                    if pressed()[pygame.K_a]:
+                        MonCamera.IncrementCameraCoordX(-0.01*CameraCoord.Get_XSize()*TimeWarpFactor)
+                    if pressed()[pygame.K_d]:
+                        MonCamera.IncrementCameraCoordX(0.01*CameraCoord.Get_XSize()*TimeWarpFactor)
+
+                    if pressed()[pygame.K_q]:#Zoom out
+                        MonCamera.SetZoom(MonCamera.GetZoom()*0.99**TimeWarpFactor)
+                    if pressed()[pygame.K_e]:#Zoom in
+                        MonCamera.SetZoom(MonCamera.GetZoom()*1.01**TimeWarpFactor)
+
+                    if pressed()[pygame.K_SPACE]:
+                        refresh = True
+
+                        
+                    MonCamera.UpdateCameraSize()        
+                    MonCamera.Draw()            #Draw images
+                    pygame.display.flip()       #Update display
+                    clock.tick(60)              #Keep to 60 fps
+                    
+
+                
+        except Exception as e:
+            print(e)
+            print("An error occured, restarting main loop")
+            Exit = input("Exit? Y/N").upper()
 
 
 

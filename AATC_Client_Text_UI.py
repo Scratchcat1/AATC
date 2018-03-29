@@ -42,15 +42,49 @@ MenuOptions = {
 
 
             -1:"Exit"
-            }
+            }           #Maps command numbers onto the strings of permissions
 
 
-class UserTextUI:
+class UserTextUI:   #Interface with server via text interface
     def __init__(self,UserInterface,MenuOptions):
         self._UserInterface = UserInterface
         self._MenuOptions = MenuOptions
+        self._Commands = {
+            "Login" : self.Login,
+            "GetNoFlyZones" : self.GetNoFlyZones,
+            "AddNoFlyZone" : self.AddNoFlyZone,
+            "RemoveNoFlyZone" : self.RemoveNoFlyZone,
+            "ModifyNoFlyZoneLevel" : self.ModifyNoFlyZoneLevel,
+            "AddDrone" : self.AddDrone,
+            "RemoveDrone" : self.RemoveDrone,
+            "GetDroneID" : self.GetDroneID,
+            "GetDroneCredentials" : self.GetDroneCredentials,
+            "SetDroneCredentials" : self.SetDroneCredentials,
+            "CheckDroneOwnership" : self.CheckDroneOwnership,
+            "GetDroneInfo" : self.GetDroneInfo,
+            "GetDronesUser" : self.GetDronesUser,
+            "GetDronesAll" : self.GetDronesAll,
+            "GetUserID" : self.GetUserID,
+            "GetUsername" : self.GetUsername,
+            "AddUser" : self.AddUser,
+            "SetFlightVisibility" : self.SetFlightVisibility,
+            "SetAccountType" : self.SetAccountType,
+            "UserChangePassword" : self.UserChangePassword,
+            "GetFlightsUser" : self.GetFlightsUser,
+            "GetFlightsAll" : self.GetFlightsAll,
+            "AddFlight" : self.AddFlight,
+            "RemoveFlight" : self.RemoveFlight,
+            "GetFlightWaypointsUser" : self.GetFlightWaypointsUser,
+            "GetFlightWaypointsAll" : self.GetFlightWaypointsAll,
+            "GetMonitorID" : self.GetMonitorID,
+            "GetMonitorName" : self.GetMonitorName,
+            "AddMonitorPermission" : self.AddMonitorPermission,
+            "RemoveMonitorPermission" : self.RemoveMonitorPermission,
+            "ModifyMonitorPermissionDate" : self.ModifyMonitorPermissionDate,
+            "GetMonitorPermissionUser" : self.GetMonitorPermissionUser,
+            "Exit" : self.Call_Exit}
 
-    def Main_Loop(self):
+    def Main_Loop(self):    #Loop until exit
         self._Exit = False
         while not self._Exit:
             try:
@@ -61,13 +95,13 @@ class UserTextUI:
             except Exception as e:
                 print("Error occured in Client Text UI",e)
                 
-    def PrintMainMenu(self):
+    def PrintMainMenu(self):        #Display the menu neatly
         print("\n"*2)
         print("AATC Client Main Menu")
         for x in self._MenuOptions.items():
             print("{0:>3} : {1}".format(str(x[0]),x[1]))
             
-    def GetMenuChoice(self):
+    def GetMenuChoice(self):    
         MenuChoice = -99
         while MenuChoice not in self._MenuOptions:  #will exit once valid menu option is chosen
             try:
@@ -76,89 +110,16 @@ class UserTextUI:
                 print("Integers only")
         return MenuChoice
 
-    def EvaluateChoice(self,MenuChoice):
-        Command = self._MenuOptions[MenuChoice]  #Gets full, easier to work with string
+    def EvaluateChoice(self,MenuChoice):        #Execute the correct command.
+        Command = self._Commands.get(self._MenuOptions[MenuChoice],None)  #Gets full, easier to work with string
 
-        if Command == "Login":
-            self.Login()
-            
-        elif Command == "GetNoFlyZones":
-            self.GetNoFlyZones()
-        elif Command == "AddNoFlyZone":
-            self.AddNoFlyZone()
-        elif Command == "RemoveNoFlyZone":
-            self.RemoveNoFlyZone()
-        elif Command == "ModifyNoFlyZoneLevel":
-            self.ModifyNoFlyZoneLevel()
-            
-        elif Command == "AddDrone":
-            self.AddDrone()
-        elif Command == "RemoveDrone":
-            self.RemoveDrone()
-        elif Command == "GetDroneID":
-            self.GetDroneID()
-        elif Command == "GetDroneCredentials":
-            self.GetDroneCredentials()
-        elif Command == "SetDroneCredentials":
-            self.SetDroneCredentials()
-        elif Command == "CheckDroneOwnership":
-            self.CheckDroneOwnership()
-        elif Command == "GetDroneInfo":
-            self.GetDroneInfo()
-        elif Command == "GetDronesUser":
-            self.GetDronesUser()
-        elif Command == "GetDronesAll":
-            self.GetDronesAll()
-            
-        elif Command == "GetUserID":
-            self.GetUserID()
-        elif Command == "GetUsername":
-            self.GetUsername()
-        elif Command == "AddUser":
-            self.AddUser()
-        elif Command == "SetFlightVisibility":
-            self.SetFlightVisibility()
-        elif Command == "SetAccountType":
-            self.SetAccountType()
-        elif Command == "UserChangePassword":
-            self.UserChangePassword()
-
-        elif Command == "GetFlightsUser":
-            self.GetFlightsUser()
-        elif Command == "GetFlightsAll":
-            self.GetFlightsAll()
-        elif Command == "AddFlight":
-            self.AddFlight()
-        elif Command == "RemoveFlight":
-            self.RemoveFlight()
-            
-        elif Command == "GetFlightWaypointsUser":
-            self.GetFlightWaypointsUser()
-        elif Command == "GetFlightWaypointsAll":
-            self.GetFlightWaypointsAll()
-
-        elif Command == "GetMonitorID":
-            self.GetMonitorID()
-        elif Command == "GetMonitorName":
-            self.GetMonitorName()
-
-        elif Command == "AddMonitorPermission":
-            self.AddMonitorPermission()
-        elif Command == "RemoveMonitorPermission":
-            self.RemoveMonitorPermission()
-        elif Command == "ModifyMonitorPermissionDate":
-            self.ModifyMonitorPermissionDate()
-        elif Command == "GetMonitorPermissionUser":
-            self.GetMonitorPermissionUser()
-
-
-
-        elif Command == "Exit":
-            self.Call_Exit()
+        if Command != None:
+            Command()
         else:
             print("Please correctly register method to EvaluateChoice method")
+            
 
-    def DisplayResults(self,Sucess,Message,Data = None):
+    def DisplayResults(self,Sucess,Message,Data = None):        #Neatly display the results
         print("Sucess >>",Sucess)
         print("Message >>",Message)
         if Data not in [None,[]]:
@@ -308,7 +269,7 @@ class UserTextUI:
         HighPoints = []
         point = ""
         print("Enter Coordinates one by one, enter 'Done' once complete")
-        while point != "Done":
+        while point != "Done":      #Obtain all the main points on the flight till the user enters done
             point = input("Enter Coordinate in form (x,y,z) >>")
             if point != "Done":
                 HighPoints.append(point)
@@ -369,7 +330,7 @@ class UserTextUI:
 
     #################################################
 
-    def Call_Exit(self):
+    def Call_Exit(self):        #Exit communication from the server and exit
         print("Exiting..")
         try:
             Sucess,Message = self._UserInterface.Exit()
@@ -388,10 +349,10 @@ if __name__ == "__main__":
     while not Exit:
         try:
             print("Connecting to server...")
-            U = AATC_Client.CreateUserInterface(IP = "127.0.0.1")
+            U = AATC_Client.CreateUserInterface(IP = "127.0.0.1")   #Connect to server
 
             TextUI = UserTextUI(U,MenuOptions)
-            TextUI.Main_Loop()
+            TextUI.Main_Loop()      #Run main loop
             
             Choice = input("Exit? (Y/N) >>").upper()
             if Choice == "Y":

@@ -3,7 +3,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_PSS
 
-def GenerateCertificate(Name,Issuer,NotBefore,NotAfter,PublicKey,IssuerPrivateKey):
+def GenerateCertificate(Name,Issuer,NotBefore,NotAfter,PublicKey,IssuerPrivateKey):     #Create a certificate signed with issuer private key
     Certificate = {}
     Certificate["Name"] = Name
     Certificate["Issuer"] = Issuer
@@ -19,7 +19,7 @@ def GenerateCertificate(Name,Issuer,NotBefore,NotAfter,PublicKey,IssuerPrivateKe
     Certificate["Signature"] = Signature
     return Certificate
 
-def VerifyCertificates(CertificateChain,RootCertificates,con = False, Reverse = False):
+def VerifyCertificates(CertificateChain,RootCertificates,con = False, Reverse = False):     #Verify chain of certificates
     CertificateChain = copy.deepcopy(CertificateChain)  #To prevent loss of chain when verifing.
     if len(CertificateChain) > AATC_Config.MAX_CERTIFICATE_CHAIN_LENGTH:
         return False
@@ -35,10 +35,10 @@ def VerifyCertificates(CertificateChain,RootCertificates,con = False, Reverse = 
                 break
 
     if Valid and con:
-        Valid = VerifyBaseAddress(CertificateChain[len(CertificateChain)-1],con)
+        Valid = VerifyBaseAddress(CertificateChain[len(CertificateChain)-1],con)    #Validates address of connectyion if connection is provided
     
         
-    if Valid and ValidateCertificate(BaseCertificate,RootCert["PublicKey"]):
+    if Valid and ValidateCertificate(BaseCertificate,RootCert["PublicKey"]):        #Validates certificate chain.
         CurrentPublicKey = BaseCertificate["PublicKey"]
         for Certificate in CertificateChain:
             if not ValidateCertificate(Certificate,CurrentPublicKey):
@@ -48,12 +48,12 @@ def VerifyCertificates(CertificateChain,RootCertificates,con = False, Reverse = 
     else:
         return False
     print("Valid Certificate Chain ")
-    return CurrentPublicKey
+    return CurrentPublicKey     #Only returns key if valid.
                 
 
 
 
-def ValidateCertificate(Certificate,IssuerPublicKey):
+def ValidateCertificate(Certificate,IssuerPublicKey):       #Validate a single certificate , ensuring within time limits and is correctly signed
     if not( Certificate["NotBefore"] <= time.time() and Certificate["NotAfter"] >= time.time()):
         return False
     key = RSA.import_key(IssuerPublicKey)
@@ -63,14 +63,14 @@ def ValidateCertificate(Certificate,IssuerPublicKey):
 
     return Valid_Signature
     
-def GetSignatureSource(Certificate):
+def GetSignatureSource(Certificate):        #Obtains the string to be hashed for the signature
     SignatureSource = codecs.encode(str(Certificate["Name"]) + str(Certificate["Issuer"]) + str(Certificate["NotBefore"]) + str(Certificate["NotAfter"]) + str(hashlib.sha256(Certificate["PublicKey"]).hexdigest()))
     return SignatureSource
         
         
 
 
-
+#Test Certificates and keys
 RootCertificates = [{'Signature': b'qV\x98n\xa8\x0c\xe1\xde\xc6\xf8\xbdK\xd4>\xf3\xdf\xb1\xc2\x02\x06z\xbf\x83#\xa2\xd5)>&\xdf\xf1\xbcm5$\x15wB\x84/L&\x1aA\xa2=\xae\xe2\x92\xab\xed\x1bP\x02c)5IT\xc1\xcft\xf1gb\x11\xd0\xa1p\xd3\xcei\xbe\xb8\xb3t\x06\xbf/\xd6$i\xc2\xfbO\xb2\x94]\x02\xa1\xf9\xfe\xec9\xd12!\x91\xea\xcb\x13\x0b\x7f\xd7\xfc\xac\xb8F\xe5\xd3\x7f\xee$\xc7?#\x07\x01\x8f\xf9\xb1\xaex\x87\x07Z#\x9e', 'NotBefore': 1, 'Name': 'IssuerA', 'PublicKey': b'0\x81\x9f0\r\x06\t*\x86H\x86\xf7\r\x01\x01\x01\x05\x00\x03\x81\x8d\x000\x81\x89\x02\x81\x81\x00\xcddI\xe9\xcbV\xc2\x931\n+\xc5\xef\xcc\xeft\xf8\x01\xe8s\x12\xe2\r)\xf8\x81\xb9\x1e\xcc\x06!n\xff\xd0=\xf1\x92\xa6\xd0\xff\x91~s\xf9pY\xde\xc2\xe4\x8e`\xd2\x02\xe8\xf2r\xa7=\xdbFK\x9a\x02b\x1a\xcdP\x07\x92>GU\x1a?\x89\x96\x89\x99\xf3b\xe5<\xfdJY\xd2\xc4]W\xe9j\x87\xb4\x82\xe0\xa8c\xa7\x87\xe2(\xb0\xa6\xc2M>\xab\xb5r\xd8\xdf\x10\x1a\x07\xd6\xc0\t\xb0\xa3Ng\x1aD%\xab\xb52\xad\x02\x03\x01\x00\x01', 'NotAfter': 10000000000000, 'Issuer': 'IssuerA'},
                     ]
 
@@ -84,7 +84,7 @@ PRIVATE_KEY = b'0\x82\x02]\x02\x01\x00\x02\x81\x81\x00\xcddI\xe9\xcbV\xc2\x931\n
 
 # CERTIFICATE CHAIN MUST RUN FROM ROOT CERTIFIATE TO SERVER
 
-def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY,hostname="localhost"):
+def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY,hostname="localhost"):       #Generates a chain used to test the program as well as the time taken to generate large chains.
     chain = []
     Issuer = "IssuerA"
     for x in range(length):
@@ -103,14 +103,14 @@ def CreateTestChain(length,RSA_KeySize,PRIVATE_KEY,hostname="localhost"):
     return chain,pk
 
 
-def VerifyBaseAddress(EndCertificate,con):
+def VerifyBaseAddress(EndCertificate,con):      #Verify if connection is to the correct server. A server could register the certificate with the server domain name so that the client can ensure they have the correct certificate.
     address = con.getpeername()[0]
     try:
         domain = socket.gethostbyaddr(address)[0]
     except:
         domain = None
 
-    if EndCertificate["Name"] not in [address,domain]:
+    if EndCertificate["Name"] not in [address,domain]:  #If it cannot link the certificate name to the domain or address then alert user
         print("[WARNING] The certificate name of the server could not be matched with the looked up domain name or address of the server")
         if AATC_Config.ALLOW_FAILED_DOMAIN_LOOKUP:
             print("Continuing anyway. Set ALLOW_FAILED_DOMAIN_LOOKUP to False to disable this behaviour")

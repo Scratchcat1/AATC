@@ -1,6 +1,6 @@
 import AATC_DB,AATC_AStar,ast,time,AATC_Config,AATC_Coordinate
 
-def NoFlyZoneGrapher_Launch(Thread_Name,Thread_Queue,Interval = 36000):  
+def NoFlyZoneGrapher_Launch(Thread_Name,Thread_Queue,Interval = 36000):  #Launch no fly zone grapher
     NFZG = NoFlyZoneGrapher(Thread_Name,Thread_Queue,Interval)
     NFZG.Main_Loop()
 
@@ -29,7 +29,7 @@ class NoFlyZoneGrapher:
 
     
         
-    def Main_Loop(self):
+    def Main_Loop(self):        #Repeatedly loop until told to exit. 
         self._Exit = False
         while not self._Exit:
             try:
@@ -55,10 +55,10 @@ class NoFlyZoneGrapher:
         for Slot in range(len(graph.GetFolderNames())):
             self.Make_Values(NoFlyZoneData,ABSlot = Slot)
         
-    def Mod(self,Coords):
+    def Mod(self,Coords):       #Find modulus tuple of coordinate
         return int(Coords.Get_X()//self._xSize),int(Coords.Get_Y()//self._ySize),int(Coords.Get_Z()//self._zSize)
         
-    def GetNoFlyZones(self):
+    def GetNoFlyZones(self):        #Extract the details of each no fly zone into a dictionary for ease of use
         _,Columns,Data = self._DB.GetNoFlyZones()
         Columns = ast.literal_eval(Columns)
         
@@ -80,7 +80,7 @@ class NoFlyZoneGrapher:
             
         return ProcessedData
 
-    def Make_Values(self,NoFlyZoneData,ABSlot = 1):
+    def Make_Values(self,NoFlyZoneData,ABSlot = 1):     #Write values to the graph on disk
         graph = AATC_AStar.DynoGraph(ABSlot = ABSlot)
         graph.ImportGraph()
         Values = {}
@@ -96,24 +96,24 @@ class NoFlyZoneGrapher:
                         NodeID = graph.Direct_NodeID(x,y,z)  #Gets NodeID for that area
                         
                         if NodeID in Values:
-                            v = max([Zone["Level"],Values[NodeID]])
+                            v = max([Zone["Level"],Values[NodeID]])     #Update node to have the maximum cost of all no fly zones for that location.
                         else:
-                            v = Zone["Level"]
+                            v = Zone["Level"]       #If the node has not yet been modified it will not yet be in the Values dictionary.
 
                         Values[NodeID] = v  #This gets the maximum cost for that node
 
-##        ######MODIFY TO BE OK
-##        graph.Node_Cache = {}  #Reduces memory usage.
+
+
         graph.FlushGraph()  #Reduces memory usage by removing the Node_Caches
 
         print("[NoFlyZoneGrapher] Length of Values:",len(Values))
-        for NodeID in graph.All_NodeIDs():   #CHECK THIS. Only using those involved with a new no fly zone may cause issues if a no fly zone was removed. Maybe should be set to all node IDs.
+        for NodeID in graph.All_NodeIDs():   
             node = graph.GetNode(NodeID)
-            if node.Get_NodeID() in Values:
+            if node.Get_NodeID() in Values:     #Alter cost of node.
                 node.Set_Cost( Values[node.Get_NodeID()])
                 Values.pop(node.Get_NodeID())# Reduce memory usage by evicting Node values which have been added already
             else:
-                node.Set_Cost(1)
+                node.Set_Cost(1)    #Reset cost to 1 if not covered by no fly zone
             if NodeID % AATC_Config.NOFLYZONEGRAPHER_FLUSH_GRAPH_NUMBER == 0:  #Every N nodes the program will save the current nodes and remove them from memory
                 try:
                     graph.SaveNodes([graph.CurrentFolderName()])  #Ensures any loaded nodes are saved. As all nodes in a block are loaded , entire blocks are saved thus no nodes are lost.

@@ -129,7 +129,7 @@ class MonitorInterface:
 
 
     
-def Connect(remote_ip,PORT):
+def Connect(remote_ip,PORT):    #Connect to server
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -146,7 +146,7 @@ def Connect(remote_ip,PORT):
 
 
 
-def CreateMonitorInterface(IP = "192.168.0.19",Port = 8001):
+def CreateMonitorInterface(IP = "192.168.0.19",Port = 8001):        #Create interface to server
     soc = Connect(IP,Port)
     M = MonitorInterface(soc)
     return M

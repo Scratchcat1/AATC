@@ -40,17 +40,17 @@ class Crypter:
 
 
 
-    def ClientGenerateKey(self,RSA_KeySize,AES_KeySize= AATC_Config.DEFAULT_AES_KEYSIZE):
+    def ClientGenerateKey(self,RSA_KeySize,AES_KeySize= AATC_Config.DEFAULT_AES_KEYSIZE):   #Start the relevant key exchange system
 
 
-        if AATC_Config.SET_ENCRYPTION_KEYS_ENABLE:   #Allows preshared encryption keys to be used 
+        if AATC_Config.SET_ENCRYPTION_KEYS_ENABLE:   #Allows preset encryption keys to be used 
             self.SetEncryptionKeys(AATC_Config.SET_AES_KEY, AATC_Config.SET_IV_KEY)
 
-        elif AATC_Config.ENCRYPTION_USE_PRESHARED_KEYS:
+        elif AATC_Config.ENCRYPTION_USE_PRESHARED_KEYS:     #Uses preshared certificates
             self.ClientPreSharedKeys(RSA_KeySize,AES_KeySize)
 
         else:
-            self.ClientExchangeKeys(RSA_KeySize,AES_KeySize)
+            self.ClientExchangeKeys(RSA_KeySize,AES_KeySize)    #Exchange AES keys using RSA
             
 
         self.Send(("Exit",()))
@@ -60,44 +60,44 @@ class Crypter:
                 
                 
 
-    def ClientPreSharedKeys(self,RSA_KeySize,AES_KeySize):
+    def ClientPreSharedKeys(self,RSA_KeySize,AES_KeySize):      #Swap keys using certificate authentication
         self.Send(("GetServerCertificateChain",()))
         Sucess,Message,CertificateChain = self.SplitData(self.Recv())
         if not Sucess:
             raise Exception("Server did not respond to command")
 
         if AES_KeySize not in AATC_Config.ALLOWED_AES_KEYSIZES:
-            raise Exception("AES key size not in ALLOWED_AES_KEYSIZES. Change keysize to an allowed value")
+            raise Exception("AES key size not in ALLOWED_AES_KEYSIZES. Change keysize to an allowed value")     #Only accept allowed key sizes 
 
         AESKey,IV = GenerateKeys(AES_KeySize)
-        PublicKey = AATC_CryptoBeta.VerifyCertificates(CertificateChain,AATC_Config.ROOT_CERTIFICATES,self._con)
+        PublicKey = AATC_CryptoBeta.VerifyCertificates(CertificateChain,AATC_Config.ROOT_CERTIFICATES,self._con)        #Verify the certificate chain is valid.
 
-        if PublicKey:
+        if PublicKey:   #If the chain is valid
             
             PKO = PKCS1_OAEP.new(RSA.import_key(PublicKey))
             EncryptedAESKey = PKO.encrypt(AESKey)
             EncryptedIV = PKO.encrypt(IV)
             self.SetEncryptionKeys(AESKey,IV)
-            self.Send(("SetKey",(EncryptedAESKey,EncryptedIV)))
+            self.Send(("SetKey",(EncryptedAESKey,EncryptedIV)))     #Swap keys encrypted using server public key
             Sucess,Message,Data = self.SplitData(self.Recv())
             if not Sucess:
-                raise Exception("Server rejected setting AES_Keys"+Message)
+                raise Exception("Server rejected setting AES_Keys"+Message)     
             
 
         else:
             print("Certificate Chain is not valid")
             if AATC_Config.AUTO_GENERATE_FALLBACK:
-                self.ClientExchangeKeys(RSA_KeySize,AES_KeySize)
+                self.ClientExchangeKeys(RSA_KeySize,AES_KeySize)        #Fall back on key exchange if allowed
             else:
-                raise Exception("Certificate Chain is not valid. Exception raised")
+                raise Exception("Certificate Chain is not valid. Exception raised")     #Raise exception if not allowed
                 
             
 
-    def ClientExchangeKeys(self,RSA_KeySize,AES_KeySize):
+    def ClientExchangeKeys(self,RSA_KeySize,AES_KeySize):       #Exchange the keys using RSA encryption
         RSAKey = RSA.generate(RSA_KeySize)
 
         privateKey = RSAKey.exportKey("DER")
-        publicKey = RSAKey.publickey().exportKey("DER")
+        publicKey = RSAKey.publickey().exportKey("DER")     #Get the RAS keys.
 
         self.Send(("GenerateKey",(publicKey,AES_KeySize)))   
         Sucess,Message,data = self.SplitData(self.Recv())     
@@ -105,7 +105,7 @@ class Crypter:
         RSAPrivateKey = RSA.import_key(privateKey)
         RSAPrivateObject = PKCS1_OAEP.new(RSAPrivateKey)
         
-        AESKey = RSAPrivateObject.decrypt(data[0])
+        AESKey = RSAPrivateObject.decrypt(data[0])          #Decrypt the recieved keys
         IV = RSAPrivateObject.decrypt(data[1])
 
         if Sucess == False:
@@ -116,17 +116,19 @@ class Crypter:
 
     ################################################################
 
-    def ServerGenerateKey(self):
+    def ServerGenerateKey(self):        #Server select the correct mode.
         if AATC_Config.SET_ENCRYPTION_KEYS_ENABLE:
-            self.SetEncryptionKeys(AATC_Config.SET_AES_KEY, AATC_Config.SET_IV_KEY)            
+            self.SetEncryptionKeys(AATC_Config.SET_AES_KEY, AATC_Config.SET_IV_KEY)            #Use preset keys if enabled
 
         self._Exit = False
-        while not self._Exit:
+        while not self._Exit:       #Start a server type loop (responds to commands from client)
             data = self.Recv()
             Command, Arguments = data[0],data[1]
 
+
+            #Respond to relevant command
             if Command == "GenerateKey":
-                Sucess,Message,Data = self.ServerGenerateKeys(Arguments)
+                Sucess,Message,Data = self.ServerGenerateKeys(Arguments)        
 
             elif Command == "GetServerCertificateChain":
                 Sucess,Message,Data = self.GetServerCertificateChain(Arguments)
@@ -150,7 +152,7 @@ class Crypter:
 
 
 
-    def ServerGenerateKeys(self,Arguments):
+    def ServerGenerateKeys(self,Arguments):     #Generate keys and encrypt with the provided RSA key
         publicKey,AES_KeySize = Arguments[0],Arguments[1]
         
         if AES_KeySize not in AATC_Config.ALLOWED_AES_KEYSIZES:
@@ -161,20 +163,20 @@ class Crypter:
         PublicKeyObject = PKCS1_OAEP.new( RSA.import_key(publicKey))
         
         EncryptedAESKey = PublicKeyObject.encrypt(AESKey)
-        EncryptedIV = PublicKeyObject.encrypt(IV)
+        EncryptedIV = PublicKeyObject.encrypt(IV)           #Encrypt AES keys
 
         self.SetEncryptionKeys(AESKey,IV)
-        return True,"Instated encryption keys",[EncryptedAESKey,EncryptedIV]
+        return True,"Instated encryption keys",[EncryptedAESKey,EncryptedIV]        #Return values to be sent
 
-    def GetServerCertificateChain(self,Arguments = None):
+    def GetServerCertificateChain(self,Arguments = None):       #Respond to request to get certificate chain.
         return True,"Server Certificate Chain",AATC_Config.SERVER_CERTIFICATE_CHAIN
 
-    def ServerSetKey(self,Arguments):
+    def ServerSetKey(self,Arguments):               #Set provided keys encrypted with public key of server
         PKO = PKCS1_OAEP.new(RSA.import_key(AATC_Config.SERVER_PRIVATE_KEY))
         AESKey,IV = Arguments[0],Arguments[1]
-        AESKey,IV = PKO.decrypt(AESKey),PKO.decrypt(IV)
+        AESKey,IV = PKO.decrypt(AESKey),PKO.decrypt(IV)     #Decrypt keys
         
-        if len(AESKey) in AATC_Config.ALLOWED_AES_KEYSIZES:
+        if len(AESKey) in AATC_Config.ALLOWED_AES_KEYSIZES:     
             self.SetEncryptionKeys(AESKey,IV)
             return True,"Keys set",[]
         else:
@@ -188,7 +190,7 @@ class Crypter:
     ###############################################
 
 
-    def SetEncryptionKeys(self,AESKey,IV):
+    def SetEncryptionKeys(self,AESKey,IV):  #Set the encryption keys and AES encryption objects
         self._AESKey = AESKey
         self._IV = IV
         self._EncryptAES = AES.new(self._AESKey,AES.MODE_GCM,self._IV)    #Two seperate instances to encrypt and decrypt as non ECB AES is a stream cipher
@@ -222,7 +224,7 @@ class Crypter:
 
 
     
-def GenerateKeys(AES_KeySize):
+def GenerateKeys(AES_KeySize):  #Creates random keys using source which is cryptographically random
     AESKey = os.urandom(AES_KeySize)  # Here to allow regeneration of AES key while still in loop if required.
     IV     = os.urandom(AES_KeySize)
     return AESKey,IV

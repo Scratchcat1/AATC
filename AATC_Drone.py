@@ -95,7 +95,7 @@ class DroneInterface:
 
 
 
-class Flight:
+class Flight:       #Stores details about a flight
     def __init__(self,FlightID,DroneID,StartCoord,EndCoord,StartTime,ETA,Distance):
         self._FlightID = FlightID
         self._DroneID = DroneID
@@ -126,7 +126,7 @@ class Flight:
     def Get_Distance(self):
         return self._Distance
 
-class Waypoint:
+class Waypoint:         #Stores details about a waypoint
     def __init__(self,FlightID,WaypointNumber,Coord,ETA):
         self._FlightID = FlightID
         self._WaypointNumber = WaypointNumber
@@ -148,12 +148,12 @@ class Waypoint:
 
 
 
-def ConvertCoordString(CoordString):
+def ConvertCoordString(CoordString):        #Converts a string coordinate to a coordinate object
     CoordTuple = ast.literal_eval(CoordString)
     Coord = AATC_Coordinate.Coordinate(CoordTuple[0],CoordTuple[1],CoordTuple[2],0,0,0)
     return Coord
 
-def GetFlightObject(Message,Data):
+def GetFlightObject(Message,Data):      #Generates the flight object
     Data = Data[0]  # as Data = [(Stuff,stuff,even more stuff)]
     Columns = ast.literal_eval(Message)
     FlightIDIndex = Columns.index("FlightID")
@@ -179,7 +179,7 @@ def GetFlightObject(Message,Data):
     FlightObj = Flight(FlightID,DroneID,StartCoord,EndCoord,StartTime,ETA,Distance)
     return FlightObj
 
-def GetWaypointObjects(Message,Data):
+def GetWaypointObjects(Message,Data):       #Generates the waypoint objects
     WaypointList = []
     Columns = ast.literal_eval(Message)
     
@@ -207,10 +207,10 @@ def GetWaypointObjects(Message,Data):
 ##        WaypointList.append(item[1])
     return WaypointList
     
-def MakeDroneInfo(DroneMessage,DroneData):
+def MakeDroneInfo(DroneMessage,DroneData):  
     return DroneInformation(DroneMessage,DroneData)
 
-class DroneInformation:
+class DroneInformation:         #Stores information about the drone to be simulated
     def __init__(self,Message,DroneInfo):
         DroneInfo = DroneInfo[0]
         Message = ast.literal_eval(Message)
@@ -225,7 +225,7 @@ class DroneInformation:
         self._DroneType = ColumnValue["DroneType"]
         self._DroneSpeed = ColumnValue["DroneSpeed"]
         self._DroneRange = ColumnValue["DroneRange"]
-        self._DroneWeight = ColumnValue["DroneWeight"]
+        self._DroneWeight = ColumnValue["DroneWeight"]      #Imports the drone information from the string
 
     def Get_DroneID(self):
         return self._DroneID
@@ -245,7 +245,7 @@ class DroneInformation:
 
 
 
-def Connect(remote_ip,PORT):
+def Connect(remote_ip,PORT):        #Connects to the server
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -261,7 +261,7 @@ def Connect(remote_ip,PORT):
         sys.exit()
 
 
-def CreateDroneInterface(IP = "127.0.0.1",Port = 8002):
+def CreateDroneInterface(IP = "127.0.0.1",Port = 8002):     #Creates a drone interface connection to the server
     soc = Connect(IP,Port)
     D = DroneInterface(soc)
     return D

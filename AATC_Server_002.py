@@ -1,6 +1,6 @@
-import codecs,ast,socket,recvall,os,math,random,time,pickle
-import AATC_AStar,AATC_DB, AATC_Crypto,AATC_Config,AATC_Weather
-from AATC_Coordinate import *
+import codecs,ast,socket,recvall,random,time
+import AATC_AStar,AATC_DB, AATC_Crypto,AATC_Config,AATC_Weather,AATC_Coordinate
+##from AATC_Coordinate import *
 
 def GetTime():
     return int(time.time())
@@ -25,13 +25,14 @@ class ClientConnection:
     """
     def __init__(self,Thread_Name,Thread_Queue,Connection):
         self._DB = AATC_DB.DBConnection()
+        self.Create_Commands()
         self._Thread_Name = Thread_Name
         self._Thread_Queue = Thread_Queue
         self._con = Connection
         self._Crypto = AATC_Crypto.Crypter(self._con, mode = "SERVER" )
         self._ClientID = -1  #Used to identify if has logged in yet
 
-    def Connection_Loop(self):
+    def Connection_Loop(self):      #Loop until exit. Checks and executes commands each loop.
         """
             Keeps looping in request for Client,
             Recived data in format (CommandString,(Arg1,Arg2...))
@@ -68,9 +69,9 @@ class ClientConnection:
         self._con.close()
         print("Process is exiting")
 
-    def Send(self,data):
+    def Send(self,data):    #Encrypt and send
         self._con.sendall(self._Crypto.Encrypt(codecs.encode(str(data))))
-    def Recv(self):
+    def Recv(self):     #Receive and decrypt
         try:
             data = self._Crypto.Decrypt(recvall.recvall(self._con))
             data = ast.literal_eval(codecs.decode(data))
@@ -78,105 +79,74 @@ class ClientConnection:
         except Exception as e:
             return ("",())#Never references a command
 
-    def Exit(self,Arguments = None):
+    def Exit(self,Arguments = None):    #Exit the program
         #self._DB.db_con.close()
+        self._ExitLoop = True
         print("Process for ",self._Thread_Name,":",self._ClientID," is exiting..")
         return True,"Server process is exiting. Ok to disconnect",[]
         
     
     
-class UserConnection(ClientConnection):
+class UserConnection(ClientConnection):     #Used to interface with the user clients.
+    def Create_Commands(self):
+        self._Non_Authenticated_Commands = {
+            "Login":self.Login,
+            "AddUser":self.AddUser,
+            "Exit":self.Exit  }
+        self._Authenticated_Commands = {
+            "GetNoFlyZones":self.GetNoFlyZones,
+            "AddNoFlyZone":self.AddNoFlyZone,
+            "RemoveNoFlyZone":self.RemoveNoFlyZone,
+            "ModifyNoFlyZoneLevel":self.ModifyNoFlyZoneLevel,
+
+            "AddDrone":self.AddDrone,
+            "RemoveDrone":self.RemoveDrone,
+            "GetDroneID":self.GetDroneID,
+            "GetDroneCredentials":self.GetDroneCredentials,
+            "SetDroneCredentials":self.SetDroneCredentials,
+            "CheckDroneOwnership":self.CheckDroneOwnership,
+            "GetDroneInfo":self.GetDroneInfo,
+            "GetDronesUser":self.GetDronesUser,
+            "GetDronesAll":self.GetDronesAll,
+
+            "Login":self.Login,
+            "GetUserID":self.GetUserID,
+            "GetUsername":self.GetUsername,
+            "SetFlightVisibility":self.SetFlightVisibility,
+            "SetAccountType":self.SetAccountType,
+            "UserChangePassword":self.UserChangePassword,
+
+
+            "GetFlightsUser":self.GetFlightsUser,
+            "GetFlightsAll":self.GetFlightsAll,
+            "AddFlight":self.AddFlight,
+            "RemoveFlight":self.RemoveFlight,
+            
+            "GetFlightWaypointsUser":self.GetFlightWaypointsUser,
+            "GetFlightWaypointsAll":self.GetFlightWaypointsAll,
+            
+            "GetMonitorID":self.GetMonitorID,
+            "GetMonitorName":self.GetMonitorName,
+            
+            "AddMonitorPermission":self.AddMonitorPermission,
+            "RemoveMonitorPermission":self.RemoveMonitorPermission,
+            "ModifyMonitorPermissionData":self.ModifyMonitorPermissionDate,
+            "GetMonitorPermissionUser":self.GetMonitorPermissionUser,
+
+            "Exit":self.Exit }
     
-    def ProcessCommand(self,Command,Arguments):
+    def ProcessCommand(self,Command,Arguments):      #Executes a command with arguments depending on login state
         if self._ClientID == -1:
-            if Command == "Login":
-                Sucess,Message,Data = self.Login(Arguments)
-            elif Command == "AddUser":  # If adding a new user, one must create it first, then log in seperatly
-                Sucess,Message,Data = self.AddUser(Arguments)
-            elif Command == "Exit":
-                Sucess,Message,Data = self.Exit(Arguments)
-                Exit = True
-            else:
-                Sucess,Message,Data = False,"Command does not exist",[]
-                
+            Function = self._Non_Authenticated_Commands.get(Command)
         else:
-            if Command == "GetNoFlyZones":
-                Sucess,Message,Data = self.GetNoFlyZones(Arguments)
-            elif Command == "AddNoFlyZone":
-                Sucess,Message,Data = self.AddNoFlyZone(Arguments)
-            elif Command == "RemoveNoFlyZone":
-                Sucess,Message,Data = self.RemoveNoFlyZone(Arguments)
-            elif Command == "ModifyNoFlyZoneLevel":
-                Sucess,Message,Data = self.ModifyNoFlyZoneLevel(Arguments)
-                
-            elif Command == "AddDrone":
-                Sucess,Message,Data = self.AddDrone(Arguments)
-            elif Command == "RemoveDrone":
-                Sucess,Message,Data = self.RemoveDrone(Arguments)
-            elif Command == "GetDroneID":
-                Sucess,Message,Data = self.GetDroneID(Arguments)
-            elif Command == "GetDroneCredentials":
-                Sucess,Message,Data = self.GetDroneCredentials(Arguments)
-            elif Command == "SetDroneCredentials":
-                Sucess,Message,Data = self.SetDroneCredentials(Arguments)
-            elif Command == "CheckDroneOwnership":
-                Sucess,Message,Data = self.CheckDroneOwnership(Arguments)
-            elif Command == "GetDroneInfo":
-                Sucess,Message,Data = self.GetDroneInfo(Arguments)
-            elif Command == "GetDronesUser":
-                Sucess,Message,Data = self.GetDronesUser(Arguments)
-            elif Command == "GetDronesAll":
-                Sucess,Message,Data = self.GetDronesAll(Arguments)
-
-            elif Command == "Login":   #Can then change UserID without restarting, UserID is changed as well as components on client side
-                Sucess,Message,Data = self.Login(Arguments)
-            elif Command == "GetUserID":
-                Sucess,Message,Data = self.GetUserID(Arguments)
-            elif Command == "GetUsername":
-                Sucess,Message,Data = self.GetUsername(Arguments)
-            elif Command == "SetFlightVisibility":
-                Sucess,Message,Data = self.SetFlightVisibility(Arguments)
-            elif Command == "SetAccountType":
-                Sucess,Message,Data = self.SetAccountType(Arguments)
-            elif Command == "UserChangePassword":
-                Sucess,Message,Data = self.UserChangePassword(Arguments)
-            
-            elif Command == "GetFlightsUser":
-                Sucess,Message,Data = self.GetFlightsUser(Arguments)
-            elif Command == "GetFlightsAll":
-                Sucess,Message,Data = self.GetFlightsAll(Arguments)
-            elif Command == "AddFlight":
-                Sucess,Message,Data = self.AddFlight(Arguments)
-            elif Command == "RemoveFlight":
-                Sucess,Message,Data = self.RemoveFlight(Arguments)
-            
-            elif Command == "GetFlightWaypointsUser":
-                Sucess,Message,Data = self.GetFlightWaypointsUser(Arguments)
-            elif Command == "GetFlightWaypointsAll":
-                Sucess,Message,Data = self.GetFlightWaypointsAll(Arguments)
-            
-            elif Command == "GetMonitorID":
-                Sucess,Message,Data = self.GetMonitorID(Arguments)
-            elif Command == "GetMonitorName":
-                Sucess,Message,Data = self.GetMonitorName(Arguments)
-            
-            elif Command == "AddMonitorPermission":
-                Sucess,Message,Data = self.AddMonitorPermission(Arguments)
-            elif Command == "RemoveMonitorPermission":
-                Sucess,Message,Data = self.RemoveMonitorPermission(Arguments)
-            elif Command == "ModifyMonitorPermissionDate":
-                Sucess,Message,Data = self.ModifyMonitorPermissionDate(Arguments)
-            elif Command == "GetMonitorPermissionUser":
-                Sucess,Message,Data = self.GetMonitorPermissionUser(Arguments)
-
-            elif Command == "Exit":
-                Sucess,Message,Data = self.Exit(Arguments)
-                self._ExitLoop = True
-            #Else if command doesnt exist send back Failure
-            else:
-                Sucess,Message,Data = False,"Command does not exist",[]
-                print(self._Thread_Name,self._ClientID," tried to use unregistered command")
+            Function = self._Authenticated_Commands.get(Command)
+        if Function != None:
+            Sucess,Message,Data = Function(Arguments)
+        else:
+            Sucess,Message,Data = False,"Command does not exist",[]
+            print(self._Thread_Name,self._ClientID," tried to use unregistered command")
         return Sucess,Message,Data
+
             
     def Login(self,Arguments):
         Username,Password = Arguments[0],Arguments[1]
@@ -301,7 +271,7 @@ class UserConnection(ClientConnection):
         Sucess,Message,Data = self._DB.GetFlightsAll()
         return Sucess,Message,Data
     
-    def AddFlight(self,Arguments):
+    def AddFlight(self,Arguments):      #Finds the path for a flight and adds it to the database
         DroneID,HighPoints,StartTime = Arguments[0],Arguments[1],Arguments[2]
         if StartTime < GetTime():
             if StartTime <= 2678400:   #Allow starting of flights up to 1 month ahead. No need to enter very large numbers for no reason.
@@ -372,7 +342,7 @@ class UserConnection(ClientConnection):
                 TotalDistance = 0
                 for x in range(len(CoordList)):
                     if x != 0: #If not first Coord add the difference in distance to time etc
-                        Distance = DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
+                        Distance = AATC_Coordinate.DeltaCoordToMetres(CoordList[x]["Coords"],CoordList[x-1]["Coords"]) #Gets distance in metres
                         TotalDistance += Distance
 
                         if AATC_Config.ENABLE_FINE_SPEED_ESTIMATION:
@@ -412,13 +382,14 @@ class UserConnection(ClientConnection):
 
 
                 
-        #Stuff I still need to do
-        #Eg add to tempoary PrebookFlight Table
-        #User pathfinding to translate to Waypoints,Flight and remove from table
-        return Sucess,Message,[]
+##        #Stuff I still need to do
+##        #Eg add to tempoary PrebookFlight Table
+##        #User pathfinding to translate to Waypoints,Flight and remove from table
+##        return Sucess,Message,[]
 
     def RemoveFlight(self,Arguments):
         FlightID = Arguments[0]
+        Sucess,Message = self._DB.RemoveFlightWaypoints(self._ClientID,FlightID)
         Sucess,Message = self._DB.RemoveFlight(self._ClientID,FlightID)
         return Sucess,Message,[]
 
@@ -481,18 +452,19 @@ class UserConnection(ClientConnection):
 
 
 
-class BotConnection(UserConnection):
+class BotConnection(UserConnection):        #Interfaces with the bot
     def __init__(self,UserID,chat_id,packet,OutputQueue):
         self._ClientID = UserID
-        self.chat_id = chat_id
-        self.OutputQueue = OutputQueue
+        self._chat_id = chat_id
+        self._OutputQueue = OutputQueue
+        self.Create_Commands()
         self._DB = AATC_DB.DBConnection()
         self._Thread_Name = "[BOT FOR UID "+str(self._ClientID)+"]"
         
         Command, Arguments = packet[0],packet[1]
         self.Main(Command,Arguments)
 
-    def Main(self,Command,Arguments):
+    def Main(self,Command,Arguments):   #Executes the single command passed to the routine
         try:
             Sucess,Message,Data = self.ProcessCommand(Command,Arguments)
                 
@@ -508,47 +480,47 @@ class BotConnection(UserConnection):
             
         
 
-    def Send(self,data):
+    def Send(self,data):    #Sends data back to the main bot thread
         Sucess,Message,Data = data[0],data[1],data[2]
         data = str(Sucess) +"\n" +str(Message)+ "\n" + str(Data)
-        self.OutputQueue.put((data,self.chat_id))
+        self._OutputQueue.put((data,self._chat_id))
 
-    def Login(self,Arguments):
+    def Login(self,Arguments):      #Sets the new UserID for the given chat_id in the session table
         Username,Password = Arguments[0],Arguments[1]
         Sucess,Message,UserID = self._DB.CheckCredentials(Username,Password)
         self._DB.Bot_SetUserID(self.chat_id,UserID)
         return Sucess,Message,[]
 
 
-
-class WebConnection(UserConnection):
-    def __init__(self,UserID):
-        self._ClientID = UserID
-        self._DB = AATC_DB.DBConnection()
-        self._Thread_Name = "[WEB FOR UID "+str(self._ClientID)+"]"
-        
-        
-
-    def Main(self,packet):
-        Command, Arguments = packet[0],packet[1]
-        try:
-            Sucess,Message,Data = self.ProcessCommand(Command,Arguments)
-                
-        except Exception as e:
-            Sucess,Message,Data = False,"An Error occured"+str(e),[]
-            print("Error occured with UserID:",str(self._ClientID),". Error :",str(e),". Sending failure message")
-
-
-        self._DB.Exit()
-        return Sucess,Message,Data
-        
-    def Login(self,Arguments):
-        Username,Password = Arguments[0],Arguments[1]
-        Sucess,Message,UserID = self._DB.CheckCredentials(Username,Password)
-        return Sucess,Message,UserID
-
-
-
+##
+##class WebConnection(UserConnection):  # Not part of project as such
+##    def __init__(self,UserID):
+##        self._ClientID = UserID
+##        self._DB = AATC_DB.DBConnection()
+##        self._Thread_Name = "[WEB FOR UID "+str(self._ClientID)+"]"
+##        
+##        
+##
+##    def Main(self,packet):
+##        Command, Arguments = packet[0],packet[1]
+##        try:
+##            Sucess,Message,Data = self.ProcessCommand(Command,Arguments)
+##                
+##        except Exception as e:
+##            Sucess,Message,Data = False,"An Error occured"+str(e),[]
+##            print("Error occured with UserID:",str(self._ClientID),". Error :",str(e),". Sending failure message")
+##
+##
+##        self._DB.Exit()
+##        return Sucess,Message,Data
+##        
+##    def Login(self,Arguments):
+##        Username,Password = Arguments[0],Arguments[1]
+##        Sucess,Message,UserID = self._DB.CheckCredentials(Username,Password)
+##        return Sucess,Message,UserID
+##
+##
+##
 
 
 
@@ -558,67 +530,48 @@ class WebConnection(UserConnection):
 
     
 
-class MonitorConnection(ClientConnection):
-    def ProcessCommand(self,Command,Arguments):
+class MonitorConnection(ClientConnection):      #Interfaces with a monitor
+    def Create_Commands(self):
+        self._Non_Authenticated_Commands = {
+            "Login":self.Login,
+            "AddMonitor":self.AddMonitor,
+            "Exit":self.Exit }
+        self._Authenticated_Commands = {
+            "Login":self.Login,
+            "MonitorChangePassword":self.MonitorChangePassword,
+            
+            "GetNoFlyZones":self.GetNoFlyZones,
+            "GetDronesAll":self.GetDronesAll,
+
+            "GetUserID":self.GetUserID,
+            "GetUsername":self.GetUsername,
+
+            "GetMonitorDrones":self.GetMonitorDrones,
+            "GetMonitorFlights":self.GetMonitorFlights,
+            "GetMonitorFlightWaypoints":self.GetMonitorFlightWaypoints,
+
+            "GetMonitorID":self.GetMonitorID,
+            "GetMonitorName":self.GetMonitorName,
+
+            "RemoveMonitorPermission":self.RemoveMonitorPermission,
+            "GetMonitorPermissionMonitor":self.GetMonitorPermissionMonitor,
+
+            "GetFlightsAll":self.GetFlightsAll,
+            "GetFlightWaypointsAll":self.GetFlightWaypointsAll,
+
+            "Exit":self.Exit}
+            
+            
+    def ProcessCommand(self,Command,Arguments): 
         if self._ClientID == -1:
-            if Command == "Login":
-                Sucess,Message,Data = self.Login(Arguments)
-            elif Command == "AddMonitor":  # If adding a new Monitor, one must create it first, then log in seperatly
-                Sucess,Message,Data = self.AddMonitor(Arguments)
-            elif Command == "Exit":
-                Sucess,Message,Data = self.Exit(Arguments)
-                Exit = True
-            else:
-                Sucess,Message,Data = False,"Command does not exist",[]
-
+            Function = self._Non_Authenticated_Commands.get(Command)
         else:
-            if Command == "Login":
-                Sucess,Message,Data = self.Login(Arguments)
-            elif Command == "MonitorChangePassword":
-                Sucess,Message,Data = self.MonitorChangePassword(Arguments)
-
-            elif Command == "GetNoFlyZones":
-                Sucess,Message,Data = self.GetNoFlyZones(Arguments)
-                
-            elif Command == "GetDronesAll":
-                Sucess,Message,Data = self.GetDronesAll(Arguments)
-                
-            elif Command == "GetUserID":
-                Sucess,Message,Data = self.GetUserID(Arguments)
-            elif Command == "GetUsername":
-                Sucess,Message,Data = self.GetUsername(Arguments)
-
-            elif Command == "GetMonitorDrones":
-                Sucess,Message,Data = self.GetMonitorDrones(Arguments)
-            elif Command == "GetMonitorFlights":
-                Sucess,Message,Data = self.GetMonitorFlights(Arguments)
-            elif Command == "GetMonitorFlightWaypoints":
-                Sucess,Message,Data = self.GetMonitorFlightWaypoints(Arguments)
-
-            elif Command == "GetMonitorID":
-                Sucess,Message,Data = self.GetMonitorID(Arguments)
-            elif Command == "GetMonitorName":
-                Sucess,Message,Data = self.GetMonitorName(Arguments)
-
-            elif Command == "RemoveMonitorPermission":
-                Sucess,Message,Data = self.RemoveMonitorPermission(Arguments)
-            elif Command == "GetMonitorPermissionMonitor":
-                Sucess,Message,Data = self.GetMonitorPermissionMonitor(Arguments)
-
-            elif Command == "GetFlightsAll":
-                Sucess,Message,Data = self.GetFlightsAll(Arguments)
-
-            elif Command == "GetFlightWaypointsAll":
-                Sucess,Message,Data = self.GetFlightWaypointsAll(Arguments)
-
-            elif Command == "Exit":
-                Sucess,Message,Data = self.Exit(Arguments)
-                self._ExitLoop = True
-
-            #Else if command doesnt exist send back Failure
-            else:
-                Sucess,Message,Data = False,"Command does not exist",[]
-                print(self._Thread_Name,self._ClientID," tried to use unregistered command")
+            Function = self._Authenticated_Commands.get(Command)
+        if Function != None:
+            Sucess,Message,Data = Function(Arguments)
+        else:
+            Sucess,Message,Data = False,"Command does not exist",[]
+            print(self._Thread_Name,self._ClientID," tried to use unregistered command")
         return Sucess,Message,Data
 
     ################################
@@ -712,44 +665,33 @@ class MonitorConnection(ClientConnection):
 
 
 
-class DroneConnection(ClientConnection):
+class DroneConnection(ClientConnection):        #Interfaces with drones
+    def Create_Commands(self):
+        self._Non_Authenticated_Commands = {
+            "Login":self.Login,
+            "Exit":self.Exit  }
+        self._Authenticated_Commands = {
+            "UpdateDroneStatus":self.UpdateDroneStatus,
+            "DroneGetDroneInfo":self.DroneGetDroneInfo,
+            "CheckForFlight":self.CheckForFlight,
+            "GetFlight":self.GetFlight,
+            "GetFlightWaypoints":self.GetFlightWaypoints,
+            "MarkFlightComplete":self.MarkFlightComplete,
+            "Exit":self.Exit }
 
-    def ProcessCommand(self,Command,Arguments):
+    def ProcessCommand(self,Command,Arguments):      #Executes a command with arguments depending on login state
         if self._ClientID == -1:
-            if Command == "Login":
-                Sucess,Message,Data = self.Login(Arguments)
-            elif Command == "Exit":
-                Sucess,Message,Data = self.Exit(Arguments)
-                Exit = True
-            else:
-                Sucess,Message,Data = False,"Command does not exist",[]
-                
-
+            Function = self._Non_Authenticated_Commands.get(Command)
         else:
-            if Command == "UpdateDroneStatus":
-                Sucess,Message,Data = self.UpdateDroneStatus(Arguments)
-
-            elif Command == "DroneGetDroneInfo":
-                Sucess,Message,Data = self.DroneGetDroneInfo(Arguments)
-                
-            elif Command == "CheckForFlight":
-                Sucess,Message,Data = self.CheckForFlight(Arguments)
-            elif Command == "GetFlight":
-                Sucess,Message,Data = self.GetFlight(Arguments)
-            elif Command == "GetFlightWaypoints":
-                Sucess,Message,Data = self.GetFlightWaypoints(Arguments)
-            elif Command == "MarkFlightComplete":
-                Sucess,Message,Data = self.MarkFlightComplete(Arguments)
-
-            elif Command == "Exit":
-                Sucess,Message,Data = self.Exit(Arguments)
-                self._ExitLoop = True
-
-            #Else if command doesnt exist send back Failure
-            else:
-                Sucess,Message,Data = False,"Command does not exist",[]
-                print(self._Thread_Name,self._ClientID," tried to use unregistered command")
+            Function = self._Authenticated_Commands.get(Command)
+        if Function != None:
+            Sucess,Message,Data = Function(Arguments)
+        else:
+            Sucess,Message,Data = False,"Command does not exist",[]
+            print(self._Thread_Name,self._ClientID," tried to use unregistered command")
         return Sucess,Message,Data
+
+ 
 
     def Login(self,Arguments):
         DroneID,DronePassword = Arguments[0],Arguments[1]
@@ -759,7 +701,7 @@ class DroneConnection(ClientConnection):
     ########################################################
 
     def UpdateDroneStatus(self,Arguments):
-        LastCoords,LastBattery = Coordinate(*Arguments[0]),Arguments[1]
+        LastCoords,LastBattery = AATC_Coordinate.Coordinate(*Arguments[0]),Arguments[1]
         Sucess,Message = self._DB.UpdateDroneStatus(self._ClientID,LastCoords,LastBattery)
         return Sucess,Message,[]
 
@@ -798,20 +740,20 @@ class DroneConnection(ClientConnection):
 
 
 
-def Cleaner(Thread_Name,Thread_Queue,Interval = 36000,EndTimeThreshold = 72000):
+def Cleaner(Thread_Name,Thread_Queue,Interval = 36000,EndTimeThreshold = 72000):    #Ensures the database does not contain old or unneeded data by removing old items.
     Exit = False
     while not Exit:
         try:
             DB = AATC_DB.DBConnection()
             while not Exit:
                 print("Cleaner starting cleaning")
-                DB.CleanMonitorPermissions()
+                DB.CleanMonitorPermissions()    #Remove expired permissions
                 
                 Sucess,Message,FlightIDs = DB.GetCompletedFlightIDs(EndTimeThreshold)
-                DB.CleanFlights(FlightIDs)
-                
                 for WrappedID in FlightIDs: #Wrapped as will be in for FlightIDs = [[a,],[b,],[c,]] where letters mean flightIDs
                     DB.CleanCompletedFlightWaypoints(WrappedID[0])
+
+                DB.CleanFlights(FlightIDs)          #Remove old flights   
                 print("Cleaner completed cleaning. Sleeping..")
                 time.sleep(Interval)
 
@@ -823,6 +765,8 @@ def Cleaner(Thread_Name,Thread_Queue,Interval = 36000,EndTimeThreshold = 72000):
             
         except Exception as e:
             print("Error in Cleaner",e)
+            time.sleep(60)
+    DB.Exit()
     
 
 

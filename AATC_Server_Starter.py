@@ -4,115 +4,6 @@ import AATC_Server_002 as AATC_Server
 from flask_app import Flask_Test_App
 
 
-def UserProcessSpawner():
-    while True:
-        try:
-            HOST = ''
-            PORT = 8000
-
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            print( 'Socket created')
-            s.bind((HOST, PORT))
-                 
-            print( 'Socket bind complete')
-            s.listen(10)
-            print( 'Socket now listening')
-
-
-            while True:
-                try:
-                    conn, addr = s.accept()
-                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1])+ "Type:User")
-                    UserProcess = multiprocessing.Process(target = MakeUserConnection,args = (conn,))
-                    UserProcess.start()
-                except Exception as e:
-                    print("Error creating User connection",str(e))
-        except Exception as e:
-            print("Error in UserProcessSpawner",str(e))
-
-def MakeUserConnection(Thread_Name,Thread_Queue,conn):
-    try:
-        UConn = AATC_Server.UserConnection(Thread_Name,Thread_Queue,conn)
-        UConn.Connection_Loop()
-    except Exception as e:
-        print("Serious error in UserConnection",e)
-
-#####################################################
-
-def MonitorProcessSpawner():
-    while True:
-        try:
-            HOST = ''
-            PORT = 8001
-
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            print( 'Socket created')
-     
-            s.bind((HOST, PORT))
-            print( 'Socket bind complete')
-            s.listen(10)
-            print( 'Socket now listening')
-
-            while True:
-                try:
-                    conn, addr = s.accept()
-                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1]) + "Type:Monitor")
-                    MonitorProcess = multiprocessing.Process(target = MakeMonitorConnection,args = (conn,))
-                    MonitorProcess.start()
-                except Exception as e:
-                    print("Error creating Monitor connection",str(e))
-        except Exception as e:
-            print("Error in MonitorProcessSpawner",str(e))
-
-def MakeMonitorConnection(Thread_Name,Thread_Queue,conn):
-    try:
-        MConn = AATC_Server.MonitorConnection(Thread_Name,Thread_Queue,conn)
-        MConn.Connection_Loop()
-    except Exception as e:
-        print("Serious error in MonitorConnection",e)
-
-
-
-############################################################
-
-def DroneProcessSpawner():
-    while True:
-        try:
-            HOST = ''
-            PORT = 8002
-
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            print( 'Socket created')
-            s.bind((HOST, PORT))
-
-                 
-            print( 'Socket bind complete')
-            s.listen(10)
-            print( 'Socket now listening')
-
-
-            while True:
-                try:
-                    conn, addr = s.accept()
-                    print( '\nConnected with ' + addr[0] + ':' + str(addr[1])+ "Type:Drone")
-                    DroneProcess = multiprocessing.Process(target = MakeDroneConnection, args = (conn,))
-                    DroneProcess.start()
-                except Exception as e:
-                    print("Error creating Drone connection",str(e))
-        except Exception as e:
-            print("Error in DroneProcessSpawner",str(e))
-
-def MakeDroneConnection(Thread_Name,Thread_Queue,conn):
-    try:
-        DConn = AATC_Server.DroneConnection(Thread_Name,Thread_Queue,conn)
-        DConn.Connection_Loop()
-    except Exception as e:
-        print("Serious error in DroneConnection",e)
-
-
 
 ##########################################################
 #####################This section is part of the flask webserver component of the AATC program, not part of the main project.
@@ -124,9 +15,9 @@ def StartFlaskServer(Thread_Name,Thread_Queue):
 ##########################################################
 
 
-def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
+def ProcessSpawner(Name,Communications_Queue,Port,Type,Target): #Spawn processes for each connection
     Exit = False
-    Spawner_Control_Queue = AATC_GPIO.Create_Controller()
+    Spawner_Control_Queue = AATC_GPIO.Create_Controller()       #Create a controller for the sub processes
     ID_Counter = 1
     DisplayName = "["+str(Name)+":"+str(Type)+"]"
     while not Exit:
@@ -137,7 +28,7 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             print(DisplayName,'Socket created')
-            s.bind((HOST, PORT))
+            s.bind((HOST, PORT))            #Bind to the port
 
                  
             print(DisplayName, 'Socket bind complete')
@@ -147,10 +38,10 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
 
             while not Exit:
                 try:
-                    conn, addr = s.accept()
+                    conn, addr = s.accept()     #Accept connections
                     print(DisplayName, ' Connected with' , addr[0] , ':' , str(addr[1]), "Type:",Type)
                     Thread_Name = Type+str(ID_Counter)
-                    Spawner_Control_Queue.put(("Controller","Create_Process",(Thread_Name,Target,(conn,))))
+                    Spawner_Control_Queue.put(("Controller","Create_Process",(Thread_Name,Target,(conn,))))     #Create the sub process for the connection
                     ID_Counter +=1
                 except Exception as e:
                     print("Error creating" ,Type,"connection",str(e))
@@ -169,7 +60,7 @@ def ProcessSpawner(Name,Communications_Queue,Port,Type,Target):
             
     Spawner_Control_Queue.put(("Controller","Exit",(True,)))
 
-def StartProcesses(Control_Queue):
+def StartProcesses(Control_Queue):      #Start each of the main sub processes.
     Control_Queue.put(("Controller","Create_Process",("USpawner",ProcessSpawner,(8000,"User",MakeUserConnection))))
     Control_Queue.put(("Controller","Create_Process",("MSpawner",ProcessSpawner,(8001,"Monitor",MakeMonitorConnection))))
     Control_Queue.put(("Controller","Create_Process",("DSpawner",ProcessSpawner,(8002,"Drone",MakeDroneConnection))))
@@ -183,7 +74,7 @@ def StartProcesses(Control_Queue):
     print("[StartProcesses] All processes started")
     
 
-if __name__ == "__main__":
+if __name__ == "__main__":      #Starts the server
     print("Server is starting")
     
 
@@ -200,7 +91,7 @@ if __name__ == "__main__":
     print("Killing all Server processes....")
     print("This may take time, sleeping processes will be killed when resuming from sleep")
 
-    Control_Queue.put(("Controller","Exit",(True,)))
+    Control_Queue.put(("Controller","Exit",(True,)))    #Tells the sub processes to quit
     
     print("Main process is now exiting...")
     sys.exit()

@@ -1,13 +1,13 @@
-import pyowm, AATC_Coordinate, math,time
+import pyowm, AATC_Coordinate, math,time,AATC_Config
 
-def Get_OWM():
-    owm = pyowm.OWM('5b943c4857a45d75ef7ee9b301666fa8')
+##def Get_OWM():
+##    owm = pyowm.OWM('5b943c4857a45d75ef7ee9b301666fa8')
 
 class OWM_Control:
     def __init__(self):
-        self._owm = pyowm.OWM('5b943c4857a45d75ef7ee9b301666fa8')
+        self._owm = pyowm.OWM(AATC_Config.OWM_API_KEY)
         
-    def Get_Ajusted_Speed(self,CoordA,CoordB,Speed,At_Time = time.time()):
+    def Get_Adjusted_Speed(self,CoordA,CoordB,Speed,At_Time = time.time()):     #Calculate the estimated speed if wind is present (lower speed when moving into wind)
         try:
             
             forecast = self._owm.daily_forecast_at_coords(CoordA.Get_Y(),CoordA.Get_X())
@@ -19,9 +19,9 @@ class OWM_Control:
             Vx = Speed*math.sin(AATC_Coordinate.toRadian(bearing))+ wind["speed"]*math.sin(AATC_Coordinate.toRadian(wind_bearing))
             Vy = Speed*math.cos(AATC_Coordinate.toRadian(bearing))+ wind["speed"]*math.cos(AATC_Coordinate.toRadian(wind_bearing))
             V = math.sqrt(Vx**2+Vy**2)
-            if V < 0:  #To prevent estimating negative speeds
+            if V <= 0:  #To prevent estimating negative speeds
                 V = 1
             return V
         except:
-            return Speed
+            return Speed    #If failure to connect return normal speed.
     

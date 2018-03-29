@@ -35,7 +35,7 @@ import socket,codecs,ast,recvall,AATC_Crypto
 #Create Socket
 #Create Connection
 
-def Connect(remote_ip,PORT):
+def Connect(remote_ip,PORT):    #Connects to the server
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.connect((remote_ip, PORT))
@@ -51,7 +51,7 @@ def Connect(remote_ip,PORT):
 ##        return Sucess,Message
 
 
-class UserInterface:
+class UserInterface:        #Used to interface with the server
     def __init__(self,Connection):
         self._con = Connection
         self._Crypto = AATC_Crypto.Crypter(self._con)
@@ -237,11 +237,11 @@ class UserInterface:
 
     ##############################################
     ##############################################
-    def Send(self,Code,data):
+    def Send(self,Code,data):   #encrypt and send data to server
         Info = self._Crypto.Encrypt(codecs.encode(str((Code,data))))
         self._con.sendall(Info)
 
-    def Recv(self):   #Returns tuple of Sucess,Message,Data   of which data may just be useless for that function
+    def Recv(self):   #receive and decrypt data from server
         try:
             data = self._Crypto.Decrypt(recvall.recvall(self._con))
             data = ast.literal_eval(codecs.decode(data))
@@ -253,7 +253,7 @@ class UserInterface:
             return (False,"Conversion/Transfer Error"+str(e),[])
 
 
-def CreateUserInterface(IP = "192.168.0.19",Port = 8000):
+def CreateUserInterface(IP = "192.168.0.19",Port = 8000):   #Create user interface to server
     soc = Connect(IP,Port)
     U = UserInterface(soc)
     return U

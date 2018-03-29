@@ -43,23 +43,23 @@ class DynoGraph:
         self._ABSlots = ABSlots
         
         
-    def Size(self,xSize,ySize,zSize):
+    def Size(self,xSize,ySize,zSize):   #Sets size of graph grid
         self._xSize = xSize
         self._ySize = ySize
         self._zSize = zSize
 
-    def Get_Size(self):
+    def Get_Size(self):                 #Gets size of graph grid
         return self._xSize, self._ySize, self._zSize
 
-    def Get_Count(self):
+    def Get_Count(self):                #Get the count values for each dimension
         return self._xCount, self._yCount, self._zCount
     
-    def add_node(self,node):
+    def add_node(self,node):            #Add a node object to the graph
         self._Nodes[node.Get_NodeID()] = node
 
 
     
-    def Add_Edges(self,xRange,yRange,zRange):
+    def Add_Edges(self,xRange,yRange,zRange):       #Add the edges to the graph
         print("Adding edges...")
         self._xCount = int(xRange/self._xSize)
         self._yCount = int(yRange/self._ySize)
@@ -71,10 +71,10 @@ class DynoGraph:
         print("zCount:",self._zCount)
         
 
-        for node in self._Nodes.values():
+        for node in self._Nodes.values():       #Calculate edges for each node
             friends = self.CalculateNeighbours(node.Get_NodeID(),self._xCount,self._yCount,self._zCount)
             for friend in friends:
-                node.add_friend(friend)
+                node.add_friend(friend)         #Add edges to nodes.
 
     def CalculateNeighbours(self,NodeID,xCount,yCount,zCount):
         zlow,zhigh,ylow,yhigh,xlow,xhigh = False,False,False,False,False,False
@@ -94,6 +94,8 @@ class DynoGraph:
         if (NodeID-1) // (zCount*yCount) != (xCount-1):
             xhigh = True
 
+            
+        #Code below finds the nodeIDs of each of the nodes neighbours by detecting if the node is not on an edge of the area for the graph.
         if zlow:
             friends.append(NodeID-1)
             if ylow:
@@ -158,19 +160,19 @@ class DynoGraph:
     
     ###################################
     
-    def MapHash(self,value,div):
+    def MapHash(self,value,div):        #Get the hash of the value passed
         return int(value//div)
 
-    def Node_Cache_Hash(self,Key):
+    def Node_Cache_Hash(self,Key):      #Find the hash for the node cache value.
         return int(int(hashlib.md5(str(Key).encode('utf8')).hexdigest()[:8],16)%self._Node_Cache_BlockSize) #Generates integer hash of key then int div by BlockSize
         
     ##################################
     
-    def Build_Node_Cache(self):
+    def Build_Node_Cache(self):         #Precalculates the node_cache values
         self._Node_Cache = {}
         for node in self._Nodes.values():
-            x = node.Get_Coords().Get_X() + 0.25*self._xSize  #Prevents floating point rounding errors
-            y = node.Get_Coords().Get_Y() + 0.25*self._ySize
+            x = node.Get_Coords().Get_X() + 0.25*self._xSize    #Prevents floating point rounding errors
+            y = node.Get_Coords().Get_Y() + 0.25*self._ySize    #Otherwise integer division may map a node on top of another (x+1)//y = x//y in edge cases if x 
             z = node.Get_Coords().Get_Z() + 0.25*self._zSize
 
             mx,my,mz = self.MapHash(x,self._xSize),self.MapHash(y,self._ySize),self.MapHash(z,self._zSize)
@@ -186,15 +188,15 @@ class DynoGraph:
             Sets[r][Key] = self._Node_Cache[Key]  #Adds the item to the set
             
         print("Saving Node Cache. Sets:",len(Sets))
-        for Letter in self.GetFolderNames():
+        for Letter in self.GetFolderNames():            #Writes to all copies as this subroutine will only be run on graph generation
             for Set in Sets:
-                filename = os.path.join(self._cwd,self._FolderName,Letter,self._BlockFileName+"NC"+str(Set)+self._BlockFileSuffix)
+                filename = os.path.join(self._cwd,self._FolderName,Letter,self._BlockFileName+"NC"+str(Set)+self._BlockFileSuffix)      #Generates the path to the file
                 data = Sets[Set]
                 with open(filename,"wb") as file:
-                    pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)               #Dumps the set using pickle.
 
 
-    def Get_Node_Cache(self,x,y,z):
+    def Get_Node_Cache(self,x,y,z):     #Load nodeID for a given coordinate using the key
         Key = (x,y,z)
         if Key not in self._Node_Cache:
             NCBlockID = self.Node_Cache_Hash(Key)
@@ -214,7 +216,7 @@ class DynoGraph:
             raise ValueError("Node_Cache Key requested is not in the NCBlockID checked. Check BlockSize or regenerate blockfiles.")
 
             
-    def Direct_NodeID(self,x,y,z):
+    def Direct_NodeID(self,x,y,z):  #Access NodeID without first mapping the coordinates
         return self.Get_Node_Cache(x,y,z)
 
     def All_NodeIDs(self,StartValue = 1, MaxValue = None):
@@ -227,12 +229,12 @@ class DynoGraph:
             
         return NodeIDList
 
-    def Find_NodeID(self,x,y,z):
+    def Find_NodeID(self,x,y,z):    #Find the NodeID a coordinate is for 
         mx,my,mz = self.MapHash(x,self._xSize),self.MapHash(y,self._ySize),self.MapHash(z,self._zSize)
         NodeID = self.Get_Node_Cache(mx,my,mz)
         return NodeID
 
-    def Obj_Find_NodeID(self,Obj):
+    def Obj_Find_NodeID(self,Obj):  
         x,y,z = Obj.Get_Coords().Get_X(),Obj.Get_Coords().Get_Y(),Obj.Get_Coords().Get_Z()
         NodeID = self.Find_NodeID(x,y,z)
         return NodeID
@@ -240,7 +242,7 @@ class DynoGraph:
     
     #############################
 
-    def SaveGraph(self,AutoNodeSave = True,AutoNodeCacheSave = True):
+    def SaveGraph(self,AutoNodeSave = True,AutoNodeCacheSave = True):   #Save the graph to the disk.
         print("Saving graph...")
         for Letter in self.GetFolderNames():
             os.makedirs(os.path.join(os.getcwd(),self._FolderName,Letter),exist_ok = True)
@@ -260,12 +262,12 @@ class DynoGraph:
             except Exception as e:
                 print("Error occured while saving graph file ",e)
 
-    def ImportGraph(self):
+    def ImportGraph(self):      #Loads graph properties
         print("Importing graph")
         ABSlot = self._ABSlot
         try:
-            filename = os.path.join(os.getcwd(),self._FolderName,"A",self._GraphFileName+self._GraphFileSuffix)   #MUST ALWAYS HAVE ATLEAST THE FOLDER "A" in order to load the configuration
-            with open(filename,"rb") as file:
+            filename = os.path.join(os.getcwd(),self._FolderName,"A",self._GraphFileName+self._GraphFileSuffix)     #MUST ALWAYS HAVE ATLEAST THE FOLDER "A" in order to load the configuration
+            with open(filename,"rb") as file:                                                                       #The graph at this point does not know how many copies there are
                 ImportFile = pickle.load(file)
                 
             self.__dict__.update(ImportFile.__dict__)
@@ -279,7 +281,8 @@ class DynoGraph:
     ################
     def Hash(self,Value):
         return int(Value//self._BlockSize)
-    def GetNode(self,NodeID):
+    
+    def GetNode(self,NodeID):           #Takes a nodeID, finds the hash, finds the file with the node ( a block) and loads this block.
         if NodeID not in self._Nodes:
             BlockID = self.Hash(NodeID)
             try:
@@ -297,9 +300,9 @@ class DynoGraph:
             return self._Nodes[NodeID]
         else:
              #Raises error if cannot get node
-            raise ValueError("NodeID requested is not in the BlockID checked. Check BlockSize or regenerate blockfiles. NodeID: "+str(NodeID))
+            raise ValueError("NodeID requested is not in the BlockID checked. Check BlockSize or regenerate blockfiles. NodeID: "+str(NodeID))      #If an error occured ( node was not loaded). This is normally the case if the graph has not been generated correctly.
 
-    def SaveNodes(self,FolderNames = None):
+    def SaveNodes(self,FolderNames = None):         #Saves the current graph into the folders defined by the set FolderNames, or all if FolderNames = None.
         if FolderNames == None:
             FolderNames = self.GetFolderNames()
         Sets = {}
@@ -317,38 +320,38 @@ class DynoGraph:
                     filename = os.path.join(self._cwd,self._FolderName,Letter,self._BlockFileName+"N"+str(Set)+self._BlockFileSuffix)
                     data = Sets[Set]
                     with open(filename,"wb") as file:
-                        pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)
+                        pickle.dump(data,file,protocol = pickle.HIGHEST_PROTOCOL)               #Writes the block to the file using pickle.
 
     def EvictNode(self,NodeID):  #Removes a node from the Nodes dict
         if NodeID in self._Nodes:
             self._Nodes.pop(NodeID)
-            return True
+            return True         #True if node was in memory, false if not
         else:
             return False
 
-    def FlushGraph(self):
+    def FlushGraph(self):       #Empty the graph to reduce memory usage
         self._Nodes = {}
         self._Node_Cache = {}
 
-    def Get_Nodes(self):
+    def Get_Nodes(self):        #Get all nodes currently in memory
         return self._Nodes
 
     #######################################
 
-    def GetFolderNames(self):
+    def GetFolderNames(self):       #Generates the set of foldernames the current graph will use
         names = []
         for x in range(self._ABSlots):
             names.append(chr(65+x))
         return names
 
-    def CurrentFolderName(self):
-        char = chr(  int(65+ ((time.time()+self._ABInterval*self._ABSlot)//self._ABInterval)%self._ABSlots))
+    def CurrentFolderName(self):    #Finds the current folder the graph should save in.
+        char = chr(  int(65+ ((time.time()+self._ABInterval*self._ABSlot)//self._ABInterval)%self._ABSlots))    
         return char
     
         
             
 
-class Node:
+class Node:         #Stores the attributes of a node in object form
     def __init__(self,NodeID,Cost,Coords):
         self._NodeID = NodeID
         self._Friends = []
@@ -370,13 +373,20 @@ class Node:
     def Set_Cost(self,cost):
         self._Cost = cost
 
-def EstimateDistance(Node,Target,xSize,ySize,zSize):
+def EstimateDistance(Node,Target,xSize,ySize,zSize):    #Estimates the distance to the target node      A* HEURISTIC
     Node_Coords = Node.Get_Coords()
-    Target_Coords = Target.Get_Coords()
+    Target_Coords = Target.Get_Coords()                 #USES THE TOTAL DISTANCE IN EACH DIMENSION TO REDUCE SEARCH TIME COMPARED TO EUCLIDIAN DISTANCE
     return (abs(Node_Coords.Get_X()-Target_Coords.Get_X())/xSize+abs(Node_Coords.Get_Y()-Target_Coords.Get_Y())/ySize+abs(Node_Coords.Get_Z()-Target_Coords.Get_Z())/zSize)
-    #return math.sqrt((Node_Coords.Get_X()-Target_Coords.Get_X()/xSize)**2+(Node_Coords.Get_Y()-Target_Coords.Get_Y()/ySize)**2 + (Node_Coords.Get_Z()-Target_Coords.Get_Z()/zSize)**2)*0.9
+##    return math.sqrt((Node_Coords.Get_X()-Target_Coords.Get_X()/xSize)**2+(Node_Coords.Get_Y()-Target_Coords.Get_Y()/ySize)**2 + (Node_Coords.Get_Z()-Target_Coords.Get_Z()/zSize)**2)*0.9
 
-def AStarPQ(graph,start,target):   # Set all g to node_count + 1
+def AStarPQ(graph,start,target):    #The priority queue version of the A* algorithm
+    """
+    Priority queue version of the A* algorithm.
+    This replaces the task of finding the minimum of f using min with a priority queue
+    This improves the performance as the size of the search increases
+    However as this is less memory efficient (must keep a priority queue of all open nodes ) it is not the default option used but is offered as an alternative.
+
+    """
     StartTime = time.time()
 
     xSize,ySize,zSize = graph.Get_Size()
@@ -389,23 +399,23 @@ def AStarPQ(graph,start,target):   # Set all g to node_count + 1
 
     g[start] = 0
     f[start] = EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize)
-    fp.put((EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize),start))
+    fp.put((EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize),start))      #Sets the start node to the current best node
     Found = False
     while len(OpenSet) != 0:
-        current = fp.pop()[1]
+        current = fp.pop()[1]   #Find best node
         
-        if current == target:
+        if current == target:       #If the node has been found, break
             Found = True
             break
         
-        OpenSet.pop(current)
+        OpenSet.pop(current)        
         ClosedSet[current] = 1
         
-        for NodeID in graph.GetNode(current).Get_Friends():
-            if NodeID in ClosedSet:
+        for NodeID in graph.GetNode(current).Get_Friends():     #For each neighbour on the graph
+            if NodeID in ClosedSet:         #This node has no better route, ignore
                 continue
             
-            if NodeID not in OpenSet:
+            if NodeID not in OpenSet:       #Add to openset if not yet in it. This only loads the nodes into the g,f,fp sets now in order to reduce memeory usage
                 OpenSet[NodeID] = 1
                 g[NodeID] = math.inf
                 f[NodeID] = math.inf
@@ -413,14 +423,14 @@ def AStarPQ(graph,start,target):   # Set all g to node_count + 1
 
             NewNode = graph.GetNode(NodeID)
             tScore = g[current] + NewNode.Get_Cost()
-            if tScore >= g[NodeID]:
+            if tScore >= g[NodeID]:                 #If does not offer a better path continue
                 continue
             cameFrom[NodeID] = current
             g[NodeID] = tScore
-            fp.remove((f[NodeID],NodeID))
-            fTemp = g[NodeID] + EstimateDistance(NewNode,graph.GetNode(target),xSize,ySize,zSize)
+            fp.remove((f[NodeID],NodeID))       #Remove from priority queue
+            fTemp = g[NodeID] + EstimateDistance(NewNode,graph.GetNode(target),xSize,ySize,zSize)       
             f[NodeID] = fTemp
-            fp.put((fTemp,NodeID))
+            fp.put((fTemp,NodeID))              #Readd to priority queue
 
         f.pop(current) #These values will not be refered to again since the current NodeID has been moved to the closed set . This therefore reduces memory usage very slightly
         g.pop(current)
@@ -450,28 +460,28 @@ def AStar2(graph,start,target):   # Set all g to node_count + 1
     f[start] = EstimateDistance(graph.GetNode(start),graph.GetNode(target),xSize,ySize,zSize)
     Found = False
     while len(OpenSet) != 0:
-        current = min(f,key = lambda n:f[n])  #Faster (143 vs 114 ms) and doesnt require OpenList to be made
+        current = min(f,key = lambda n:f[n])  #Faster (143 vs 114 ms) and doesnt require OpenList to be made.Find best node
         
         if current == target:
             Found = True
             break
 
 
-        OpenSet.pop(current)
+        OpenSet.pop(current)        
         ClosedSet[current] = 1
         
-        for NodeID in graph.GetNode(current).Get_Friends():
+        for NodeID in graph.GetNode(current).Get_Friends():     #For each neighboyur
             if NodeID in ClosedSet:
                 continue
             
-            if NodeID not in OpenSet:
+            if NodeID not in OpenSet:        #Add to openset if not yet in it. This only loads the nodes into the g,f sets now in order to reduce memeory usage
                 OpenSet[NodeID] = 1
                 g[NodeID] = math.inf
                 f[NodeID] = math.inf
 
             NewNode = graph.GetNode(NodeID)
             tScore = g[current] + NewNode.Get_Cost()
-            if tScore >= g[NodeID]:
+            if tScore >= g[NodeID]:     #If not a better path contine, otherwise update.
                 continue
             cameFrom[NodeID] = current
             g[NodeID] = tScore
@@ -491,7 +501,7 @@ def AStar2(graph,start,target):   # Set all g to node_count + 1
         return None
 
         
-def FindPath(cameFrom,current):
+def FindPath(cameFrom,current):     #Retraces the path from the end node to the start node.
     path = [current]
     while current in cameFrom:
         current = cameFrom[current]
@@ -499,7 +509,18 @@ def FindPath(cameFrom,current):
     return path[::-1]
 
 
-def Benchmark(FLUSH = 100,MAXNODE = 80000):
+
+
+
+
+
+
+##############################################
+
+# Below are random benchmarks used for improvement of the search algorithms
+
+
+def Benchmark(FLUSH = 100,MAXNODE = 80000):     #Benchmark with test of removing nodes from memory every FLUSH steps
     graph = DynoGraph()
     graph.ImportGraph()
 
@@ -519,7 +540,7 @@ def Benchmark(FLUSH = 100,MAXNODE = 80000):
         
 
         
-def MultiBenchmark(num_proc = 4,FLUSH=100,MAXNODE=80000):
+def MultiBenchmark(num_proc = 4,FLUSH=100,MAXNODE=80000):       #Benchmark but with multiple processes to simulate server
     import multiprocessing
     procs = []
     for x in range(num_proc):
@@ -528,7 +549,7 @@ def MultiBenchmark(num_proc = 4,FLUSH=100,MAXNODE=80000):
         procs.append(p)
 
 
-def CAStarBenchmark(Random = False):
+def CAStarBenchmark(Random = False):    #Test of the CAStar module. Not part of NEA
     graph = DynoGraph()
     graph.ImportGraph()
     if Random:

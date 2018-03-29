@@ -31,7 +31,7 @@ def GPIO_Wait_Switch(pin,wait_time = 1, SWITCH_MODE= 1, Indicator_Pin = False): 
         pass  
 
 
-def GPIO_Thread(Thread_Name,GPIO_Queue):
+def GPIO_Thread(Thread_Name,GPIO_Queue):    #Generic thread for executing functions
     Exit = False
     Function = BlankFunction
     FuncArgs = ()
@@ -60,7 +60,7 @@ def GPIO_Thread(Thread_Name,GPIO_Queue):
 
             
 
-class Thread_Handle:
+class Thread_Handle:    #Acts as storage for thread name, pointer and communications queue
     def __init__(self,Thread_Name,ThreadPointer,Queue):
         self._Thread_Name = Thread_Name
         self._ThreadPointer = ThreadPointer
@@ -79,7 +79,7 @@ class Thread_Handle:
 
 
 
-class Thread_Controller:
+class Thread_Controller:        #Handle usage of sub processes automatically using this object
     def __init__(self,Command_Queue,Name = ""):
         print("Creating Thread Controller",Name)
         self._Name ="TC"+ Name + " >"
@@ -93,13 +93,13 @@ class Thread_Controller:
         if Process:
             Thread_Queue = multiprocessing.Queue()
             threadPointer = multiprocessing.Process(target = TargetCommand,args = (Thread_Name,Thread_Queue)+TargetArgs)
-        else:
+        else:                                                                                                               #Create the secondary thread/process depending on selected type
             Thread_Queue = queue.Queue()
             threadPointer = threading.Thread(target = TargetCommand,args = (Thread_Name,Thread_Queue)+TargetArgs)
         self._Threads[Thread_Name] = Thread_Handle(Thread_Name,threadPointer,Thread_Queue)
         threadPointer.start()
         
-    def Close_Thread(self,Thread_Name):
+    def Close_Thread(self,Thread_Name): #Close a thread of this name
         ClosingThreadHandle = self._Threads.pop(Thread_Name)
         Queue = ClosingThreadHandle.Get_Queue()
         Queue.put(("Exit",()))
@@ -107,7 +107,7 @@ class Thread_Controller:
         return ClosingThreadHandle  #Returns Thread_Handle of thread
    
 
-    def PassData(self,Thread_Name,Data):
+    def PassData(self,Thread_Name,Data):    #Pass data to the subprocess via the queue
         Queue = self._Threads[Thread_Name].Get_Queue()
         Queue.put(Data)
 
@@ -115,10 +115,10 @@ class Thread_Controller:
         Exit = False
         while not Exit:
             try:
-                Request = self._Command_Queue.get()   #(Thread_Name/Controller command,"Command",Args)
+                Request = self._Command_Queue.get()   #(Thread_Name/Controller,"Command",Args)
                 self._Command_Queue.task_done()
                 
-                if Request[0] == "Controller":
+                if Request[0] == "Controller":  #If this is a command to be processed by the controller
                     Command,Args = Request[1],Request[2]
                     if Command == "Create_Thread":               #In total form ("Controller","Create_Thread",(ThreadName,[TargetFunction,TargetArguments]))
                         self.Create_Thread(*Args)
@@ -128,12 +128,12 @@ class Thread_Controller:
                         self.Close_Thread(*Args)
                     elif Command == "Exit":  #Shutdown  everything
                         self.Reset(*Args)
-                        self._Exit = True
+                        Exit = True
                     elif Command == "Reset":  #Shutdown all threads, not controller
                         self.Reset(*Args)
                         
                 else:
-                    self.PassData(Request[0],Request[1:])
+                    self.PassData(Request[0],Request[1:])   #Pass the data to the subprocess excluding the Target process name.
                         
 
             except Exception as e:
@@ -141,7 +141,7 @@ class Thread_Controller:
         print(self._Name,"Shutting down")
 
 
-    def Reset(self,Wait_Join = False):
+    def Reset(self,Wait_Join = False):  #Close all processes , optionally waiting for them to join.
         print(self._Name,"Reseting GPIO Threading Controller...")
         Thread_Names = list(self._Threads.keys())
         ThreadHandles = []
@@ -164,7 +164,7 @@ class Thread_Controller:
             
         
         
-def Create_Controller(process = False, Name = ""):
+def Create_Controller(process = False, Name = ""):  #Create a thread controller and return the command queue
     if process:
         q = multiprocessing.Queue()
     else:
@@ -203,11 +203,11 @@ def Command(Thread_Name,arg1,arg2...):
 
 # Example functions
 
-def BlankFunction(Thread_Name):
+def BlankFunction(Thread_Name): #Just sleep repeatedly
     time.sleep(0.2)
     return True
 
-def DisplayName(Thread_Name,Sleep_Time):
+def DisplayName(Thread_Name,Sleep_Time):    #Repeatedly display the threads name
     print("Message from Thread",Thread_Name,". Sleeping for time",Sleep_Time)
     time.sleep(Sleep_Time)
     return True
@@ -228,7 +228,7 @@ def BlinkTest(Thread_Name,pin,frequency,cycles=1,repeat = False):  #prints demon
 
 ##################General GPIO functions
 
-def Blink(Thread_Name,pin,frequency,cycles = 1,repeat= False):
+def Blink(Thread_Name,pin,frequency,cycles = 1,repeat= False):  #Blinks an LED 
     pauseTime = 1/(frequency*2)
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(pin,GPIO.OUT)
@@ -252,7 +252,7 @@ def Blink(Thread_Name,pin,frequency,cycles = 1,repeat= False):
 
 
 
-def Pattern(Thread_Name, Pattern ,ReferenceTime=1,repeat = True):
+def Pattern(Thread_Name, Pattern ,ReferenceTime=1,repeat = True):   #Executes a pattern of LED events
     pins = set()
     for item in Pattern:
         pins.add(item[0])
@@ -278,7 +278,7 @@ def Pattern(Thread_Name, Pattern ,ReferenceTime=1,repeat = True):
         GPIO.cleanup(*pins)
     return repeat
 
-def PatternGenerator(PinSet=[11,13,21],StateSet = [0,1] ,Length = 50 ,MinTime = 0.1 ,MaxTime = 1 , RoundingTime = 2):
+def PatternGenerator(PinSet=[11,13,21],StateSet = [0,1] ,Length = 50 ,MinTime = 0.1 ,MaxTime = 1 , RoundingTime = 2):   #Generate a random pattern
     Pattern = []
     for x in range(Length):
         Pattern.append((
