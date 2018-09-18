@@ -1,4 +1,4 @@
 mysqlclient==1.3.12
 prettytable==0.7.2
-pycryptodome==3.4.7
+pycryptodome==3.6.6
 telepot==12.3
